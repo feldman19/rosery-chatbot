@@ -2,32 +2,29 @@ from flask import Flask, request, jsonify
 import openai
 import os
 
+app = Flask(__name__)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-app = Flask(__name__)
-
-# This route handles chatbot messages
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
     message = data.get("message", "")
 
     if not message:
-        return jsonify({"response": "לא הבנתי, תוכל לשאול שוב?"})
+        return jsonify({"error": "No message provided"}), 400
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "אתה שירות לקוחות של Rosery"},
-            {"role": "user", "content": message}
-        ]
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "אתה שירות לקוחות של Rosery..."},
+                {"role": "user", "content": message}
+            ]
+        )
+        reply = response.choices[0].message["content"]
+        return jsonify({"response": reply})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    answer = response.choices[0].message.content
-    return jsonify({"response": answer})
-
-
-# This runs the Flask app and uses the correct port for Render
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True, host="0.0.0.0", port=10000)
