@@ -1,18 +1,18 @@
 import os
-import openai
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from openai import OpenAI
 
 app = Flask(__name__)
-CORS(app)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-# Set initial system role
 chat_history = [
     {
         "role": "system",
-        "content": "אתה עוזר שירות של Rosery. תענה בעברית מקצועית ותעזור ללקוחות להבין את תנאי המשלוחים, אחריות, החזרות, מבצעים וחומרים של התכשיטים.",
+        "content": (
+            "תענה בעברית. אתה נציג שירות של Rosery. "
+            "פשוטה, מקצועית, עזור ללקוחות להבין את תנאי התשלומים, אחריות, החזירות, מבצעים וחומרים של התכשיטים. "
+            "מנה את הידע העסקי מה{business_knowledge}"
+        ),
     }
 ]
 
@@ -22,22 +22,24 @@ def chat():
     message = data.get("message", "")
 
     if not message:
-        return jsonify({"error": "Missing message"}), 400
+        return jsonify({"error": "No message provided"}), 400
 
     chat_history.append({"role": "user", "content": message})
 
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o",
             messages=chat_history
         )
-        reply = response.choices[0].message.content
-        chat_history.append({"role": "assistant", "content": reply})
-        return jsonify({"response": reply})
+        answer = response.choices[0].message.content
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    chat_history.append({"role": "assistant", "content": answer})
+
+    return jsonify({"response": answer})
 
 if __name__ == "__main__":
+    import os
     port = int(os.environ.get("PORT", 10000))
     app.run(debug=True, host="0.0.0.0", port=port)
