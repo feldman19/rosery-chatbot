@@ -1,0 +1,3 @@
+# Rule sources are hash-bound (rulebook.py); keep exact bytes on every OS.
+campaigner/rules/*.md text eol=lf
+campaigner/rules/*.json text eol=lf
