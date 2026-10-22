@@ -289,11 +289,11 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
             if workspace=='manager' and self.path=='/advanced' and (data/'rosery-pilot.json').exists():
                 page=(ROOT/'owner-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
                 return self.reply(200,page,'text/html; charset=utf-8')
+            if workspace=='manager' and self.path.split('?',1)[0]=='/':
+                # Simple owner screen first; the full workspace stays at /advanced.
+                page=(ROOT/'simple-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
+                return self.reply(200,page,'text/html; charset=utf-8')
             if self.path.split('?',1)[0] == '/' or (self.path == '/lab' and workspace == 'manager'):
-                if workspace=='manager' and self.path=='/' and (data/'rosery-pilot.json').exists():
-                    # Simple owner screen first; the full workspace stays at /advanced.
-                    page=(ROOT/'simple-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
-                    return self.reply(200,page,'text/html; charset=utf-8')
                 template = 'manager.html' if workspace == 'manager' else 'dashboard.html'
                 if workspace == 'manager' and self.path == '/' and (data / 'rosery-pilot.json').exists():
                     template = 'pilot.html'
@@ -672,9 +672,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8766)
     parser.add_argument('--workspace', choices=('employee', 'manager'), default='employee')
+    parser.add_argument('--data-dir', help='Existing data folder (for example the original install\'s campaigner\\.local)')
     parser.add_argument('--no-startup-execution-workers', action='store_true', help='Keep read-only report refresh; execution starts only after an explicit operator action')
     args = parser.parse_args()
-    server = make_server(args.port, workspace=args.workspace,start_live=True,start_execution_workers=not args.no_startup_execution_workers)
+    server = make_server(args.port, args.data_dir, workspace=args.workspace,start_live=True,start_execution_workers=not args.no_startup_execution_workers)
     print(f'Local {args.workspace} prototype: http://127.0.0.1:{server.server_port}', flush=True)
     try:
         server.serve_forever()
