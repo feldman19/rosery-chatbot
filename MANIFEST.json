@@ -1,0 +1,1167 @@
+{
+  "files": 290,
+  "redacted_matches": 0,
+  "source_files": [
+    {
+      "path": "campaigner/.gitignore",
+      "sha256": "fd3765be479726732b49bbd7a957309a37b265baa6dc94b59ac580feb4bbc557"
+    },
+    {
+      "path": "campaigner/action_desk.py",
+      "sha256": "e722de119cccf25476a629d12699688029dfbaa8031c81f873df8c5109369cbd"
+    },
+    {
+      "path": "campaigner/action_recommendations.py",
+      "sha256": "6862db8539f2d3157ed9d43ae8f9979f863b99cfc2de4c1faa56f609c4877ab4"
+    },
+    {
+      "path": "campaigner/analysis.py",
+      "sha256": "5582c5c0db7e703c74eaa3b8c2c8d7f6b381191c625a3c185a12eb2c565dc9de"
+    },
+    {
+      "path": "campaigner/artifact_lock.py",
+      "sha256": "a239ab4c6fffe8f3a3ffd47e3e9c22f75399cbbd84abb8cbaf6a4ab585a17a95"
+    },
+    {
+      "path": "campaigner/assistant/__init__.py",
+      "sha256": "e701fa9ebb3349f44226facf7e2ee798d94d0a697c37a59f4f725fdd506e89e5"
+    },
+    {
+      "path": "campaigner/audit_decision_snapshot.py",
+      "sha256": "a0ad861ec3f8bbb42921fc0450f7c06181299201d9edc1c189d41e40d8af333c"
+    },
+    {
+      "path": "campaigner/audit_gift_test_local.py",
+      "sha256": "fa7e1a0d972228a2d1e3e9bc247e7b913aca2f97d5784f70e65c6bd8e1c9fecf"
+    },
+    {
+      "path": "campaigner/audit_pause_budget_context.py",
+      "sha256": "f500dafd9398af6e4de91f008be08eca78c75895d8c5acf7f8b1ac45f7d0d03e"
+    },
+    {
+      "path": "campaigner/audit_pause_evaluation.py",
+      "sha256": "d017151a31482620ffcaca5d2f0a98c085ce4bdf77bfd323b0adb0c4211b6274"
+    },
+    {
+      "path": "campaigner/audit_shadow_freeze.py",
+      "sha256": "a86429ece900ba44552d8097ba45ca2352df9dde2b366b28221118b42cc2a4e7"
+    },
+    {
+      "path": "campaigner/audit_shadow_server_cycle.py",
+      "sha256": "22f020ffabd986c89642b167c9cfccb1c1bed04d87f5f51ea31364c0f3d7ccff"
+    },
+    {
+      "path": "campaigner/automation_service.py",
+      "sha256": "1423d30c4efad487115902a22f9d26d35af30efe3d9933672b0744c819cd8bb4"
+    },
+    {
+      "path": "campaigner/autonomy/__init__.py",
+      "sha256": "41fca966263bea0b9bdb0e798c1c84d4e4fc23ef77a6f51c8a54f40d8ce067b1"
+    },
+    {
+      "path": "campaigner/batch_limits.py",
+      "sha256": "553657c7bb7fd57b3a15866aae424d8b46ad31ab38f79e290eee51b8a112b1ab"
+    },
+    {
+      "path": "campaigner/build_mobile_page.py",
+      "sha256": "2ce23645b7feedc4ac352f966e28f9bb53f166deab5799831cb0887f714358a7"
+    },
+    {
+      "path": "campaigner/build_registration_case.py",
+      "sha256": "2b84d1a0d6f02b78513cb8647d4d6418b895e87edd749212a578b1552489c5c1"
+    },
+    {
+      "path": "campaigner/build_reviewed_launch.py",
+      "sha256": "9425efbb856b645f820ead9406f3ecfe754ef35de52f2666b79cb50c876fc4f2"
+    },
+    {
+      "path": "campaigner/build_rosery_economics_profile.py",
+      "sha256": "795af195731ec1cfb80f6a391910deae8d3bdfe2e13cbe30db1d7a8083d0f53b"
+    },
+    {
+      "path": "campaigner/business_context.py",
+      "sha256": "072d13ddb685e09ce92287bda1347d2f017337d076c7663c5012a21d85cb5596"
+    },
+    {
+      "path": "campaigner/business_method_review.py",
+      "sha256": "ec6cb4ffa956177cba58ca2cc774b9913a76b33b67b3eeb6df5a9e5f3e3a0878"
+    },
+    {
+      "path": "campaigner/c11_canary.py",
+      "sha256": "3edd3bc010e3cb572229c54d87c3d0c80cc5b45c66dfce18da92c991af14c899"
+    },
+    {
+      "path": "campaigner/campaign_operations.py",
+      "sha256": "91a3835f803693194b29a11abe90c0ef4cb791c619ea6cbf66c4ff9b869e32d8"
+    },
+    {
+      "path": "campaigner/campaign_operations_transport.py",
+      "sha256": "36713b59a4a2d817e92a97165de659e14381b53f75a8523ff8f5f287e52ac1d4"
+    },
+    {
+      "path": "campaigner/canary_plan.py",
+      "sha256": "14d7ee0221021a440790a14e2f305238bc217414ed646b74aa8b30ff219934dc"
+    },
+    {
+      "path": "campaigner/change_history_evidence.py",
+      "sha256": "c84231a2df8ebc2064d7f8a5e6d971739a8f1ffc13dce9be137a50c55ca041da"
+    },
+    {
+      "path": "campaigner/claude_chat.py",
+      "sha256": "6fa16677320423a85ce0edbcc33a8a4268e5ba94bc59c2994643beee278005f3"
+    },
+    {
+      "path": "campaigner/claude_quality_review.py",
+      "sha256": "453a0b15c3337f32bc40637eaa7fa2fb12168f0b40bd64c6c113fc9ac63a02e4"
+    },
+    {
+      "path": "campaigner/cohort.py",
+      "sha256": "e1a058f433eaa467d5c63188f55ece6be363bb432a915104fad50ce8b0b86583"
+    },
+    {
+      "path": "campaigner/connection-ui.js",
+      "sha256": "ade15f10dcdd1ab9e3d87b7f3c245e086df4e45703e298633adf428ef4cc3840"
+    },
+    {
+      "path": "campaigner/connections.py",
+      "sha256": "54e94e26a3e301e95aab1d89ac650c10360fd002366fd313f934337af8d3fe5d"
+    },
+    {
+      "path": "campaigner/core/__init__.py",
+      "sha256": "9162cec21b7d411f1aeccd51e44cb35537de48ff02d7a301ec11c479ec85368a"
+    },
+    {
+      "path": "campaigner/create_gift_test_20261019.py",
+      "sha256": "e8772567925623df1603c18cd96b1be2d35dd538f08fd1215eac14fd756f871c"
+    },
+    {
+      "path": "campaigner/creative_audit.py",
+      "sha256": "0fea0c37a9bcaae7875e6263c53a82534a05a017adfa21730954e90ff031b26f"
+    },
+    {
+      "path": "campaigner/creative_claims.py",
+      "sha256": "c6fcc16ab61b3e451be10e385f13600e2e294111697dde21e3ae56f3025330a8"
+    },
+    {
+      "path": "campaigner/creative_destination.py",
+      "sha256": "cacb1aad823149ed0ac31e2ef191ad7f28a91a60a537c4a13993658b0b8dcaa5"
+    },
+    {
+      "path": "campaigner/creative_grouping.py",
+      "sha256": "4bedee86bf4eb68eb7261890813a8e4a60a5cef5eaf2783dce2631c1e0aa3bd8"
+    },
+    {
+      "path": "campaigner/creative_preparation.py",
+      "sha256": "15aee91a7bca212754c1faabb8019fc16c5a324e26a4ccdb338b7db690215156"
+    },
+    {
+      "path": "campaigner/creative_reuse.py",
+      "sha256": "6ba6482f04d8fd38c598e78f7c18d6a441de1e842e42425aa36931e3d98e77b1"
+    },
+    {
+      "path": "campaigner/creative_review_receipts.py",
+      "sha256": "90cc0b2d2c167ad8b9c84ab6ffee8d6b2d479720394d7a51983a26bf34d257ac"
+    },
+    {
+      "path": "campaigner/creative_selection.py",
+      "sha256": "c5b5020b4ff5bcec8ec7f0b4f36ec9cde0d0f90506e5f8325f0113764f14f7ac"
+    },
+    {
+      "path": "campaigner/creative_vision.py",
+      "sha256": "ff66a8ca5171fdea993da3622c12e196f14b2217a188ddd86ef2c95ca890b47a"
+    },
+    {
+      "path": "campaigner/dashboard-design.css",
+      "sha256": "35e8624d64fdd0c5afdcaf16039c86623e79b236fc6bb174c0fbbfedb575b6ff"
+    },
+    {
+      "path": "campaigner/dashboard.html",
+      "sha256": "a3bb9096bbfb5cbdd1f3202ba7419f4a75abd40d2cfd5452fa4d74434988a7ff"
+    },
+    {
+      "path": "campaigner/decision-ui.js",
+      "sha256": "b986c58537da33e622e9d4b736d4ef5b15b921471f10183d4c0d2b0c3a326a0d"
+    },
+    {
+      "path": "campaigner/decision_evidence.py",
+      "sha256": "4b186db9fddd4c1cf9becaf6c3e17fcf7813b88af63e9737403628b393be46f1"
+    },
+    {
+      "path": "campaigner/decision_history.py",
+      "sha256": "19172bad6c4933f859fe1dce9c9cc83ea3a576a2c1ab0ce8ed5a8f8525920f8e"
+    },
+    {
+      "path": "campaigner/decision_loop.py",
+      "sha256": "1fdb30238277dbe3929682715941b6a66aeb45face4b9165ec192d3011f008d3"
+    },
+    {
+      "path": "campaigner/DECISION_MEMORY.md",
+      "sha256": "ba0c385c97a2e1655b9f3133b1fb2652df3698e36e643e5c63a6705c990d0291"
+    },
+    {
+      "path": "campaigner/decision_memory.py",
+      "sha256": "36426cb6bfda575dc1124e8e2a0760632770c1dcdbe402eb19ee908ffed6dbfa"
+    },
+    {
+      "path": "campaigner/decision_uncertainty.py",
+      "sha256": "2c6581c247153d1fc43a5695946994f27ab6cee583b5e7232ec7f8fb48b59cde"
+    },
+    {
+      "path": "campaigner/decisions.py",
+      "sha256": "281262d809368ff92461ffc1d576be86c5e540b2fa652b1cbec9f0934c955e60"
+    },
+    {
+      "path": "campaigner/diagnose_asset_groups.py",
+      "sha256": "1195d05428959b0987b19eaa2c7848692edeea4213df3ef503457214c8ad4a8d"
+    },
+    {
+      "path": "campaigner/drive_assets.py",
+      "sha256": "c3553e9c25a39c4786487c162fc38dd7c3238e0442684e9240b402903524a668"
+    },
+    {
+      "path": "campaigner/drive_direct.py",
+      "sha256": "91fb939fb70fddb0a6215b69fd7fbc63c22d135ffcfab2b0e06708d66b1311b3"
+    },
+    {
+      "path": "campaigner/drive_oauth.py",
+      "sha256": "922e36c091d5822049388651a0fb923dd7641615efb1b943dd716f66eb91383e"
+    },
+    {
+      "path": "campaigner/economics_evidence.py",
+      "sha256": "26e6e8bfdaab6cb57f70dd9c114ec22ce420c8dddb2ae5787ba69cc061f3ee95"
+    },
+    {
+      "path": "campaigner/economics_limits.py",
+      "sha256": "584f73e5b0e14a7d2e65ceae80fd9bb2f2c88752a7bd6e03332d707fe75226f2"
+    },
+    {
+      "path": "campaigner/economics_observation.py",
+      "sha256": "e4bc9cb784bd8a69d0a75f404639d6906c4c1c731ce480773d903280ac6ab1ed"
+    },
+    {
+      "path": "campaigner/evidence_cli.py",
+      "sha256": "5a6c4cec7a2d8f274d8b14ef46abab8a2cc14b1dd4cb7be743faf15eeb86f793"
+    },
+    {
+      "path": "campaigner/exact_approval_bridge.py",
+      "sha256": "705a5f0f94c09eacb562f565bdfba5fcacbd967a767a4b76500bcec0b72035af"
+    },
+    {
+      "path": "campaigner/execution_preflight.py",
+      "sha256": "51a5174dbac58210c473a74643c9f8d99b730faad83f58179732e383d1ab5ef7"
+    },
+    {
+      "path": "campaigner/experiment_planner.py",
+      "sha256": "d20bf9111b8e6cb23fbd100d04eaf339858a31df7492cd4c950fb5ab141270bf"
+    },
+    {
+      "path": "campaigner/experiment_suggestions.py",
+      "sha256": "8f8451ad0dcd2c08a9e937e0d83f2669e1283b3d842657ce6f1b84a8366a63a7"
+    },
+    {
+      "path": "campaigner/flashy_direct.py",
+      "sha256": "ba3bc86253308cbc7b79d3c60854da70a826964db4306c62226e4f2568571caf"
+    },
+    {
+      "path": "campaigner/image_validation.py",
+      "sha256": "6c31cbac3eee92a3d16bb7f5430a92f0114fea20f591ac732e769e5f551d50dd"
+    },
+    {
+      "path": "campaigner/import_creative_history.py",
+      "sha256": "52c80a5f902d7597c19950e8fd9697d425c8f206fb695d2eaaec18994f0dbb8e"
+    },
+    {
+      "path": "campaigner/imported_business_method.py",
+      "sha256": "58c06ef9207e933b598d1c1a00437a88c5a59a51cf4e69dc9f8f7b79ae556f45"
+    },
+    {
+      "path": "campaigner/insights_split.py",
+      "sha256": "8de8a63fec9e1703284df882a37ad643035996963b5b87fb1a0aa2093ac3d02b"
+    },
+    {
+      "path": "campaigner/intelligence.py",
+      "sha256": "3660a623fd6f9ee5adfc3d8f6031ca0b226df30a1f5763858034b6c4a79a4c17"
+    },
+    {
+      "path": "campaigner/launch-proposal-ui.js",
+      "sha256": "6f5bb6f617d662f7c1153c9b06e8d76684f89823de6aa087b11cc6cf6b03c79e"
+    },
+    {
+      "path": "campaigner/launch-ui.js",
+      "sha256": "a87994c334e4a71ed1b6e1450cd17408da6f2065be29a26cbfc775b945f62065"
+    },
+    {
+      "path": "campaigner/launch_blueprint.py",
+      "sha256": "426ab06d5108124c49727efca20edeb53780d3234d55736e29c3d7ecd4b22bc3"
+    },
+    {
+      "path": "campaigner/launch_materials.py",
+      "sha256": "a48246efa01bd71448885c66d2ed8d349c5c70dfdd80e2089a2f7621be179cd0"
+    },
+    {
+      "path": "campaigner/launch_proposal.py",
+      "sha256": "ac0164c6a8afafa6bd6a8406704feb50b5122416c8bd39efda94ba69b66cd196"
+    },
+    {
+      "path": "campaigner/launch_workflow.py",
+      "sha256": "b95c1ac71588991f9a08835b234dcde979aa0a4c2661cc86b7e79697acecaeca"
+    },
+    {
+      "path": "campaigner/learning.py",
+      "sha256": "26496199410449c35d3f54ae5952b1e8e21acec825298f882d77a35f8f1acce5"
+    },
+    {
+      "path": "campaigner/live-ui.js",
+      "sha256": "e31adf6ce58c61ee53c1414aa7a0d619a0260eecc9257a5b76d13cddd6774b76"
+    },
+    {
+      "path": "campaigner/live.py",
+      "sha256": "be66faea4eeb7a6050d8b24ee3d5a7de735b917b50356d9dde814a376e3d5663"
+    },
+    {
+      "path": "campaigner/live_workplan.py",
+      "sha256": "9358c8b3f35d74f846e1dac10413a06ac2e971f1f645472cf62b180b16f9d7c0"
+    },
+    {
+      "path": "campaigner/local_uploads.py",
+      "sha256": "8e5a3b6bcde482bba3cc806d108244bfe9c838eacc45605cb1e9e82b9dc5127e"
+    },
+    {
+      "path": "campaigner/management_guidance.py",
+      "sha256": "82cd5a826c9e7b19afa3753b882bf440799633f449fc22986ac89038003936e2"
+    },
+    {
+      "path": "campaigner/management_report.py",
+      "sha256": "a8fd3f79f0707c2b2e2855b3e1a4af6d493d3a7b5ee6127e02d563b2b735b4f5"
+    },
+    {
+      "path": "campaigner/manager.html",
+      "sha256": "ee6544b02c6de54f82aa70e344d7a9a99728ef7205afec5c4a9b599e73341c1d"
+    },
+    {
+      "path": "campaigner/meta-execution-panel.js",
+      "sha256": "449a36ec3f08fcbeb9e8013feede8bfa086787a544a0f315de96127a2c850625"
+    },
+    {
+      "path": "campaigner/meta_batch.py",
+      "sha256": "93da5508a97bf0925f9de142d7fc16e4e468163ea671eae78d8bcaad8ef3cbfe"
+    },
+    {
+      "path": "campaigner/meta_direct.py",
+      "sha256": "db1040ac60d7eb2c61ce33be6fe592015c2fdfaf26f6c20fcdbe62c572b4e2d4"
+    },
+    {
+      "path": "campaigner/meta_execution.py",
+      "sha256": "9894ed1f1dfbc01e2635dc7e0252aee484eb66e17d663585962c71a9b4f8fe3d"
+    },
+    {
+      "path": "campaigner/meta_write_connection.py",
+      "sha256": "f4ce8ee48a53446c25c781b04e0587ec30e62f04d90cda9b60dcf6300bbfb354"
+    },
+    {
+      "path": "campaigner/mobile-web.html",
+      "sha256": "f70990fd48294cfb873a80363c8d446cb8f7431b5954feaef9221c58d4a15f43"
+    },
+    {
+      "path": "campaigner/mobile-web.template.html",
+      "sha256": "5d92e7b5a8197e71aaa50d17c953c528fc0207cd882a42330c1835b2290f7265"
+    },
+    {
+      "path": "campaigner/mobile_supervisor.py",
+      "sha256": "d3dd0fc51b9a11ca6bd000cdc9afe1e83404bfd8858079c8bd1e82d934004ee0"
+    },
+    {
+      "path": "campaigner/mobile_web.py",
+      "sha256": "c247a4e59ef31c10048807703d98fe2e40c8b4598da0f497b7e056e28bfbc9cd"
+    },
+    {
+      "path": "campaigner/OPERATING.md",
+      "sha256": "4028251bde6fca13716a864b334c3beabcfe98625a4c4589990fe15872ec8a01"
+    },
+    {
+      "path": "campaigner/operations_config.py",
+      "sha256": "db0a8cb45b36a4fe5819815b47a869a17561b1c509418e3a35811e0fcef29bd0"
+    },
+    {
+      "path": "campaigner/operator-ui.js",
+      "sha256": "4769c3568e7a509f4f1fe7f367fcd77a07541cd6514c35d1b9bd44e9b4eb0b61"
+    },
+    {
+      "path": "campaigner/operator_service.py",
+      "sha256": "42df172b450045f4c824e737f35cf233a728a2756b5b874523f9ce0daeffe060"
+    },
+    {
+      "path": "campaigner/orchestrator.py",
+      "sha256": "7becf2dd284d63fdf279ab42d95c45bbdf20d8e0f7f6bf4f1531b6cdc4c97f03"
+    },
+    {
+      "path": "campaigner/order_economics.py",
+      "sha256": "3feb74f283f79652f37b47ce044a83a6d5514aaeeec40c7e57fd48a4b621a723"
+    },
+    {
+      "path": "campaigner/original_loop_review.py",
+      "sha256": "8d0e50787006767102c086d442376cc74412035b6edfe02f5cbb477a52872ae1"
+    },
+    {
+      "path": "campaigner/owner-instructions.js",
+      "sha256": "edf3063f5ceae92a0aa0b75e722231c470874243805d8c64c7e3b61b4402a522"
+    },
+    {
+      "path": "campaigner/owner-portal-model.js",
+      "sha256": "516082cdc88730cdc650502c5ebdf4013ce440527e2e198d320e35e454d6fe56"
+    },
+    {
+      "path": "campaigner/owner-portal.js",
+      "sha256": "060f175e762b83478f83ec66b38ce11b54e8d730fa034a43de1e796971292733"
+    },
+    {
+      "path": "campaigner/owner-portal.template.html",
+      "sha256": "d92f040ac21a883417ab33bb53e0cfe8b34dc1a7208704519c6e8c8745c71ebd"
+    },
+    {
+      "path": "campaigner/owner-web.html",
+      "sha256": "3c6333e99e1ea745e81f38bb391b3444d64acf99e5b664d48b82082cf8a1bc54"
+    },
+    {
+      "path": "campaigner/owner_action_proposals.py",
+      "sha256": "0a666778c40b31d7442d085b216a2696ed31f461093be972711fe11aff6a2b8e"
+    },
+    {
+      "path": "campaigner/owner_action_results.py",
+      "sha256": "00f4ec32b079781666a46e99a1c210602606c582c074162bde731c72c53d1305"
+    },
+    {
+      "path": "campaigner/package_source.py",
+      "sha256": "c09a775e6dc9a88a28f69ac220cb25849b18df187dddaddd2a0135c2891dd30b"
+    },
+    {
+      "path": "campaigner/pause_budget_context.py",
+      "sha256": "4c2379e3ec5d8b67708fd3c2929ba42078bf3ea4c4f76682644cb0156c03efb2"
+    },
+    {
+      "path": "campaigner/pause_evaluation.py",
+      "sha256": "3d68b0a84a0ab4e3c0d595926635a3fa0c133aa3effc6a2bb99997f3ef0d0d9d"
+    },
+    {
+      "path": "campaigner/pause_recommendation_adapter.py",
+      "sha256": "6838bd5b7abc745342667d6feede22f572ca8a1acab772e44620b1de46ed8242"
+    },
+    {
+      "path": "campaigner/period_delivery.py",
+      "sha256": "fcd83cd45f756410712567bdbd0aeb3c9bbe550aeb5408e70989f2fd4420d959"
+    },
+    {
+      "path": "campaigner/pilot-format.js",
+      "sha256": "3727785c359c59b8089e8860851c2e251cfd08056efe718284eed1db291cd359"
+    },
+    {
+      "path": "campaigner/pilot-ui.js",
+      "sha256": "fcf2603f09f6e7ab566bb42183d053ddbaa0f71a47b63abf5e5cc10961bf22ce"
+    },
+    {
+      "path": "campaigner/pilot.html",
+      "sha256": "1ec246795db73caf85dd1510196c7c2fc2737da9e7c074097dc8d0a174c709da"
+    },
+    {
+      "path": "campaigner/pilot.py",
+      "sha256": "a0d5ebea32db7c1e2c12ae588f3ee1d76390f18fa1b6cf35e523620d8a7e84ad"
+    },
+    {
+      "path": "campaigner/placement_readback.py",
+      "sha256": "202db655727fbcf2c745909c314119201566024fef0fed66bd512ea7e172aae8"
+    },
+    {
+      "path": "campaigner/preparation-loop-ui.js",
+      "sha256": "24b5a11bc4eb513b139a7105fa9547b091dd60ebd503bcbd7d022b8dc068a516"
+    },
+    {
+      "path": "campaigner/preparation-task-ui.js",
+      "sha256": "cd3d1a954e3de8d00b51ec8249e858b5e4a881bd77c5955bc1c624ad40d40169"
+    },
+    {
+      "path": "campaigner/preparation_loop.py",
+      "sha256": "76d724434a44c1e5d98b06ed7cc89cc7682eb4a723240fc59abd2024f7429b59"
+    },
+    {
+      "path": "campaigner/preparation_task.py",
+      "sha256": "b423640f858cc4a0d1f4e3365fc9780f11aea76c0c3cb0397e50f8454f443b88"
+    },
+    {
+      "path": "campaigner/private_mobile_gateway.py",
+      "sha256": "c984679445950b3a4fc6d3e54fc57b045b5e64fb803023aadeda4cf58aa57c2f"
+    },
+    {
+      "path": "campaigner/private_orders.py",
+      "sha256": "882264d98e00dd2bf845226067d0fbef4b1a5e334498e5fd82235cb41ecc2a7b"
+    },
+    {
+      "path": "campaigner/quality_review.py",
+      "sha256": "48e9d104c5a1d3a7bcb475b9024aef2de1cccbba27f1be30534acb5758b2a7db"
+    },
+    {
+      "path": "campaigner/registration-ui.js",
+      "sha256": "2f2ba8098007abaa77d85bdb89a5c371eebed465cfa5ea35a0faccae205e51a7"
+    },
+    {
+      "path": "campaigner/registration.py",
+      "sha256": "79418c7ba46878058456fcb4ee891d1b09d74704b7b2a9a64343a6cb9f8ae929"
+    },
+    {
+      "path": "campaigner/registration_records.py",
+      "sha256": "16c784658d526972a47dc696e871d609b11e24a0824558af82861f1dc47822eb"
+    },
+    {
+      "path": "campaigner/requirements.txt",
+      "sha256": "ebe19b7fb8ba2e13bf2bfd453b70a4876d53aab7215305e3462dcdb67238813e"
+    },
+    {
+      "path": "campaigner/review-ui.js",
+      "sha256": "4148cca82f87374bbba0936c886c513480cacb8734bf5736fd0aca1e68d05091"
+    },
+    {
+      "path": "campaigner/reviews.py",
+      "sha256": "5d5fda69e211c37cf7a084245bc5578e8343263d4080cf4327fbd5c6f1b7f3ac"
+    },
+    {
+      "path": "campaigner/run_approved_c11_postpublish.py",
+      "sha256": "1346f86a73911929e54e9d09a57a011bc4cfaf77b7160ae4b533c5098cb319d1"
+    },
+    {
+      "path": "campaigner/run_tests.py",
+      "sha256": "a8d67fec1a0e670825da1c6f6b91abc76ed48a16e2436f078892eb6ba4df9705"
+    },
+    {
+      "path": "campaigner/sandbox_runner.py",
+      "sha256": "35d6b745bedc30d6b7b29cd0fda31fc5f147e3eb4fcde9a7fb333b65384f841c"
+    },
+    {
+      "path": "campaigner/saved_metric_audit.py",
+      "sha256": "c6f7a7721944c4608ff4820ec676ee868b8b5ae0d15cdc83b83c4b1cb1f06fbd"
+    },
+    {
+      "path": "campaigner/serve_isolated_preparation_proof.py",
+      "sha256": "d37946e6363cb83542f00d791ff1d07371fc11a8528417a07840cafc777fa143"
+    },
+    {
+      "path": "campaigner/serve_owner_without_workers.py",
+      "sha256": "cf2236c8747e97bbeacf9b8d70656e042bdab9cdbbc48c70adac815f7890cf70"
+    },
+    {
+      "path": "campaigner/server.py",
+      "sha256": "50b8c83f17fd0bad7c0f7614e3f196f3dbbfc56d72b8145e05193b27669eceec"
+    },
+    {
+      "path": "campaigner/shadow_reporting_check.py",
+      "sha256": "3d92e1bd12ca2e8641d770905832f66066d0c699b1d4aee51d9f7a6d63e40bca"
+    },
+    {
+      "path": "campaigner/shopify_direct.py",
+      "sha256": "0f819c1c7d673355ee846a90e4082162400739ab6a388d9dc695dc165cdfe18d"
+    },
+    {
+      "path": "campaigner/shopify_orders.py",
+      "sha256": "a81738147660148240adb7ab13cfa29448599d67e34f948915672b345b732bd3"
+    },
+    {
+      "path": "campaigner/strategy-ui.js",
+      "sha256": "9b98cec3f62cbe4282159f20d8b20938599819ad0870aec8dd41c70c221736f4"
+    },
+    {
+      "path": "campaigner/strategy.py",
+      "sha256": "92bd3d52b571bc660da819806a517b544d1c5a0aa61d3bf125fc4af1341ee269"
+    },
+    {
+      "path": "campaigner/strategy_desk.py",
+      "sha256": "164a377e7fb908fcf1576b437a6b905a58de30fc655c30b57d0f8d515cec65be"
+    },
+    {
+      "path": "campaigner/studio-design.css",
+      "sha256": "f3b509f342d2b279f226c4fc3701f255cb76262c8cb225cf42dae39520363603"
+    },
+    {
+      "path": "campaigner/task-overview.js",
+      "sha256": "52aa601848d798dd2ab504893b84eb29a1b70a2962eeda9b8087e997e4512a85"
+    },
+    {
+      "path": "campaigner/test_action_case_lifecycle.py",
+      "sha256": "4d0bcdf52ba2306cbdb0700c5043bf52044a06a131da65450974838e8389de5b"
+    },
+    {
+      "path": "campaigner/test_action_desk.py",
+      "sha256": "279706582de55f6758a5e29b7010380d1c107459eb943c0a2fd417ecfa15ef7f"
+    },
+    {
+      "path": "campaigner/test_action_recommendations.py",
+      "sha256": "e2912a267fcc1f9b2dc7c776c239f6785c30b4ac786eb975da416ad1069544f2"
+    },
+    {
+      "path": "campaigner/test_analysis.py",
+      "sha256": "e5a6c9cb74e4d97f45c6ccae375bd39052350c6eb1230fb5679fb475d8829017"
+    },
+    {
+      "path": "campaigner/test_automation_service.py",
+      "sha256": "0b4702f7d43a257fa4ef247abb4d62e0d6775f294a71249da717ba235ec6c8b8"
+    },
+    {
+      "path": "campaigner/test_batch_capacity.py",
+      "sha256": "4f14813cba692ce94d188b6364b4fb4f9e584d0505fc027167f5c5d61ef756d3"
+    },
+    {
+      "path": "campaigner/test_business_context.py",
+      "sha256": "52ba023fd01496469c914a5ef4257e3b87190ecc131e08410c9598ac29c74506"
+    },
+    {
+      "path": "campaigner/test_business_method_review.py",
+      "sha256": "edea095deb171f40f26a2b2d394a05dc4afa044d38bb1df2cf2b959b915bc0e1"
+    },
+    {
+      "path": "campaigner/test_campaign_operations.py",
+      "sha256": "7e61cf33467d37ce8b7038dc5ac5195f048877272a778b38aa3513c690dc95bc"
+    },
+    {
+      "path": "campaigner/test_campaign_operations_batch_transport.py",
+      "sha256": "405031dac53808ebe39ad63b4872349790465df655f04f9fac60ad40a8ee8a13"
+    },
+    {
+      "path": "campaigner/test_campaign_operations_dispatch.py",
+      "sha256": "7b2be61fc7a467d7d6266c4257d1e58b9849f309fbaa22b6f8ad2429cb240314"
+    },
+    {
+      "path": "campaigner/test_campaign_operations_reconcile.py",
+      "sha256": "3b31fa3a511f31087427ff566900efa00b4c99d22fd5dfaea7a70fe6d03eaaaa"
+    },
+    {
+      "path": "campaigner/test_canary_plan.py",
+      "sha256": "72fe2455b479f365d53ccea5228932b18bbc84ecbf2184a9a3610c3a01887b9c"
+    },
+    {
+      "path": "campaigner/test_change_time_evidence.py",
+      "sha256": "e5318608e95cd77cca7a09dab6813306f2d63f8efcb28ce74a2b7a5ed24c40b6"
+    },
+    {
+      "path": "campaigner/test_claude_chat_scope.py",
+      "sha256": "fb1cc9cd021a7c66ac2bdd6c18682584bd7177efd33198a874295a0c9566ace4"
+    },
+    {
+      "path": "campaigner/test_cohort.py",
+      "sha256": "452ce51feb00297adfb3d5d72b67606112ff6e7b37409412030972086e9b797f"
+    },
+    {
+      "path": "campaigner/test_connections.py",
+      "sha256": "dc62a19935435e124e0b4107a45e4710083e12a6814bd928c0cede81fbf1235b"
+    },
+    {
+      "path": "campaigner/test_creative_audit.py",
+      "sha256": "dd5098adea17f2e3365633b42d0ed6d00e6dba9d323442281360f6c5ac8d3ab6"
+    },
+    {
+      "path": "campaigner/test_creative_brief_privacy.py",
+      "sha256": "732597aa8d5851de85f24d9717509879f2a3dc8fd65d55e469c8d51bf04303e9"
+    },
+    {
+      "path": "campaigner/test_creative_claims.py",
+      "sha256": "8bf1e35b0e128bd2c8ba1f223b12e0a6a3dabd1ead662c43df8d9b3bb3cd86d7"
+    },
+    {
+      "path": "campaigner/test_creative_copy_contract.py",
+      "sha256": "3df53a8eb74005275cbdbb4a75ae2735a3abfafe0bdaaa14737dfe6f379314b2"
+    },
+    {
+      "path": "campaigner/test_creative_destination.py",
+      "sha256": "b2de25274989aa8e7e80c6c11828a7881b0a92a039884c802f1e0da2d0e65c56"
+    },
+    {
+      "path": "campaigner/test_creative_grouping.py",
+      "sha256": "c6b6c0b41ef72e7cde572fc80528bd0901b9eac8a21553b8f091d7d9ad111846"
+    },
+    {
+      "path": "campaigner/test_creative_pairing.py",
+      "sha256": "ead083e28e866b5bceb75e4e24ec68efb277d39f601f523cc0c51d9b9e602e4c"
+    },
+    {
+      "path": "campaigner/test_creative_restart.py",
+      "sha256": "43e3034cfb7a6af4cc6df5ebeb00fe221b9fb75c89dd961216d187069e53b091"
+    },
+    {
+      "path": "campaigner/test_creative_reuse.py",
+      "sha256": "e4ad91f99f621f29e776ab9fcea234c6cd029784ebfbb297f4461920927b8b3e"
+    },
+    {
+      "path": "campaigner/test_creative_review_receipts.py",
+      "sha256": "30ddd18d122e335d3277906f788451af345721d1b84b894f6a46b034adb3eac0"
+    },
+    {
+      "path": "campaigner/test_creative_selection.py",
+      "sha256": "69e6c5a0738c1237c85ef2611169220aa6e37443ee5306716511922824efcc7b"
+    },
+    {
+      "path": "campaigner/test_creative_stage_timing.py",
+      "sha256": "c8464da2492cbcee08b327df414edc7afdb2d8417659ebe1f1e39f5db6649831"
+    },
+    {
+      "path": "campaigner/test_creative_upload_gate.py",
+      "sha256": "269dcfef19efb958be6aa4e678661e8a2d60b2018fa78451875f9231ccebae91"
+    },
+    {
+      "path": "campaigner/test_creative_vision.py",
+      "sha256": "5ec0a1ccd4cd6029f302e6325bc1c2f0458a965dcd5598c23395e8d870cea448"
+    },
+    {
+      "path": "campaigner/test_decision_evidence.py",
+      "sha256": "6c12526328067225e6efcaeafed67136e8c135fd1f54b77df7f56e7dcad958d8"
+    },
+    {
+      "path": "campaigner/test_decision_history.py",
+      "sha256": "caf4338e856430186cdb51a293ee90a53eca89544a6033b5c5f5ac5af0eaa585"
+    },
+    {
+      "path": "campaigner/test_decision_loop.py",
+      "sha256": "8466294c82ec5801cdbdd57d5f75c6168d8174795d2750c5a458755f8849ddb4"
+    },
+    {
+      "path": "campaigner/test_decision_memory.py",
+      "sha256": "e7e501b694b4dfc34343a345e3642e934e3a64a3b845647695b1b2d24bbd4063"
+    },
+    {
+      "path": "campaigner/test_decision_memory_http.py",
+      "sha256": "716f94b2eb7487633d3f48f5e9a32a30daf80858d2791a564e1787bfe481b46f"
+    },
+    {
+      "path": "campaigner/test_decisions.py",
+      "sha256": "a4de3bad2fc2b968cafd89628354a21d57668512eed9aea71e6b8ed6bdf60531"
+    },
+    {
+      "path": "campaigner/test_drive_assets.py",
+      "sha256": "d76552f816c6369a0ddc62c92dd365427f4f3b367b3b9c92b4177bbee2a4522a"
+    },
+    {
+      "path": "campaigner/test_drive_direct.py",
+      "sha256": "0b7e3e48eb1e42896fc734f40faf60e48c1da0f4e3dac80e976acc03e1f2c40e"
+    },
+    {
+      "path": "campaigner/test_drive_oauth.py",
+      "sha256": "d5668cf36f80d109652bdb3633d514a6abe43cca6dc595deeeda74a9803cbc67"
+    },
+    {
+      "path": "campaigner/test_economics_evidence.py",
+      "sha256": "59c05f1cfed1e9f89b7b526e6db5fe25040012727a2db4d1b56c3ae39552e477"
+    },
+    {
+      "path": "campaigner/test_economics_limits.py",
+      "sha256": "f10c33cba2cf6a7e0499f1b30206daf6f8358be3ed0a5de44d2145524d865571"
+    },
+    {
+      "path": "campaigner/test_economics_observation.py",
+      "sha256": "e3de66ef4e4244e9c5e2d0f0a4da9671e9fa011ac63fedcbf0103f780e6d4559"
+    },
+    {
+      "path": "campaigner/test_employee.py",
+      "sha256": "094bc47cd6860b915025026ea61991a47e8a8a3601ea970dba920c92610e4a23"
+    },
+    {
+      "path": "campaigner/test_exact_approval_bridge.py",
+      "sha256": "e8ea1f75405811526ecd663ab8fbea497352bd289b1f2f09e9ae774904b1ebbc"
+    },
+    {
+      "path": "campaigner/test_execution_preflight.py",
+      "sha256": "3ef9eeeff49a20b960739e5847e2a3ed9aa3f3fbfce1168ebe85ea84fea19021"
+    },
+    {
+      "path": "campaigner/test_experiment_planner.py",
+      "sha256": "e9e2681be6c29b50e74750468465da659151f3878352c6b255cf7224995d89b8"
+    },
+    {
+      "path": "campaigner/test_experiment_suggestions.py",
+      "sha256": "f5a42137c85628ab50c7cd9493fd2efc6c704a9045182de933e749db38af970e"
+    },
+    {
+      "path": "campaigner/test_flashy_direct.py",
+      "sha256": "039835deccfe56f20809e540c461efe47d2168b019e452435f5735a1565255ef"
+    },
+    {
+      "path": "campaigner/test_http_creative_launch_flow.py",
+      "sha256": "f49cf248ce0c25a820154106e6921a4d574284497d9c0526619402fd15a4a496"
+    },
+    {
+      "path": "campaigner/test_image_receipt_reuse.py",
+      "sha256": "550c9305386bb956b84a3a15f0c48165d268e438bd21c313a60ee9fc73ff3735"
+    },
+    {
+      "path": "campaigner/test_image_thumbnail.py",
+      "sha256": "b517f7d9efe148f607e47465ce22512e6aa6d9a2db9a526dc35408696575e97a"
+    },
+    {
+      "path": "campaigner/test_imported_business_method.py",
+      "sha256": "762d11148187e747a984ca0585ef3ab46fe2de83639ba00011a888b86da2782e"
+    },
+    {
+      "path": "campaigner/test_insights_split.py",
+      "sha256": "c07841d52e4ba55cd74e040d21f349478c936c316d60a86b9e5acb3e07997f15"
+    },
+    {
+      "path": "campaigner/test_intake_to_paused_launch.py",
+      "sha256": "ebc7d02092e28380688e3cfe88b7d2d85ae09fb00b29fe5f7f641e21dbf2a554"
+    },
+    {
+      "path": "campaigner/test_integrated_launch_path.py",
+      "sha256": "a96b7d48129daaef61bd3a03af56a4c2e77c3ed1f5b36358ad8181caf305166f"
+    },
+    {
+      "path": "campaigner/test_intelligence.py",
+      "sha256": "0e71688f06fd748db82c7fd7372e81033dc5f7e628175c8ce0ad81a19402618d"
+    },
+    {
+      "path": "campaigner/test_large_creative_images.py",
+      "sha256": "033b5148d56b4bba0e1c50ce9e8b7f7b87d25ce02ccc542de94951e3601b3b9a"
+    },
+    {
+      "path": "campaigner/test_launch_batch_bounds.py",
+      "sha256": "449948d14a36e14b988b787c70d13d853abef67329316a3a695b09bc8f9fba1d"
+    },
+    {
+      "path": "campaigner/test_launch_blueprint.py",
+      "sha256": "ed51f0f762c0c4b3d1a5c9252a140c471924188e98d685eb1af1a613251d43e6"
+    },
+    {
+      "path": "campaigner/test_launch_materials.py",
+      "sha256": "ca450dd8281b4ae87ba9763b19cf324b3b6bffdd2dc730dd6a9d86331fcaaec7"
+    },
+    {
+      "path": "campaigner/test_launch_proposal.py",
+      "sha256": "567cdff30813c9115cdfca9242a5feb2ea4d38e97380313b9e170c0ec9da87a9"
+    },
+    {
+      "path": "campaigner/test_launch_proposal_ui.js",
+      "sha256": "3625d455700a834864a7c2a8d87a17c24a0eda836edbf9dafdba2b2a3f005573"
+    },
+    {
+      "path": "campaigner/test_launch_ui.js",
+      "sha256": "062e9b56aee2e7e5cbe8d83754547f990035b49bedf668b3036997fa4f50eb69"
+    },
+    {
+      "path": "campaigner/test_launch_workflow.py",
+      "sha256": "53c89f548cd02ebd9d281e1fb7421bdbf735427a19ea69adc112a1a6f8b42c17"
+    },
+    {
+      "path": "campaigner/test_learning.py",
+      "sha256": "789fcb8d945214d8c9d44dd31b13ad605a63abb20e93d14e7870e6b95ed9184b"
+    },
+    {
+      "path": "campaigner/test_live.py",
+      "sha256": "63f98b4817e73a8f50b74fcce02a648bd49d782c751777a5a190870bd744064b"
+    },
+    {
+      "path": "campaigner/test_live_workplan.py",
+      "sha256": "02582d2e295cf3765dd799522e36b98c07f725982c41386a370c397db02d9454"
+    },
+    {
+      "path": "campaigner/test_management_guidance.py",
+      "sha256": "55bb9f576760a14c2a66c9da32013336e83d3afb660b22061ca4bc1d934a8073"
+    },
+    {
+      "path": "campaigner/test_management_report.py",
+      "sha256": "6a3dd8fb11b3231cb7e5bd2bc722810eae52f957d3ce7ddbbe81783147401625"
+    },
+    {
+      "path": "campaigner/test_meta_batch.py",
+      "sha256": "148e2f33cc1d817a62804714ce2981bbec39e737ca25f5096c2052950bf5a10c"
+    },
+    {
+      "path": "campaigner/test_meta_direct.py",
+      "sha256": "58680807b96c6bc13b0f4e22261f89fea06b48237dd92a69bc11a86408d0c5ac"
+    },
+    {
+      "path": "campaigner/test_meta_execution.py",
+      "sha256": "6b9ac46318f5a38a24c613116d1cf58c2767940747cd79001df089a3fe3b83cf"
+    },
+    {
+      "path": "campaigner/test_meta_execution_panel.js",
+      "sha256": "16d0ce900f648e657597397bbfa8cdf95aed74ec1da4120ed0b1ef10387e42b4"
+    },
+    {
+      "path": "campaigner/test_meta_write_connection.py",
+      "sha256": "6c7889a1f8c7dccef36ac39936d494a78fb283f61722b16da5ee3070b9d6b899"
+    },
+    {
+      "path": "campaigner/test_metric_integrity.py",
+      "sha256": "24bf1322105f9ea09484b5d12a8b6d30bcbb18337b4f6d23823b9f6b365d33eb"
+    },
+    {
+      "path": "campaigner/test_mobile_execution_integration.py",
+      "sha256": "aeb201542be8ff00f070fc2c6027ec13f2e9424ddede1e305593b5e24d049e87"
+    },
+    {
+      "path": "campaigner/test_mobile_operations.py",
+      "sha256": "82091067331c53bc9c9fde8c1a19f90cb2b8f6212264acf5559bd54ae951cf78"
+    },
+    {
+      "path": "campaigner/test_mobile_web.py",
+      "sha256": "68b2c5bd562ebdad0346aa25c3dcea458d5cfd94cba15c7a49b27cdf850fef63"
+    },
+    {
+      "path": "campaigner/test_operation_timings.py",
+      "sha256": "d91e2d3a3741ab00d6a0ad67a265220951683fe17f91cf724163e00cb3bc2006"
+    },
+    {
+      "path": "campaigner/test_operations_config.py",
+      "sha256": "cf1dcbbb68043985f0a3b7d6f35d5cbdbcc0e3014c87a2051b3392e3fcf49e9b"
+    },
+    {
+      "path": "campaigner/test_operator_service.py",
+      "sha256": "a2d567bf3668ddd848924e4465aa8207ad98c0db531c3d76276169a9f28b3e01"
+    },
+    {
+      "path": "campaigner/test_orchestrator.py",
+      "sha256": "da674a2ad3dc452b57f80510534d78540d8e1972888b176f8881972daa55d6e2"
+    },
+    {
+      "path": "campaigner/test_order_economics.py",
+      "sha256": "dc632ad14d316bba4d05ea4e09d8a392708a754b6a40743dc897f7e948b598c4"
+    },
+    {
+      "path": "campaigner/test_owner_action_proposals.py",
+      "sha256": "145bfd122c5661a35b4f56bdf0d6c0db5e77ef1e401f327394ea9e4e492dee73"
+    },
+    {
+      "path": "campaigner/test_owner_action_results.py",
+      "sha256": "e1bf82efbc4b625ea5a6a6c14c26b7343916689379c732108cb2012a50f760d8"
+    },
+    {
+      "path": "campaigner/test_owner_launch_integration.py",
+      "sha256": "ec9f09758317f58b29f576cf54b1cefaaba6e86eef099dd18bf01bc7de0b9b71"
+    },
+    {
+      "path": "campaigner/test_owner_operations_ui.js",
+      "sha256": "5119b31c369a1a0057bfdce926bba8eb0947b766db850e8ad55039809b4a91cc"
+    },
+    {
+      "path": "campaigner/test_owner_portal_model.js",
+      "sha256": "c2ea16ca8b15c19c588255de7aad0f6b686add4f47ebc4f12e40688ae1930d29"
+    },
+    {
+      "path": "campaigner/test_owner_queue_recovery.py",
+      "sha256": "cad1997f3a6e7705dcf12cf010489fde10eeaffcc1a293aa907db1384db38a7c"
+    },
+    {
+      "path": "campaigner/test_pause_evaluation.py",
+      "sha256": "fe7ba75a6db9ef2ac344d0f9f97b0e2689cf2e2e85136931c3f173a279bf4b33"
+    },
+    {
+      "path": "campaigner/test_pause_recommendation_adapter.py",
+      "sha256": "1320a52bcaad749119285b62433783238d5ccd4758eeb71f074472ba885ac988"
+    },
+    {
+      "path": "campaigner/test_period_delivery.py",
+      "sha256": "8554e50046cbc9e2dd308ea5b77e60297e91d7f2b13cdb610ba25cf9ee5d427f"
+    },
+    {
+      "path": "campaigner/test_pilot.py",
+      "sha256": "429a6bbb0f75477e46c64728c580af63acbf7034a3032eb7c6a430e7bfe10608"
+    },
+    {
+      "path": "campaigner/test_pilot_format.js",
+      "sha256": "b791f539dc6a5151ccd2064122578082f0da5f037cd25709779be7ca59ddbd93"
+    },
+    {
+      "path": "campaigner/test_placement_launch_path.py",
+      "sha256": "1fc6ac24b59fde966e36bd874e08deb08c64d80894bb3209c40cf5dcaae090a6"
+    },
+    {
+      "path": "campaigner/test_placement_readback.py",
+      "sha256": "8cc4c8b482939e7e6b6001fd8263cbc606fe448e324d9901d7c4db8ced742138"
+    },
+    {
+      "path": "campaigner/test_preparation_loop.py",
+      "sha256": "552b48bd92a5f176ee3336858bddea80c033a63b3725f2630eba7c9e3c398f61"
+    },
+    {
+      "path": "campaigner/test_preparation_loop_contract_http.py",
+      "sha256": "0f2290a79772783835a09b131c252ebfe9488c7f283ddfb714f5b7df3dae25fa"
+    },
+    {
+      "path": "campaigner/test_preparation_loop_ui.js",
+      "sha256": "5d101277ddf4ca5435eec42b7b85a8838130322cf78e55b211b7e36f4e20a11b"
+    },
+    {
+      "path": "campaigner/test_preparation_task.py",
+      "sha256": "8c80786bca509db0099b97d7414be26dbfbbe284936b6291ff8209379aed012b"
+    },
+    {
+      "path": "campaigner/test_preparation_task_audit.py",
+      "sha256": "3be6e04e2a8208e4f7f4da9afc704ba2722eb9ae8887fd7d57b480d0851a5222"
+    },
+    {
+      "path": "campaigner/test_preparation_task_http.py",
+      "sha256": "a2293afc21218cac90a029c05b620739bad69913f44beedeea1514186440a3c3"
+    },
+    {
+      "path": "campaigner/test_preparation_task_ui.js",
+      "sha256": "40b35d7082413c611a2ef4da49cd377fdbcbef69699210c013160416abe3c6cc"
+    },
+    {
+      "path": "campaigner/test_private_mobile_gateway.py",
+      "sha256": "23b2c38bd271ea5e6d8912c85b31fd2d8cd10e5621677027b4c9e8f24281b4ce"
+    },
+    {
+      "path": "campaigner/test_private_orders.py",
+      "sha256": "c57a71b66fb7da3cd19a629c46f6fcea79524b8dbf6e6d85efeb329526ffa71d"
+    },
+    {
+      "path": "campaigner/test_quality_review.py",
+      "sha256": "8b25efc0f017c8b3a030ca2d4d3ed75a9e1a131a1550ca618f0b215d536157ec"
+    },
+    {
+      "path": "campaigner/test_registration.py",
+      "sha256": "6f3c1b4b46fbdf8d738172e0fd15710ca2b7ba3d03ed19ed9b101dc3cccf0641"
+    },
+    {
+      "path": "campaigner/test_registration_records.py",
+      "sha256": "68716cf668ab76eb3bc6071612206adc52c1eea515e18857d0aca482c28097be"
+    },
+    {
+      "path": "campaigner/test_reviews.py",
+      "sha256": "0bb6817282d88127ee32389dae8a67c9392ed1d0b90730149a19d3a8c093d825"
+    },
+    {
+      "path": "campaigner/test_saved_change_receipts.py",
+      "sha256": "81fe9016a10a079f3782a4d125de2e0a11bd907c283d49e546da61cb47ec6de7"
+    },
+    {
+      "path": "campaigner/test_server.py",
+      "sha256": "79b80ef5c2aed81a5d43e5ebcddd0696ae70cd30d18dc8c054df90a438861141"
+    },
+    {
+      "path": "campaigner/test_server_compression.py",
+      "sha256": "b868d636593f094849f63380bf1a8e413d0f610de83cfcc21095bce1925704b4"
+    },
+    {
+      "path": "campaigner/test_server_exclusive.py",
+      "sha256": "681de23f6ed52dbe4b0e404e67d67b8b3166fe2407a8a054fd39ce3c4ed4cb43"
+    },
+    {
+      "path": "campaigner/test_server_local_uploads.py",
+      "sha256": "8795279a8da50c3eaebea8cf10a83d09da9edd40e08d54e9250841aaf4b4c34d"
+    },
+    {
+      "path": "campaigner/test_shadow_freeze.py",
+      "sha256": "93c4814fd247f6437a3fe782df3eec7d6dbb0a18fcc21bbed5398904a54567f0"
+    },
+    {
+      "path": "campaigner/test_shopify_direct.py",
+      "sha256": "813ab154417f17046633eef5a4e0ab1a9961a9d60c584778ebe1c4beba82f646"
+    },
+    {
+      "path": "campaigner/test_shopify_orders.py",
+      "sha256": "c910c5da93512bdd3ddc5cedb488c87e0cba6ff8a998e9b33f1c2c87364b71d8"
+    },
+    {
+      "path": "campaigner/test_strategy.py",
+      "sha256": "17329f53dd7f3675f5ecdbdd8d1ece1e986eabbe1ecb98d393bef2bb10d8364c"
+    },
+    {
+      "path": "campaigner/test_strategy_desk.py",
+      "sha256": "f4e931519a0025928db256438a895e793ca14044b9a80102685a3ae24b003315"
+    },
+    {
+      "path": "campaigner/test_strategy_ui.js",
+      "sha256": "e483719c82027615df9101e14f2e1a21ad6be980ca6f732ee57525fa341dd408"
+    },
+    {
+      "path": "campaigner/test_task_overview.js",
+      "sha256": "f748acc926709dad70bcdc8e2abe17197a95de17963d57b8605f68524a79f5ef"
+    },
+    {
+      "path": "campaigner/test_vision_structured_output.py",
+      "sha256": "dc84e90c6210b25e47561da0e6b58aa6f5bc1f0b521c8c3016899968db5bd91b"
+    },
+    {
+      "path": "campaigner/test_visual_workspace_placement.py",
+      "sha256": "5f10097f5bbd48b0b69878b842585faec00a5f6429ebc96e1412e08e88f43e8e"
+    },
+    {
+      "path": "campaigner/test_weekly_creative_context.py",
+      "sha256": "96c3e19cea40b4a693ccd0af689008a23409e601a5e3eb34ed22bc33eb3dec1b"
+    },
+    {
+      "path": "campaigner/test_work_home.js",
+      "sha256": "69f11f441d7dca1792a30d4dfa3f3776a311a599b5a58b1ff7f3b14f7d75e7b2"
+    },
+    {
+      "path": "campaigner/test_work_intake.py",
+      "sha256": "2549f7795bd25abe4f3d64d110705284c8ea02ac0909d5ffcf86d5096cbedb39"
+    },
+    {
+      "path": "campaigner/test_work_journal.py",
+      "sha256": "c69d9dbc2f751d7a960fe074c738fa02f55a99e3ee1a03c882148c5f26c3c593"
+    },
+    {
+      "path": "campaigner/test_work_products.py",
+      "sha256": "7632322087203e755ae7181090b39806c722307b815a11bc350dcae17938f041"
+    },
+    {
+      "path": "campaigner/test_work_status.py",
+      "sha256": "cfe77a6830b76b941b5cc27490a6be80b08ab6ac5e1deb3e3302ad46afd59432"
+    },
+    {
+      "path": "campaigner/tests/test_assistant.py",
+      "sha256": "f8143d32129e127778ea32417dd572f24f1faf09c40afe69c77dabb8c50fdc4b"
+    },
+    {
+      "path": "campaigner/tests/test_autonomy.py",
+      "sha256": "93859ec4be1f26d7b369190d741285bd1f3c05ef031e416b186b85aa8d03b052"
+    },
+    {
+      "path": "campaigner/tests/test_core.py",
+      "sha256": "218aafc3b7f73a5caf0384d3a325dd3dc4a86c02860c10200cac474d9272b030"
+    },
+    {
+      "path": "campaigner/tests/test_evidence.py",
+      "sha256": "8bd5e387588954e032335656987b9d2baf084a6413cd000451e1ab90c8a6a567"
+    },
+    {
+      "path": "campaigner/update_ui_copy.py",
+      "sha256": "b49a5c5c2a1684d2b4613958edb6a16ce2cc53fb1a1971ac81bae307a8ae037d"
+    },
+    {
+      "path": "campaigner/update_ui_versions.py",
+      "sha256": "4f8b589ba663753907428be90edee779e6ae5905d4abbe1afe7057714c0f7852"
+    },
+    {
+      "path": "campaigner/verify_gift_test_20261019.py",
+      "sha256": "48df07f1a021be43ba4d8010a55fc12f316514149b3a77a915f9b06da1b95f32"
+    },
+    {
+      "path": "campaigner/visual_workspace.py",
+      "sha256": "28972676ba53373c31a1d4ca53966c53254bfbb7dc3bdb17c5e0a9f894569fc5"
+    },
+    {
+      "path": "campaigner/weekly_creative_context.py",
+      "sha256": "f77bf8e61ec4a2ee5f94f16c027af5cdea9b38f3d09c6ae7fcb74194f1e89183"
+    },
+    {
+      "path": "campaigner/work-home.js",
+      "sha256": "be368302746e043489b54217cce9baa82893cfc5d3bef535e8d4d80b976d4614"
+    },
+    {
+      "path": "campaigner/work_intake.py",
+      "sha256": "a64db0f91aa8e07c6fc79c8fa7ccefb9a9ca8ba497e6e801a58e06ac24d9cb06"
+    },
+    {
+      "path": "campaigner/work_journal.py",
+      "sha256": "f01e98754c1040779f8c0ea14a9d71dc272e5b2890f87168a877bedb3ded84dc"
+    },
+    {
+      "path": "campaigner/work_products.py",
+      "sha256": "eb511d84d50f866f34d9785ff2e18e6188aa191b16b64b6eb40b7102fdc39331"
+    },
+    {
+      "path": "campaigner/work_status.py",
+      "sha256": "c5dd5a7199694433c555bc3bd0dac5bdb3e6f8de80ee9047fa832626eda73a6a"
+    },
+    {
+      "path": "campaigner/workflows.py",
+      "sha256": "85ded2c200e9b9d1c8e420fa08971fb5492a7a41a2edd2549a2a548285f03f55"
+    }
+  ],
+  "excluded": "runtime state, secrets, customers, orders, raw private source documents, financial evidence, media"
+}

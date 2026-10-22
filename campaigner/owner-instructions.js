@@ -1,0 +1,12 @@
+/* Owner notes: persisted queue, not model chat or live execution. */
+function renderOwnerInstructions(parent,before=null){
+ const panel=el('section','','owner-instructions');panel.dir='rtl';
+ panel.append(el('h2','הנחיה חדשה'),el('p','כתוב או הכתב דרך המיקרופון במקלדת הטלפון. ההנחיה תישמר בתור העבודה; אין כאן מענה AI אוטומטי או העברה אוטומטית לצ׳אט.'));
+ const label=el('label','מה תרצה שנעשה?'),input=el('textarea');input.id='owner-instruction';label.htmlFor=input.id;input.rows=3;input.maxLength=1000;input.placeholder='למשל: בתמונה השנייה אני רוצה כותרת קצרה יותר';
+ const send=el('button','שמור הנחיה'),notice=el('p'),history=el('div');send.type='button';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
+ panel.append(label,input,el('small','בלי סיסמאות, מפתחות גישה או פרטי לקוחות.'),send,notice,history);parent.insertBefore(panel,before);
+ let busy=false,uncertain=false;
+ async function refresh(){try{const r=await fetch('/api/workspace',{headers:{'X-Local-Session':token},cache:'no-store'});if(!r.ok)throw Error();const data=await r.json();history.replaceChildren(el('h3','הנחיות אחרונות'));for(const row of (data.questions||[]).slice(-5).reverse()){const bubble=el('article','','owner-note');bubble.append(el('p',row.question),el('small',row.status==='resolved'?'נענתה':'נשמרה · ממתינה לטיפול'));if(row.resolution)bubble.append(el('p',row.resolution));history.append(bubble)}}catch{history.replaceChildren(el('p','לא הצלחנו לרענן את ההנחיות. אין להסיק שהטיפול הושלם.'))}}
+ send.onclick=async()=>{if(busy||uncertain)return;const question=input.value.trim();if(!question){notice.textContent='כתוב הנחיה לפני השמירה.';return}busy=true;send.disabled=true;try{const r=await fetch('/api/help/escalate',{method:'POST',headers:{'X-Local-Session':token,'Content-Type':'application/json'},body:JSON.stringify({question})});if(!r.ok){if(r.status>=500){uncertain=true;throw Error()}notice.textContent='ההנחיה לא נשמרה. הסר פרטים אישיים או סודות ונסה שוב.';return}const saved=await r.json();if(!saved.id||saved.question!==question){uncertain=true;throw Error()}input.value='';notice.textContent='ההנחיה נשמרה וממתינה לטיפול. לא בוצע שינוי בפרסום.';await refresh()}catch{uncertain=true;notice.textContent='לא התקבל אישור שמירה. בדוק ברשימה לפני שליחה נוספת; הטקסט נשאר כאן.';await refresh()}finally{busy=false;send.disabled=uncertain}};
+ refresh();setInterval(()=>{if(!document.hidden&&!parent.hidden&&!busy)refresh()},30000);
+}

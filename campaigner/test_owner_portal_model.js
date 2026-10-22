@@ -1,0 +1,32 @@
+const assert=require('node:assert/strict');
+const {portalModel,adReference,deploymentSummary,adDeploymentLabel,operationModel,operationBudgetMinor}=require('./owner-portal-model.js');
+const p={id:'proposal-r2',request_id:'r1',request_revision:2,ads:[{asset_id:'source-1',source_name:'Copy of ROSERY_C11_self_style_FEED.png'}]};
+let m=portalModel({request_identity:{id:'r1',revision:2}},{available:true,proposal:p},[{id:'pending',question:'five copy options',status:'pending',created_at:'2026-10-18T10:00:00Z'}]);
+assert.equal(m.adCount,1);assert(m.title.includes('ממתינה'));assert(m.detail.includes('אין כרגע ביצוע AI עצמאי'));
+assert.equal(portalModel({request_identity:{id:'r1',revision:3}},{available:true,proposal:p}).proposal,null);
+assert.equal(portalModel({request_identity:{id:'other',revision:2}},{available:true,proposal:p}).oldProposal,true);
+assert.equal(portalModel(null,{available:false,proposal:p}).adCount,0);
+const ref=adReference(p,p.ads[0],0);assert.equal(ref.concept,'C11');assert(ref.context.includes('proposal-r2'));assert(ref.context.includes('source-1'));
+m=portalModel(null,{available:true,proposal:p},[{id:'2',status:'resolved',created_at:'2026-10-19T00:00:00Z'},{id:'1',status:'pending',created_at:'2026-10-18T00:00:00Z'}]);assert.equal(m.latest.id,'2');assert.equal(m.pending.length,1);
+console.log('PASS: pending is not executed; stale proposal hidden; stable ad and version reference; request sorting.');
+
+assert.equal(portalModel(null,{available:true,proposal:p}).proposal,null);
+assert(portalModel({state:'preparation_failed',request:{id:'r1',revision:2}},{available:true,proposal:p}).title.includes('נעצרה'));
+assert.notEqual(adReference({...p,prepared_at:'2026-10-18'},p.ads[0],0).context,adReference({...p,prepared_at:'2026-10-19'},p.ads[0],0).context);
+
+assert(portalModel({request:{id:'r1',revision:2}},{available:true,proposal:{...p,deployment:{state:'blocked'}}}).title.includes('חסומה'));
+assert.equal(adReference(p,{source_name:'ROSERY_R01_POST.jpg',asset_id:'abc'},0).concept,'R01');
+const partial={state:'partial',media_uploaded:8,meta_media_draft_ads:4,meta_placeholder_ads:1,complete_ads_verified:0};
+m=portalModel({request:{id:'r1',revision:2}},{available:true,proposal:{...p,deployment:partial}},[{id:'pending',status:'pending'}]);
+assert(m.title.includes('חלקית'));assert(m.detail.includes('8 קבצים'));assert(m.detail.includes('4 טיוטות OFF'));assert(m.detail.includes('1 טיוטות ללא מדיה'));assert(m.detail.includes('0 מודעות עברו אימות מלא'));
+assert(deploymentSummary({}).includes('לא אומת'));assert(!deploymentSummary({}).includes('undefined'));
+assert(adDeploymentLabel({deployment:{state:'draft_qa_pending'}}).includes('טרם הושלמו'));
+assert(adDeploymentLabel({deployment:{state:'upload_blocked',placeholder:true}}).includes('ללא מדיה'));
+assert(adDeploymentLabel({deployment:{state:'upload_blocked',placeholder:false}}).includes('הכנה מקומית'));
+assert(adDeploymentLabel({}).includes('לא אומת'));
+const authorizedSummary=deploymentSummary({...partial,budget_approved:true,schedule_at:'2026-10-18T19:00:00+03:00'});
+assert(authorizedSummary.includes('120 ₪'));assert(authorizedSummary.includes('240 ₪'));assert(authorizedSummary.includes('18.10.2026'));assert(!authorizedSummary.includes('19.10.2026'));assert(authorizedSummary.includes('רק לאחר השלמת QA'));assert(authorizedSummary.includes('אינו מאומת'));assert(!authorizedSummary.includes('תקציב והפעלה לא אושרו'));
+assert.equal(operationModel(null).canExecute,false);
+const op={operation_id:'op1',digest:'a'.repeat(64),expires_at:new Date(Date.now()+60000).toISOString(),approval_status:'approved',execution_ready:true,schedule_ready:true};
+assert(operationModel(op).canExecute);assert(operationModel(op).canSchedule);assert(!operationModel({...op,expires_at:'2000-01-01'}).canExecute);assert(!operationModel({...op,blocked_reasons:['source_changed']}).canExecute);assert(!operationModel({...op,approval_status:'pending'}).canExecute);
+assert.equal(operationBudgetMinor('120'),12000);assert.equal(operationBudgetMinor('120.01'),12001);for(const value of ['-1','0','1.001','1e3','NaN',''])assert.equal(operationBudgetMinor(value),null);
