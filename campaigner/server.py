@@ -348,7 +348,10 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     report['weekly_creative_context']=weekly_creative_context(report,build_workspace(snapshot),snapshot=snapshot)
                     report['owner_actions']=build_owner_action_proposals(report,operations,source_proposal)
                     dossier=load_rosery_dossier(include_owner_financials=workspace=='manager')
-                    recommendations=build_recommendations(report,dossier)
+                    try:recommendations=build_recommendations(report,dossier)
+                    except ValueError:
+                        # A missing/partial business profile must not hide the rulebook proposals.
+                        recommendations=build_recommendations(report,None);recommendations['dossier_status']='unavailable'
                     if workspace=='manager':
                         report['business_economics']=dossier.get('economics_evidence')
                     recommendations.pop('historical_financial_context',None)
