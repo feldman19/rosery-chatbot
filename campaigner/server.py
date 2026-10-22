@@ -286,9 +286,13 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except Exception:
                     kickoff='החיבור נשמר. הפעלת קריאת החומרים לא הושלמה; ניתן לנסות אותה מהמערכת בלי להתחבר מחדש.'
                 return self.reply(200,'<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><title>ROSERY — Drive connected</title><h1>החיבור לדרייב אומת ונשמר מוצפן</h1><p>קריאה בלבד. לא פורסמו מודעות ולא שונו קבצים בדרייב.</p><p>'+kickoff+'</p><a href="/">חזרה למערכת</a></html>','text/html; charset=utf-8')
+            if workspace=='manager' and self.path=='/advanced' and (data/'rosery-pilot.json').exists():
+                page=(ROOT/'owner-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
+                return self.reply(200,page,'text/html; charset=utf-8')
             if self.path.split('?',1)[0] == '/' or (self.path == '/lab' and workspace == 'manager'):
                 if workspace=='manager' and self.path=='/' and (data/'rosery-pilot.json').exists():
-                    page=(ROOT/'owner-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
+                    # Simple owner screen first; the full workspace stays at /advanced.
+                    page=(ROOT/'simple-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
                     return self.reply(200,page,'text/html; charset=utf-8')
                 template = 'manager.html' if workspace == 'manager' else 'dashboard.html'
                 if workspace == 'manager' and self.path == '/' and (data / 'rosery-pilot.json').exists():
