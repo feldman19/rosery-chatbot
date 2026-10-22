@@ -73,11 +73,31 @@ function renderReport(){
 }
 async function waitForReportCycle(initial,read,wait,maxPolls=15,forceOne=false){let report=initial,polls=0;while((report?.collection?.refreshing===true||forceOne)&&polls<maxPolls){forceOne=false;await wait();report=await read();polls++}return {report,pending:report?.collection?.refreshing===true,polls}}
 let fetchedReportSignature=null;
+function renderTodayPlan(){
+ // Owner rulebook output only. Links open Ads Manager; nothing here executes a change.
+ const root=$('today-plan-content');if(!root)return;root.replaceChildren();
+ const today=managementReport?.recommendations?.today;
+ if(!today){root.append(node('p','ההמלצות של היום עוד לא זמינות. רענן את הנתונים.'));return}
+ root.append(node('p',today.summary,'today-summary'));
+ const names={PAUSE:'להשהות',SCALE:'להגדיל',KEEP_TESTING:'לעקוב',ALERT:'לתשומת לב'};
+ for(const item of today.items||[]){
+  const card=node('article',undefined,'today-item today-'+String(item.action).toLowerCase());
+  card.append(node('span',names[item.action]||item.action,'today-tag'),node('h3',item.headline),node('p',item.body));
+  if(typeof item.saving_per_day==='number')card.append(node('small','חיסכון משוער: כ־₪'+Math.round(item.saving_per_day)+' ליום'));
+  for(const w of item.warnings||[])card.append(node('p',w,'today-warning'));
+  if(item.kind==='approve')card.append(node('small',item.ready_for_approval?'מוכן לאישור שלך.':'עוד לא מוכן לאישור — חסר מידע (ראה הערות).'));
+  if(item.link){const a=node('a','פתח במנהל המודעות','link-button');a.href=item.link;a.target='_blank';a.rel='noopener noreferrer';card.append(a)}
+  root.append(card)
+ }
+ if(today.more)root.append(node('small','ועוד '+today.more+' פריטים בדוח המלא.'));
+ root.append(node('small',today.note,'muted'));
+}
 function renderFetchedReport(value){
  const stable=(item,root=false)=>Array.isArray(item)?item.map(x=>stable(x)):item&&typeof item==='object'?Object.fromEntries(Object.keys(item).filter(key=>!(root&&key==='checked_at')).sort().map(key=>[key,stable(item[key])])):item;
  // Only data consumed by renderReport/renderGuidance. Other panels render separately.
  const visible=Object.fromEntries(['account_id','currency','windows','freshness','notes','recorded_economics','business_economics','guidance','action_summary'].map(key=>[key,value?.[key]]));
  const signature=JSON.stringify(stable(visible));managementReport=value;
+ renderTodayPlan();
  if(signature===fetchedReportSignature)return false;
  renderReport();renderGuidance();fetchedReportSignature=signature;return true;
 }

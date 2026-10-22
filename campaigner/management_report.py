@@ -36,6 +36,9 @@ def _number(value,negative=False):
 def _public(value):return float(value) if value is not None else None
 def _sum(values):return sum(values,Decimal(0)) if all(x is not None for x in values) else None
 def _event(row,field,types):
+    # Meta omits empty action lists. Only a row confirmed present in the actions
+    # stream turns that omission into zero; otherwise absence stays unknown.
+    if field not in row and field in ('actions','action_values') and (row.get('metric_sources') or {}).get('actions_present') is True:return Decimal(0)
     if field not in row or not isinstance(row[field],list):return None
     selected={}
     for action in row[field]:
@@ -99,6 +102,15 @@ def _aggregate(rows):
         revenue.append(value)
     values={'spend':_sum([_number(row.get('spend')) for row in rows]),'landing_page_views':_sum([_event(row,'actions',('landing_page_view',)) for row in rows]),'purchases':_sum(purchases),'registrations':_sum([_event(row,'actions',REGISTRATION) for row in rows]),'attributed_revenue':_sum(revenue)}
     values['roas']=_ratio(values['attributed_revenue'],values['spend']);return values
+
+ADD_TO_CART=('offsite_conversion.fb_pixel_add_to_cart','omni_add_to_cart')
+CHECKOUT=('offsite_conversion.fb_pixel_initiate_checkout','omni_initiated_checkout')
+
+def _funnel(rows):
+    """Diagnostic funnel signals; missing in any row means unknown, never zero."""
+    clicks=_sum([_number(row.get('inline_link_clicks')) for row in rows]);impressions=_sum([_number(row.get('impressions')) for row in rows])
+    values={'add_to_cart':_sum([_event(row,'actions',ADD_TO_CART) for row in rows]),'initiate_checkout':_sum([_event(row,'actions',CHECKOUT) for row in rows]),'link_clicks':clicks,'impressions':impressions,'link_ctr':_ratio(clicks,impressions)}
+    return {key:_public(value) for key,value in values.items()}
 
 def _observed_results(rows):
     """Partial attributed-event observations, NEVER replacements for totals."""
@@ -287,6 +299,7 @@ def _drilldown(data,rows,campaign_inventory,reg_campaigns):
             if current.get('campaign_id')!=campaign_id or kind=='ads' and current.get('adset_id')!=set_id:current={}
             parent_current=campaign_inventory.get(campaign_id) or (bound_campaign if bound_campaign.get('id')==campaign_id else {});parent_at=account_inventory_at if campaign_id in campaign_inventory else data.get('checked_at') if parent_current else None;objective=parent_current.get('objective');rtype='registration' if campaign_id in reg_campaigns else 'purchase' if objective in ('OUTCOME_SALES','SALES','PRODUCT_CATALOG_SALES') else None
             values=_aggregate(own);namefield='adset_name' if kind=='adsets' else 'ad_name';entry={'id':identity,'name':current.get('name') or _row_name(own,namefield,identity),'campaign_id':campaign_id,'campaign_name':(parent_current.get('name') or _row_name(own,'campaign_name')) if campaign_id else None,'adset_id':identity if kind=='adsets' else set_id,'adset_name':_row_name(own,'adset_name') if kind=='adsets' or set_id else None,'objective':objective,'result_type':rtype,**{key:_public(value) for key,value in values.items()},'observed_results':_observed_results(own),'cost_per_registration':_public(_ratio(values['spend'],values['registrations'])) if rtype=='registration' else None,'status':current.get('status'),'effective_status':current.get('effective_status'),'configured_active':current.get('status')=='ACTIVE' if current.get('status') in ('ACTIVE','PAUSED','ARCHIVED','DELETED') else None,'inventory_observed_at':observed_at if current else None,'status_scope':'current_configuration_not_period_history','hierarchy_complete':len(parents)==1 and (kind=='adsets' or set_id is not None)}
+            entry['funnel'] = _funnel(own)
             entry['inventory_observed_at'] = current.get('_observed_at') if current else None
             entry['inventory_source_path'] = current.get('_source_path')
             entry['change_evidence'] = entity_update_evidence(current, identity, kind, current.get('_source_path') or 'sources.meta.data.inventory.' + kind, current.get('_observed_at'))

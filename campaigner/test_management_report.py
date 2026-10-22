@@ -154,4 +154,22 @@ class ManagementReportTests(unittest.TestCase):
     def test_campaign_query_missing_actions_is_not_inferred_zero(self):
         source=self.campaign_comparison();source['rows'][0].pop('actions');self.snapshot['sources']['meta']['data']['rows'][0].pop('actions');window=self.report()['windows']['7'];self.assertIsNone(window['metrics']['purchases']);self.assertNotEqual(window['metrics_sources']['purchases'],'campaign_insights')
 
+class OmittedActionsTests(unittest.TestCase):
+    """Meta omits `actions` for zero-action ad days (21.10 gap: new ads with tiny spend)."""
+    def test_confirmed_actions_row_without_actions_is_zero_not_unknown(self):
+        from management_report import _aggregate
+        sold={'spend':'10','actions':[{'action_type':'omni_purchase','value':'2'}],'action_values':[{'action_type':'omni_purchase','value':'500'}],'metric_sources':{'delivery_present':True,'actions_present':True}}
+        quiet={'spend':'1.5','metric_sources':{'delivery_present':True,'actions_present':True}}
+        values=_aggregate([sold,quiet])
+        self.assertEqual(values['purchases'],2);self.assertEqual(values['attributed_revenue'],500)
+    def test_missing_actions_stream_row_stays_unknown(self):
+        from management_report import _aggregate
+        lost={'spend':'1.5','metric_sources':{'delivery_present':True,'actions_present':False}}
+        self.assertIsNone(_aggregate([lost])['purchases'])
+        self.assertIsNone(_aggregate([{'spend':'1.5'}])['purchases'])
+    def test_purchases_without_values_keep_revenue_unknown(self):
+        from management_report import _aggregate
+        row={'spend':'10','actions':[{'action_type':'omni_purchase','value':'1'}],'metric_sources':{'delivery_present':True,'actions_present':True}}
+        self.assertIsNone(_aggregate([row])['attributed_revenue'])
+
 if __name__=='__main__':unittest.main()

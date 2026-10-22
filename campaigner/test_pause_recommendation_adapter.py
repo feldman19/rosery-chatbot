@@ -66,6 +66,10 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(pause['policy_status'],'implemented_scenario_only')
         self.assertEqual(pause['evidence_status'],'blocked');self.assertIsNone(pause['benefit_pause_ils'])
         self.assertIn('scoped_future_evidence_not_recorded',pause['missing'])
+        # The owner's rulebook may propose +20%, but never as an incrementality forecast.
+        self.assertEqual(result['policy_status']['scale'],'owner_rulebook_proposal')
+        self.assertTrue(all(any('תוספתיות' in t for t in d['data_does_not_support']) for d in result['rule_engine']['decisions']))
+        result=build_recommendations(self.report,now=self.now,rulebook={'status':'unavailable'})
         self.assertEqual(result['policy_status']['scale'],'scale_forecast_not_implemented')
 
 if __name__=='__main__':unittest.main()

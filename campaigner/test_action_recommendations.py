@@ -102,6 +102,10 @@ class RecommendationsTests(unittest.TestCase):
         self.report['checked_at'] = (self.now-timedelta(hours=1)).isoformat()
         result = build_recommendations(self.report, now=self.now)
         self.assertEqual(result['performance_findings'], [])
+        self.assertEqual(result['decision_engine_status'], 'owner_rulebook_proposals')
+        self.assertFalse(any(p['ready_for_approval'] for p in result['rule_engine']['proposals']))
+        result = build_recommendations(self.report, now=self.now, rulebook={'status': 'unavailable'})
         self.assertEqual(result['decision_engine_status'], 'financial_action_generation_not_implemented')
+        self.assertEqual(result['rule_engine']['status'], 'blocked')
 
 if __name__ == '__main__': unittest.main()

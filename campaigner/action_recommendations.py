@@ -9,6 +9,9 @@ from order_economics import order_economics
 from decision_evidence import report_assessment
 from decision_uncertainty import one_event_sensitivity
 from pause_recommendation_adapter import pause_assessment
+from rulebook import load_rulebook
+from rule_engine import evaluate_report
+from today_plan import build_today
 
 ACCOUNT = '393059510164294'
 SOURCE = {'id': 'rosery-operating-guide-v1', 'kind': 'local_operating_safeguard',
@@ -92,7 +95,7 @@ def performance_findings(report):
     return sorted(findings, key=lambda f: (f['priority'], -f['spend']))
 
 
-def build_recommendations(report, dossier=None, *, now=None):
+def build_recommendations(report, dossier=None, *, now=None, rulebook=None):
     """Consume build_report output and optional owner-only load_rosery_dossier output.
 
     Dossier experiment labels are not verified evidence and cannot generate an
@@ -178,12 +181,18 @@ def build_recommendations(report, dossier=None, *, now=None):
                               'recheck': 'ברענון נתונים חדש; החלטת תקציב רק לאחר השלמת הראיות הכלכליות והמדידה',
                               'rollback': 'אין שינוי חי להחזיר; הכנת ניסוי אינה משנה את הישות הקיימת',
                               'sources': [SOURCE]})
+    # The owner's rulebook is the approved financial policy; it yields proposals only.
+    rulebook = load_rulebook() if rulebook is None else rulebook
+    rules = evaluate_report(report, rulebook, now=now)
+    rules_ready = rulebook.get('status') == 'available'
     return {'account_id': ACCOUNT, 'currency': report.get('currency'), 'checked_at': report.get('checked_at'),
             'business_method': dossier.get('business_method', {'status':'unavailable'}),
             'performance_findings': performance_findings(report) if fresh else [],
-            'decision_engine_status': 'financial_action_generation_not_implemented',
-            'policy_status':{'pause':'implemented_scenario_only','scale':'scale_forecast_not_implemented'},
-            'system_gaps':['executable_financial_policy_not_implemented','scale_forecast_not_implemented'],
+            'decision_engine_status': 'owner_rulebook_proposals' if rules_ready else 'financial_action_generation_not_implemented',
+            'policy_status':{'pause':'owner_rulebook_proposal' if rules_ready else 'implemented_scenario_only',
+                             'scale':'owner_rulebook_proposal' if rules_ready else 'scale_forecast_not_implemented'},
+            'system_gaps':['ad_level_execution_not_connected'] if rules_ready else ['executable_financial_policy_not_implemented','scale_forecast_not_implemented'],
+            'rule_engine': rules, 'today': build_today(rules),
             'system_gap_explanation':'השוואת תרחישי עצירה מול המשך מחוברת. היא דורשת ראיות על חיסכון ותרומה עתידיים ואינה המלצה לביצוע. חיזוי סקייל עדיין לא מומש.',
             'fresh': fresh, 'recommendations': decisions, 'order_economics': economics, 'historical_financial_context': financial_context,
             'financial_context_is_target': False, 'live_action_allowed': False,

@@ -45,6 +45,7 @@ from management_report import build_report as management_report
 from visual_workspace import build_workspace
 from weekly_creative_context import weekly_creative_context
 from claude_chat import ClaudeChat
+from chat_rules_context import chat_rule_context
 from decision_memory import DecisionMemory
 from launch_workflow import LaunchWorkflow
 from launch_materials import LaunchMaterials
@@ -459,6 +460,8 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     # records, browser history, raw chat or private economics are sent.
                     chosen={k:selected.get(k) for k in ('id','name','campaign_name','adset_name','status','effective_status','primary_text','headline','description','text_options')} if selected else None
                     context={'business':'ROSERY, Israeli jewelry and apparel brand','account_id':view.get('account_id'),'checked_at':view.get('checked_at'),'selected_ad':chosen,'available_ads':len(view.get('ads',[])),'image_provided':False}
+                    try:context['rule_assessment']=chat_rule_context(management_report(live.snapshot()),body['ad_id'])
+                    except (ValueError,KeyError,TypeError,OSError):context['rule_assessment']={'status':'unavailable'}
                     return self.reply(200,claude_chat.submit(body['question'],body['request_id'],context))
                 if self.path in ('/api/help', '/api/help/escalate'):
                     if set(body) not in ({'question'},{'question','request_id'}) or (self.path=='/api/help' and set(body)!={'question'}):
