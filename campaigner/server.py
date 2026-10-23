@@ -188,6 +188,12 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
             from video_validation import frames
             launch_media_cache[key]=frames(path,asset['duration_ms'],count=1)[0][1]
         return launch_media_cache[key],'image/jpeg'
+    def launch_video(key):
+        # The uploaded video itself, to watch before approving; checked against its signed upload receipt.
+        if not re.fullmatch(r'local_[a-f0-9]{32}~[a-f0-9]{64}',key):raise ValueError('Invalid media key')
+        identity,sha=key.split('~');asset=local_uploads.resolve([{'id':identity,'sha256':sha}])[0]
+        if asset.get('media_kind')!='video':raise ValueError('Not a video')
+        return data/'drive-assets'/(identity+'-'+sha+'.bin'),asset['mime_type']
     engine.bind_account(TENANT, ACCOUNT)
     try:
         engine.get_entity(TENANT, ACCOUNT, ENTITY)
@@ -326,7 +332,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 self.send_header('Set-Cookie','campaigner_preparation_media='+session+'; HttpOnly; SameSite=Strict; Path=/api/preparation-task/media/')
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'no-referrer')
-            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: https://*.fbcdn.net https://*.cdninstagram.com; frame-ancestors 'none'; connect-src 'self'")
+            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: https://*.fbcdn.net https://*.cdninstagram.com; media-src 'self' blob:; frame-ancestors 'none'; connect-src 'self'")
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -384,6 +390,16 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 page = (ROOT / template).read_text(encoding='utf-8').replace('__SESSION__', session)
                 page = page.replace('</html>', '<script>' + (ROOT / 'pilot-format.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'registration-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'review-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'connection-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'operator-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'strategy-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-proposal-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'owner-instructions.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'preparation-loop-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'task-overview.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'work-home.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'live-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'decision-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'meta-execution-panel.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'pilot-ui.js').read_text(encoding='utf-8') + '</script></html>')
                 return self.reply(200, page, 'text/html; charset=utf-8')
+            if self.path.startswith('/api/creative-launch/video/'):
+                if workspace!='manager' or not hmac.compare_digest(self.headers.get('X-Local-Session',''),session):
+                    return self.reply(403,{'error':'Invalid local session'})
+                try:path,mime=launch_video(self.path.rsplit('/',1)[-1]);size=path.stat().st_size
+                except (ValueError,KeyError,OSError):return self.reply(404,{'error':'Not found'})
+                self.send_response(200);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(size))
+                self.send_header('Cache-Control','no-store');self.end_headers()
+                with path.open('rb') as f:
+                    while chunk:=f.read(1024*1024):self.wfile.write(chunk)
+                return
             if self.path.startswith('/api/creative-launch/media/'):
                 if workspace!='manager' or not hmac.compare_digest(self.headers.get('X-Local-Session',''),session):
                     return self.reply(403,{'error':'Invalid local session'})

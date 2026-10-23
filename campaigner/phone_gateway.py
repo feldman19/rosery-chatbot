@@ -97,7 +97,7 @@ def permitted(method, path, peer, phone_ip):
         return False
     route = path.split('?', 1)[0]
     if method == 'GET':
-        return route in GET_ROUTES or re.fullmatch(r'/api/creative-launch/media/local_[a-f0-9]{32}~[a-f0-9]{64}', route) is not None
+        return route in GET_ROUTES or re.fullmatch(r'/api/creative-launch/(media|video)/local_[a-f0-9]{32}~[a-f0-9]{64}', route) is not None
     return method == 'POST' and route in POST_ROUTES
 
 
@@ -126,6 +126,27 @@ def make_gateway(bind_ip, phone_ip, access, port=8768, backend_port=8767):
                 self.send_header('Set-Cookie', cookie)
             self.end_headers()
             self.wfile.write(body)
+
+        def _stream(self, response):
+            # A video can be up to 300 MiB: pass it through in pieces instead of holding it in memory.
+            try:
+                size = int(response.headers.get('Content-Length', ''))
+            except ValueError:
+                return self.send_bytes(502, b'{"error":"Unknown video size"}')
+            if not 0 <= size <= MAX_UPLOAD:
+                return self.send_bytes(502, b'{"error":"Response too large"}')
+            self.send_response(200)
+            for name, value in (('Content-Type', response.headers.get('Content-Type', 'application/octet-stream')), ('Content-Length', str(size)),
+                                ('Cache-Control', 'no-store'), ('X-Content-Type-Options', 'nosniff'), ('Referrer-Policy', 'no-referrer')):
+                self.send_header(name, value)
+            self.end_headers()
+            while size > 0:
+                chunk = response.read(min(1024 * 1024, size))
+                if not chunk:
+                    self.close_connection = True  # cut short: the phone sees an incomplete file, never a different one
+                    break
+                self.wfile.write(chunk)
+                size -= len(chunk)
 
         def _phone_cookie(self):
             for part in (self.headers.get('Cookie') or '').split(';'):
@@ -182,6 +203,8 @@ def make_gateway(bind_ip, phone_ip, access, port=8768, backend_port=8767):
                 except urllib.error.HTTPError as error:
                     response = error
                 with response:
+                    if self.path.startswith('/api/creative-launch/video/') and response.code == 200:
+                        return self._stream(response)
                     content = response.read(64 * 1024 * 1024 + 1)
                     if len(content) > 64 * 1024 * 1024:
                         return self.send_bytes(502, b'{"error":"Response too large"}')

@@ -114,6 +114,7 @@ details.why summary::before{content:"›";display:inline-block;transition:transf
 details.why[open] summary::before{transform:rotate(-90deg)}
 details.why>div,details.why>form,details.why>p{margin-top:10px;display:grid;gap:8px;font-size:15px;color:var(--muted)}
 .note{font-size:14px;color:var(--watch)}
+#launch-error{unicode-bidi:plaintext}
 .empty{text-align:center;padding:30px 18px;display:grid;gap:8px;justify-items:center}
 .empty .big{width:64px;height:64px;border-radius:50%;background:var(--grow-soft);color:var(--grow);display:grid;place-items:center;font-size:30px;font-weight:800;box-shadow:0 0 0 8px color-mix(in srgb,var(--grow-soft) 50%,transparent)}
 .empty p{margin:0;color:var(--muted)}
@@ -175,6 +176,37 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 #shadow-form label.label{display:grid;gap:6px;letter-spacing:0;font-size:13.5px;margin:0}
 #shadow-items{margin:0;padding-inline-start:18px;display:grid;gap:6px;color:var(--muted);font-size:14px}
 /* progress as a vertical timeline */
+/* upload tab: four-step strip, drop zone, previews of the chosen files, progress */
+.flow{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.flow li{display:grid;justify-items:center;gap:6px;text-align:center;font-size:12.5px;line-height:1.3;color:var(--muted);padding:10px 4px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--line)}
+.flow b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--idle-soft);color:var(--muted);font-size:13px}
+.flow li.done b{background:var(--grow);color:#fff}.flow li.done{color:var(--ink)}
+.flow li.now{color:var(--ink);font-weight:700;border-color:var(--brand-2);box-shadow:0 0 0 3px var(--brand-soft)}.flow li.now b{background:var(--brand);color:var(--on-brand)}
+.drop{display:grid;gap:6px;justify-items:center;text-align:center;padding:26px 14px;border:1.5px dashed color-mix(in srgb,var(--gold) 60%,var(--line));border-radius:var(--r);background:var(--gold-soft);cursor:pointer;transition:background .2s,border-color .2s}
+.drop strong{font-size:17px;padding:10px 20px;border-radius:999px;background:var(--ink);color:var(--bg)}
+.drop span{font-size:13px;color:var(--muted)}
+.drop.over{border-color:var(--brand-2);background:var(--brand-soft)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.drop:focus-within{outline:3px solid var(--gold);outline-offset:2px}
+.picked{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.picked:empty{display:none}
+.tile{position:relative;display:grid;gap:4px;padding:8px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line);font-size:13px;min-width:0}
+.tile img,.tile video,.media img,.media video{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:10px;background:#000;display:block}
+.tile strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext;text-align:start}
+.tile span{color:var(--muted)}
+.tile .x{position:absolute;top:12px;inset-inline-end:12px;width:32px;height:32px;border-radius:50%;border:0;background:rgb(0 0 0/.6);color:#fff;font-size:16px;cursor:pointer;z-index:1}
+.progress{display:grid;gap:6px}
+.bar{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--grow);transition:width .2s}
+.media{position:relative;width:132px;flex:none}
+.adrow:has(.media.big){flex-wrap:wrap}.media.big{width:100%;max-width:360px}.media.big video{aspect-ratio:auto;max-height:70vh;object-fit:contain}
+.media .play{position:absolute;inset:0;margin:auto;width:52px;height:52px;border-radius:50%;border:0;background:rgb(0 0 0/.6);color:#fff;font-size:20px;cursor:pointer}
+.plan{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.plan li{padding:10px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line);display:grid;gap:2px}
+.plan li span{color:var(--muted);font-size:14px}
+.todo-owner{margin:0;padding-inline-start:20px;display:grid;gap:4px;font-size:15px}
+.todo-owner .ok{color:var(--grow)}
+@media (max-width:420px){.flow li{font-size:11.5px}.media{width:108px}}
 .steps{display:grid;gap:0;font-size:15px}
 .steps p{margin:0;position:relative;padding:8px 32px 8px 0}
 .steps p::before{content:"";position:absolute;inset-inline-start:6px;top:14px;width:12px;height:12px;border-radius:50%;border:2px solid var(--line);background:var(--surface)}
@@ -256,13 +288,23 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 
   <!-- creative launch (Claude): upload → analysis → proposal; nothing is published from here -->
   <section data-tab="upload" hidden aria-labelledby="upload-title">
-    <div class="hello"><h1 id="upload-title">תכנים חדשים</h1><p>מעלים תמונות או סרטונים, והמערכת מנתחת ומציעה איך להעלות אותם לפי החוקים שלך. שום דבר לא עולה למטא בלי האישור שלך.</p></div>
+    <div class="hello"><h1 id="upload-title">תכנים חדשים</h1><p>ארבעה שלבים. שום דבר לא עולה למטא בלי האישור שלך, וגם אז הכל נוצר מושהה.</p></div>
+    <ol class="flow" id="launch-flow" aria-label="שלבי ההעלאה">
+      <li data-step="pick" class="now"><b>1</b><span>בוחרים קבצים ומטרה</span></li>
+      <li data-step="analyze"><b>2</b><span>המערכת מנתחת וכותבת טקסטים</span></li>
+      <li data-step="review"><b>3</b><span>רואים בדיוק איך זה יעלה</span></li>
+      <li data-step="approve"><b>4</b><span>מאשרים, ועולה מושהה</span></li>
+    </ol>
     <form class="card" id="launch-form">
+      <label class="drop" id="launch-drop"><input id="launch-files" type="file" multiple accept="image/jpeg,image/png,video/mp4,video/quicktime">
+        <strong>בחר תמונות או סרטונים</strong><span>או גרור לכאן · תמונות JPG/PNG עד 20MB · סרטוני MP4/MOV עד 300MB</span></label>
+      <p class="fact" id="launch-count" hidden></p>
+      <div class="picked" id="launch-picked"></div>
       <label class="field"><span class="label">מה המטרה?</span><textarea id="launch-goal" rows="3" maxlength="2000" placeholder="למשל: קולקציית צמידים חדשה לחגים, גברים 25–40"></textarea></label>
-      <label class="field"><span class="label">קבצים (תמונות JPG/PNG או סרטוני MP4/MOV)</span><span class="btn">בחר תמונות או סרטונים</span><span id="launch-filenames" class="fact"></span><input id="launch-files" hidden type="file" multiple accept="image/jpeg,image/png,video/mp4,video/quicktime"></label>
       <label class="field"><span class="label">לאיזה קמפיין?</span><select id="launch-campaign"><option value="">אבחר אחרי הניתוח</option></select></label>
       <label class="fact"><input id="launch-consent" type="checkbox"> אני מאשר לשלוח לניתוח ב-Claude את התמונות, פריימים מהסרטונים ותמלול הדיבור. הקבצים עצמם נשארים במחשב.</label>
       <button class="btn primary" id="launch-go" type="submit">נתח והכן הצעה</button>
+      <div class="progress" id="launch-progress" hidden><div class="bar"><i id="launch-bar"></i></div><p class="fact" id="launch-progress-text"></p></div>
       <p class="note" id="launch-error" hidden></p>
     </form>
     <div class="cards" id="launch-result"></div>
@@ -544,6 +586,65 @@ function renderAds(){
 // --- creative launch (Claude) ---
 let launchTimer=null,launchState=null;
 const LAUNCH_STEPS=[['analyzing','ניתוח התכנים'],['writing_copy','5 טקסטים ו-5 כותרות'],['planning','אד-סט חדש או קיים, לפי החוקים'],['ready_for_owner','הצעה מוכנה']];
+// The four-step strip at the top of the tab: where the owner is now.
+function setFlow(step){const order=['pick','analyze','review','approve'],at=order.indexOf(step);
+  for(const li of $('launch-flow').children){const i=order.indexOf(li.dataset.step);li.className=i<at?'done':i===at?'now':'';
+    if(i===at)li.setAttribute('aria-current','step');else li.removeAttribute('aria-current')}}
+// Files chosen on this device, shown (and playable) before anything is uploaded; same limits as the local server.
+const MAX_IMAGE=20*1024*1024,MAX_VIDEO=300*1024*1024,IMAGE_TYPES=['image/jpeg','image/png'],VIDEO_TYPES=['video/mp4','video/quicktime'];
+let picked=[];
+const mb=n=>(n/1048576).toFixed(n<10*1048576?1:0)+'MB';
+const clock=sec=>{const t=Math.round(sec);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
+function showLaunchError(text){const err=$('launch-error');err.hidden=!text;err.textContent=text||''}
+function addFiles(list){
+  const problems=[];
+  for(const f of list){const video=VIDEO_TYPES.includes(f.type);
+    if(!video&&!IMAGE_TYPES.includes(f.type)){problems.push(f.name+': אפשר רק JPG, PNG, MP4 או MOV');continue}
+    if(f.size>(video?MAX_VIDEO:MAX_IMAGE)){problems.push(f.name+': '+(video?'סרטון עד 300MB':'תמונה עד 20MB')+' (הקובץ '+mb(f.size)+')');continue}
+    if(picked.some(p=>p.file.name===f.name&&p.file.size===f.size&&p.file.lastModified===f.lastModified))continue;
+    if(picked.length>=30){problems.push('אפשר עד 30 קבצים בפעם אחת');break}
+    picked.push({file:f,url:URL.createObjectURL(f),video})}
+  renderPicked();showLaunchError(problems.join(' · '));
+}
+function renderPicked(){
+  const box=$('launch-picked');box.replaceChildren();
+  for(const p of picked){const tile=el('div','tile'),x=el('button','x','✕'),facts=el('span','',(p.video?'סרטון':'תמונה')+' · '+mb(p.file.size));
+    x.type='button';x.setAttribute('aria-label','הסר את '+p.file.name);x.onclick=()=>{URL.revokeObjectURL(p.url);picked=picked.filter(q=>q!==p);renderPicked()};
+    let media;
+    if(p.video){media=document.createElement('video');media.controls=true;media.playsInline=true;media.preload='metadata';media.src=p.url;
+      media.onloadedmetadata=()=>{if(isFinite(media.duration))facts.textContent='סרטון · '+clock(media.duration)+' · '+mb(p.file.size)};
+      media.onerror=()=>{facts.textContent='סרטון · '+mb(p.file.size)+' · הדפדפן לא מציג אותו, אבל אפשר להעלות'}}
+    else{media=document.createElement('img');media.alt='';media.src=p.url}
+    const name=el('strong','',p.file.name);name.dir='auto';tile.append(x,media,name,facts);box.append(tile)}
+  const images=picked.filter(p=>!p.video).length,videos=picked.length-images,count=$('launch-count');
+  count.hidden=!picked.length;
+  count.textContent='נבחרו '+[images&&(images===1?'תמונה אחת':images+' תמונות'),videos&&(videos===1?'סרטון אחד':videos+' סרטונים')].filter(Boolean).join(' ו')+'. כל קובץ יהיה מודעה אחת.';
+}
+$('launch-files').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+{const drop=$('launch-drop');
+  drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};drop.ondragleave=()=>drop.classList.remove('over');
+  drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');addFiles([...e.dataTransfer.files])}}
+// One file to the local server, with progress (fetch cannot report upload progress).
+function uploadOne(f,onProgress){return new Promise((resolve,reject)=>{
+  const x=new XMLHttpRequest();x.open('POST','/api/local-uploads');
+  x.setRequestHeader('X-Local-Session',token);x.setRequestHeader('Content-Type',f.type);x.setRequestHeader('X-File-Name',encodeURIComponent(f.name));
+  x.setRequestHeader('X-Upload-Id',crypto.randomUUID().replace(/-/g,''));
+  x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded)};
+  x.onload=()=>{let v={};try{v=JSON.parse(x.responseText)}catch{}x.status>=200&&x.status<300&&v.asset?resolve(v):reject(Error(f.name+': '+(v.error||'ההעלאה נכשלה')))};
+  x.onerror=()=>reject(Error(f.name+': החיבור נקטע. נסה שוב.'));x.send(f)})}
+// A proposal's image or video; a video loads only when tapped, then plays here.
+function mediaBox(ad){
+  const box=el('div','media'),img=el('img');img.alt='';box.append(img);
+  (ad.video?mediaUrl(ad.video.thumbnail_asset_id,ad.video.thumbnail_sha256):mediaUrl(ad.asset_id,ad.sha256)).then(u=>img.src=u);
+  if(ad.media_kind==='video'){const play=el('button','play','▶');play.type='button';play.setAttribute('aria-label','נגן את הסרטון');
+    play.onclick=async()=>{play.disabled=true;play.textContent='…';
+      try{const r=await fetch('/api/creative-launch/video/'+ad.asset_id+'~'+ad.sha256,{headers:{'X-Local-Session':token},cache:'no-store'});
+        if(!r.ok)throw Error();const v=document.createElement('video');v.controls=true;v.playsInline=true;v.poster=img.src;v.src=URL.createObjectURL(await r.blob());
+        box.classList.add('big');box.replaceChildren(v);v.play().catch(()=>{})}
+      catch{play.disabled=false;play.textContent='▶';toast('לא הצלחתי לטעון את הסרטון. נסה שוב.')}};
+    box.append(play)}
+  return box;
+}
 function fillCampaigns(){
   const sel=$('launch-campaign');if(sel.options.length>1)return;
   for(const c of (report?.windows?.['7']?.campaigns||[]).filter(c=>c.configured_active===true&&/SALES/.test(c.objective||''))){const o=document.createElement('option');o.value=c.id;o.textContent=c.name;sel.append(o)}
@@ -560,8 +661,9 @@ async function loadLaunch(){
 }
 function renderLaunch(){
   const box=$('launch-result');box.replaceChildren();const s=launchState||{};
-  if(s.state==='idle')return;
   const busy=['analyzing','writing_copy','planning'].includes(s.state);
+  setFlow(busy?'analyze':s.state==='ready_for_owner'?'review':'pick');
+  if(s.state==='idle')return;
   $('launch-go').disabled=busy;
   if(busy||s.state==='ready_for_owner'){
     const card=el('article','card'),steps=el('div','steps'),at=LAUNCH_STEPS.findIndex(x=>x[0]===s.state);
@@ -573,6 +675,21 @@ function renderLaunch(){
   if(s.state!=='ready_for_owner'||!s.draft)return;
   if(Date.parse(s.draft.expires_at)<=Date.now())box.append(el('p','note','ההצעה פגה, הכן מחדש. המשך לאישור יחדש את התוקף.'));
   const d=s.draft,rows=Object.fromEntries((s.analysis||[]).map(r=>[r.asset_id,r]));
+  // How it will go up, in one look: campaign → ad sets → ads, and what is still needed from the owner.
+  {const plan=el('article','card'),list=el('ol','plan'),need=el('ul','todo-owner'),total=d.ads.length;
+    plan.append(el('span','pill grow','ככה זה יעלה'),el('h3','',total+(total===1?' מודעה חדשה':' מודעות חדשות')+' ב-'+d.adsets.length+(d.adsets.length===1?' אד-סט':' אד-סטים')));
+    for(const g of d.adsets){const n=d.ads.filter(a=>a.adset_key===g.key),videos=n.filter(a=>a.media_kind==='video').length,li=el('li');
+      li.append(el('strong','',(g.target.mode==='existing'?'הוספה לאד-סט קיים: ':'אד-סט חדש: ')+g.label),
+        el('span','',n.length+(n.length===1?' מודעה':' מודעות')+(videos?' ('+(videos===1?'סרטון אחד':videos+' סרטונים')+')':'')+(g.target.mode==='existing'?' · התקציב והקהל שלו לא משתנים':' · תקציב וקהל שאתה קובע למטה')));
+      list.append(li)}
+    plan.append(list,el('p','fact','כל מודעה מקבלת 5 טקסטים ו-5 כותרות, ומטא מחליף ביניהם. הכל נוצר מושהה: שום דבר לא רץ ולא מוציא כסף עד שתפעיל.'));
+    const newSets=d.adsets.filter(g=>g.target.mode!=='existing').length,sameAngle=d.adsets.filter(g=>g.target.mode==='existing').length;
+    const steps=['לבחור קמפיין (למטה)'];
+    if(newSets)steps.push('לקבוע תקציב יומי וקהל ל'+(newSets===1?'אד-סט החדש':newSets+' האד-סטים החדשים'));
+    if(sameAngle)steps.push('לאשר שהזווית זהה למודעות שכבר רצות ב'+(sameAngle===1?'אד-סט הקיים':sameAngle+' האד-סטים הקיימים'));
+    steps.push('ללחוץ "המשך לאישור", לראות בדיוק מה ייווצר, ורק אז "אשר והעלה"');
+    for(const t of steps)need.append(el('li','',t));
+    plan.append(el('p','label','מה נשאר לך לעשות'),need);box.append(plan)}
   for(const q of d.owner_questions||[]){const c=el('article','card');c.append(el('span','pill watch','שאלה אליך'),el('p','',q));box.append(c)}
   for(const g of d.adsets){
     const card=el('article','card'),existing=g.target.mode==='existing';
@@ -583,11 +700,12 @@ function renderLaunch(){
       for(const [v,l] of [['','בחר קהל'],['men','גברים'],['women','נשים']]){const o=document.createElement('option');o.value=v;o.textContent=l;o.selected=(au.gender||'')===v;sel.append(o)}
       q.append(el('span','label','קהל (הטירגוט יועתק מאד-סט פעיל של אותו מגדר)'),sel);card.append(q);if(au.reason)card.append(el('p','fact',au.reason))}
     for(const ad of d.ads.filter(a=>a.adset_key===g.key)){
-      const r=rows[ad.asset_id]||{},row=el('div','adrow'),img=el('img','thumb');img.alt='';(ad.video?mediaUrl(ad.video.thumbnail_asset_id,ad.video.thumbnail_sha256):mediaUrl(ad.asset_id,ad.sha256)).then(u=>img.src=u).catch(()=>{img.alt='התצוגה המקדימה אינה זמינה'});
+      const r=rows[ad.asset_id]||{},row=el('div','adrow');
       const info=el('div');info.append(el('strong','',(ad.media_kind==='video'?'🎬 ':'')+(r.observed_product||ad.source_name)),
         el('span','fact','זווית: '+(r.angle||'—')),el('span','fact','קהל (השערה): '+(r.audience_hypothesis||'—')),el('span','fact','מה רואים: '+(r.visual_description||'—')));
       if(ad.media_kind==='video')info.append(el('span','fact',r.audio_status==='checked'?'מה אומרים: '+(r.transcript||'אין דיבור'):'הקול לא נבדק'));
-      row.append(img,info);card.append(row);
+      if(ad.video)info.append(el('span','fact','אורך: '+clock(ad.video.duration_ms/1000)+' · לחץ ▶ לצפייה'));
+      row.append(mediaBox(ad),info);card.append(row);
       const det=el('details','why');det.append(el('summary','','5 טקסטים ו-5 כותרות'));const inner=el('div');
       ad.primary_text_options.forEach((t,i)=>inner.append(el('p','','טקסט '+(i+1)+': '+t)));ad.headline_options.forEach((t,i)=>inner.append(el('p','','כותרת '+(i+1)+': '+t)));
       det.append(inner);card.append(det);
@@ -641,11 +759,12 @@ function launchCounts(){
 }
 function launchSheet(op){
   closeSheet();const sheet=el('div','sheet'),panel=el('div','sheet-panel');sheet.append(panel);document.body.append(sheet);
-  sheet.onclick=e=>{if(e.target===sheet)closeSheet()};
+  setFlow('approve');const back=()=>{closeSheet();setFlow('review')};
+  sheet.onclick=e=>{if(e.target===sheet)back()};
   const m=op.manifest||{},sets=m.adsets||[],ads=(m.steps||[]).filter(x=>x.kind==='ads').length;
   panel.append(el('h2','',op.blocked_reasons?.length?'אי אפשר להעלות כרגע':'מה ייווצר במטא'));
   for(const r of op.blocked_reasons||[]){panel.append(el('p','note',launchBlockReason(r)));panel.append(el('small','fact',r))}
-  if(op.blocked_reasons?.length){const c=el('button','btn','סגור');c.type='button';c.onclick=closeSheet;panel.append(c);return}
+  if(op.blocked_reasons?.length){const c=el('button','btn','סגור');c.type='button';c.onclick=back;panel.append(c);return}
   const campaign=(launchState?.campaigns||[]).find(c=>c.id===m.campaign_id);
   panel.append(el('p','fact','קמפיין: '+(campaign?campaign.name:m.campaign_id)));
   const copyBy=Object.fromEntries((m.copy_choices||[]).map(c=>[c.asset_id,c])),names=Object.fromEntries((launchState?.analysis||[]).map(r=>[r.asset_id,r.name]));
@@ -665,7 +784,7 @@ function launchSheet(op){
     det.append(inner);panel.append(det)}
   panel.append(el('p','fact','כל מודעה: 5 טקסטים ו-5 כותרות · כל שיפורי Advantage+ כבויים (חוץ מתגובות רלוונטיות) · הכל מושהה'));
   panel.append(el('p','fact','קוד אישור: '+op.digest.slice(0,12)+' · תקף עד '+new Date(op.expires_at).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})));
-  const a=el('div','actions'),go=el('button','btn primary','אשר והעלה במצב מושהה'),no=el('button','btn ghost','ביטול');go.type=no.type='button';no.onclick=closeSheet;
+  const a=el('div','actions'),go=el('button','btn primary','אשר והעלה במצב מושהה'),no=el('button','btn ghost','ביטול');go.type=no.type='button';no.onclick=back;
   go.onclick=async()=>{go.disabled=no.disabled=true;go.textContent='מעלה למטא ובודק…';
     try{await api('/api/campaign-operations/approve',{operation_id:op.operation_id,digest:op.digest});
       await api('/api/campaign-operations/execute',{operation_id:op.operation_id});closeSheet();toast('ההעלאה התחילה. הכל נוצר במצב מושהה.');watchOperation(op.operation_id)}
@@ -683,23 +802,22 @@ async function watchOperation(id){
   }
 }
 $('launch-form').onsubmit=async e=>{
-  e.preventDefault();const err=$('launch-error');err.hidden=true;
-  const files=[...$('launch-files').files];
-  if(!files.length||!$('launch-goal').value.trim()){err.hidden=false;err.textContent='צריך מטרה וקבצים.';return}
-  if(!$('launch-consent').checked){err.hidden=false;err.textContent='צריך לסמן את האישור לשליחה לניתוח.';return}
-  $('launch-go').disabled=true;const sources=[];
+  e.preventDefault();showLaunchError('');
+  if(!picked.length){showLaunchError('בחר לפחות תמונה או סרטון אחד.');return}
+  if(!$('launch-goal').value.trim()){showLaunchError('כתוב בקצרה מה המטרה.');$('launch-goal').focus();return}
+  if(!$('launch-consent').checked){showLaunchError('צריך לסמן את האישור לשליחה לניתוח.');return}
+  const go=$('launch-go'),bar=$('launch-bar'),text=$('launch-progress-text'),files=picked.map(p=>p.file),sources=[];
+  const total=files.reduce((n,f)=>n+f.size,0)||1;let done=0;
+  go.disabled=true;$('launch-progress').hidden=false;
+  const show=(i,loaded)=>{const pct=Math.min(100,Math.round((done+loaded)/total*100));bar.style.width=pct+'%';
+    text.textContent='מעלה למחשב '+(i+1)+' מתוך '+files.length+' ('+files[i].name+') · '+pct+'%'};
   try{
-    for(const [i,f] of files.entries()){
-      $('launch-go').textContent='מעלה '+(i+1)+' מתוך '+files.length+'…';
-      const r=await fetch('/api/local-uploads',{method:'POST',body:f,headers:{'X-Local-Session':token,'Content-Type':f.type,'X-File-Name':encodeURIComponent(f.name),'X-Upload-Id':crypto.randomUUID().replace(/-/g,'')}});
-      const v=await r.json();if(!r.ok)throw Error((f.name)+': '+(v.error||'ההעלאה נכשלה'));
-      sources.push({id:v.asset.id,sha256:v.asset.sha256});
-    }
-    $('launch-go').textContent='מתחיל ניתוח…';
+    for(const [i,f] of files.entries()){show(i,0);const v=await uploadOne(f,loaded=>show(i,loaded));done+=f.size;sources.push({id:v.asset.id,sha256:v.asset.sha256})}
+    bar.style.width='100%';text.textContent='הקבצים במחשב. מתחיל ניתוח…';
     launchState=await api('/api/creative-launch/start',{goal:$('launch-goal').value.trim(),sources,consent:true,campaign_id:$('launch-campaign').value||null});
+    for(const p of picked)URL.revokeObjectURL(p.url);picked=[];renderPicked();$('launch-progress').hidden=true;
     loadLaunch();
-  }catch(ex){err.hidden=false;err.textContent=ex.message;$('launch-go').disabled=false}
-  finally{$('launch-go').textContent='נתח והכן הצעה'}
+  }catch(ex){showLaunchError(ex.message);go.disabled=false;$('launch-progress').hidden=true}
 };
 let chatTimer=null;
 async function loadChat(){
