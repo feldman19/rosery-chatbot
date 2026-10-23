@@ -17,6 +17,8 @@ from action_recommendations import build_recommendations
 from owner_action_proposals import build_owner_action_proposals
 from owner_action_results import execute_local
 from outcome_tracking import OutcomeTracker, OutcomeDenied
+from creative_drift import CreativeDrift
+from rulebook import load_rulebook
 from change_history_evidence import load_saved_change_evidence
 from core import Campaigner, Denied
 from evidence import SnapshotStore
@@ -106,6 +108,12 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     decision_memory=DecisionMemory(data / "decision-memory.sqlite3")
     decision_memory.bind("rosery", "393059510164294")
     outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3')
+    drift=CreativeDrift(data/'creative-drift.sqlite3')
+    try:
+        # Verified launch readbacks are the starting state for ads not read live yet.
+        drift.import_readbacks([(p.name,json.loads(p.read_text(encoding='utf-8')))
+                                for p in sorted((ROOT.parent/'outputs').glob('*-readback-*.json'))])
+    except (OSError,ValueError):pass
     key_file = data / 'signing.key'
     try:
         with key_file.open('xb') as key:
@@ -366,6 +374,8 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                             report['outcomes_status']='available'
                         except Exception:
                             report['outcomes_status']='unavailable'
+                        try:report['creative_drift']=drift.check(((snapshot.get('sources') or {}).get('meta') or {}).get('data'),load_rulebook())
+                        except Exception:report['creative_drift']={'status':'unavailable','items':[],'unknown':[],'provider_writes':0,'live_action_allowed':False}
                     return self.reply(200,report)
                 except (ValueError,KeyError,TypeError,OSError):return self.reply(503,{'error':'דוח הניהול אינו זמין כרגע. לא בוצע שינוי בקמפיינים.'})
             if self.path == '/api/outcomes':
@@ -496,6 +506,14 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     return self.reply(200, result)
                 if workspace != 'manager':
                     return self.reply(403, {'error': 'אישור ושינוי תקציב זמינים למנהל בלבד'})
+                if self.path == '/api/creative-drift/keep':
+                    # Local note that the owner keeps this state; nothing is sent to Meta.
+                    if set(body)!={'ad_id'} or not isinstance(body['ad_id'],str) or not body['ad_id'].isdigit() or len(body['ad_id'])>40:
+                        raise ValueError('Exact ad ID required')
+                    snapshot=live.snapshot()
+                    try:result=drift.keep(body['ad_id'],((snapshot.get('sources') or {}).get('meta') or {}).get('data'))
+                    except ValueError as error:return self.reply(409,{'error':str(error)})
+                    return self.reply(200,result)
                 if self.path in ('/api/outcomes/mark','/api/outcomes/answer'):
                     # Local record of what the owner did in Meta; nothing is sent to Meta.
                     try:

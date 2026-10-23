@@ -126,6 +126,8 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2
     <div class="hello"><h1 id="hello-title">שלום</h1><p id="hello-sub">בודק מה קורה בפרסום…</p></div>
     <div class="stats" id="stats" aria-label="אתמול"></div>
     <p class="caption" id="stats-caption"></p>
+    <div class="label" id="drift-label" hidden>מטא שינתה משהו בלי אישור</div>
+    <div class="cards" id="drift"></div>
     <div class="label" id="todo-label">מה לעשות היום</div>
     <div class="cards" id="todo"><div class="skeleton"></div></div>
     <div class="label" id="done-label" hidden>מה קרה אחרי מה שעשית</div>
@@ -251,6 +253,31 @@ function outcomeCard(o){
   for(const w of o.warnings||[])card.append(el('p','note',w));
   return card;
 }
+// Enhancements Meta has on against the owner's rule. Turning off happens in Ads Manager.
+function driftCard(item,rule){
+  const card=el('article','card');card.append(el('span','pill stop','בניגוד לחוק שלך'),el('h3','',item.name));
+  if(item.adset_name)card.append(el('p','fact','קבוצה: '+item.adset_name));
+  const when=s=>s?' · מאז '+new Date(s).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+  if(item.features.length){
+    card.append(el('p','','מופעל: '+item.features.map(f=>f.label).join(', ')));
+    const kinds=[...new Set(item.features.map(f=>f.kind_label))].join('; '),since=item.features.map(f=>f.since).filter(Boolean).sort()[0];
+    card.append(el('p','fact',kinds+when(since)));
+  }
+  if(item.creative_replaced)card.append(el('p','note','הקריאייטיב של המודעה הוחלף'+when(item.creative_replaced.detected_at)+'.'));
+  if(rule)card.append(el('p','fact','החוק שלך: "'+rule.quote+'"'));
+  const a=el('div','actions'),l=el('a','btn primary','לכיבוי במטא');l.href=item.link;l.target='_blank';l.rel='noopener noreferrer';
+  const keep=el('button','btn ghost','השאר כך');keep.type='button';
+  keep.onclick=async()=>{keep.disabled=true;try{await api('/api/creative-drift/keep',{ad_id:item.ad_id});await load(false)}catch(e){keep.disabled=false;alert(e.message)}};
+  a.append(l,keep);card.append(a);return card;
+}
+let showAllDrift=false;
+function renderDrift(){
+  const d=report?.creative_drift,box=$('drift');box.replaceChildren();
+  const items=d?.status==='ready'?d.items:[];$('drift-label').hidden=!items.length&&!(d?.unknown||[]).length;
+  for(const i of showAllDrift?items:items.slice(0,3))box.append(driftCard(i,d.rule));
+  if(items.length>3){const more=el('button','link',showAllDrift?'הצג פחות':'עוד '+(items.length-3)+' מודעות עם שיפורים מופעלים');more.type='button';more.onclick=()=>{showAllDrift=!showAllDrift;renderDrift()};box.append(more)}
+  if((d?.unknown||[]).length)box.append(el('p','note','לא הצלחנו לקרוא את הגדרות השיפורים ב-'+d.unknown.length+' מודעות. זה לא אומר שהן כבויות.'));
+}
 let outcomes=null;
 async function loadOutcomes(){try{outcomes=await api('/api/outcomes')}catch{outcomes=null}renderOutcomes()}
 function renderOutcomes(){
@@ -333,7 +360,7 @@ async function load(refresh){
   if(refresh){$('fresh-text').textContent='מרענן…';try{await api('/api/live/refresh',{})}catch{}}
   try{report=await api('/api/management-report')}catch(e){$('hello-sub').textContent=e.message;$('todo').replaceChildren();return}
   await loadOutcomes();
-  renderHeader();renderStats();renderToday();renderAds();
+  renderHeader();renderStats();renderDrift();renderToday();renderAds();
 }
 $('fresh').onclick=()=>load(true);
 load(false);setInterval(()=>load(false),5*60*1000);

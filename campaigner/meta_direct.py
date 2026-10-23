@@ -96,7 +96,7 @@ def read_reports(data_dir):
     creative_inventory={'verified':False}
     if inventory.get('verified'):
         try:
-            page=graph(token,LAUNCH+'/ads',{'fields':'id,name,status,effective_status,adset_id,creative{id,thumbnail_url,image_url,object_story_spec,asset_feed_spec,url_tags,link_url}','limit':500})
+            page=graph(token,LAUNCH+'/ads',{'fields':'id,name,status,effective_status,adset_id,creative{id,thumbnail_url,image_url,object_story_spec,asset_feed_spec,url_tags,link_url,degrees_of_freedom_spec}','limit':500})
             if not isinstance(page.get('data'),list) or (page.get('paging') or {}).get('next'):raise ValueError('Incomplete creative inventory')
             if {x['id'] for x in page['data']}!={x['id'] for x in inventory['ads']}:raise ValueError('Creative inventory changed during read')
             creative_inventory={'verified':True,'account_id':ACCOUNT,'campaign_id':LAUNCH,'ads':page['data']}
@@ -172,7 +172,7 @@ def read_active_ads(token,deadline=None):
     get_ads/effective_status follows Meta's official facebook-python-business-sdk.
     """
     deadline=deadline or time.monotonic()+45
-    params={'fields':'id,name,account_id,status,effective_status,updated_time,campaign{id,name,objective,status,effective_status,updated_time},adset{id,name,status,daily_budget,lifetime_budget,updated_time,optimization_goal,promoted_object,attribution_spec,effective_status},creative{id,thumbnail_url,image_url,body,title,object_story_spec,asset_feed_spec,url_tags}','effective_status':json.dumps(['ACTIVE']),'limit':100}
+    params={'fields':'id,name,account_id,status,effective_status,updated_time,campaign{id,name,objective,status,effective_status,updated_time},adset{id,name,status,daily_budget,lifetime_budget,updated_time,optimization_goal,promoted_object,attribution_spec,effective_status},creative{id,thumbnail_url,image_url,body,title,object_story_spec,asset_feed_spec,url_tags,degrees_of_freedom_spec}','effective_status':json.dumps(['ACTIVE']),'limit':100}
     rows=[];seen=set();cursors=set()
     try:
         for _ in range(20):
