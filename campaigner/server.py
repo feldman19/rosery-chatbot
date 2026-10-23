@@ -119,23 +119,6 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3')
     drift=CreativeDrift(data/'creative-drift.sqlite3')
     history=AccountHistory(data,reader=read_account_history if start_live and workspace=='manager' else None)
-    # --- simple-screen creative launch (Claude): uploads → analysis → copy → strategy; no Meta writes ---
-    from creative_launch import CreativeLaunch
-    from creative_vision import CreativeVision
-    import copy_variants, launch_strategy
-    creative_launch=CreativeLaunch(data,uploads=local_uploads,
-        analyze=lambda assets,owner_brief:CreativeVision(data).analyze(assets,owner_brief=owner_brief,local_image_review_consent=True),
-        copy=copy_variants.variants,plan=launch_strategy.plan,report=lambda:management_report(live.snapshot()),rulebook=load_rulebook)
-    launch_media_cache={}
-    def launch_media(key):
-        if not re.fullmatch(r'local_[a-f0-9]{32}~[a-f0-9]{64}',key):raise ValueError('Invalid media key')
-        identity,sha=key.split('~');asset=local_uploads.resolve([{'id':identity,'sha256':sha}])[0]
-        path=data/'drive-assets'/(identity+'-'+sha+'.bin')
-        if asset.get('media_kind')!='video':return path.read_bytes(),asset['mime_type']
-        if key not in launch_media_cache:
-            from video_validation import frames
-            launch_media_cache[key]=frames(path,asset['duration_ms'],count=1)[0][1]
-        return launch_media_cache[key],'image/jpeg'
     profit_settings=true_profit.ProfitSettings(data/'profit-settings.json')
     def profit_summary(snapshot=None,report=None):
         # --- true profit (Claude) ---
@@ -158,6 +141,23 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         pass
     engine = Campaigner(str(data / 'campaigner.sqlite3'), key_file.read_bytes())
     local_uploads = LocalUploads(data, key_file.read_bytes())
+    # --- simple-screen creative launch (Claude): uploads → analysis → copy → strategy; no Meta writes ---
+    from creative_launch import CreativeLaunch
+    from creative_vision import CreativeVision
+    import copy_variants, launch_strategy
+    creative_launch=CreativeLaunch(data,uploads=local_uploads,
+        analyze=lambda assets,owner_brief:CreativeVision(data).analyze(assets,owner_brief=owner_brief,local_image_review_consent=True),
+        copy=copy_variants.variants,plan=launch_strategy.plan,report=lambda:management_report(live.snapshot()),rulebook=load_rulebook)
+    launch_media_cache={}
+    def launch_media(key):
+        if not re.fullmatch(r'local_[a-f0-9]{32}~[a-f0-9]{64}',key):raise ValueError('Invalid media key')
+        identity,sha=key.split('~');asset=local_uploads.resolve([{'id':identity,'sha256':sha}])[0]
+        path=data/'drive-assets'/(identity+'-'+sha+'.bin')
+        if asset.get('media_kind')!='video':return path.read_bytes(),asset['mime_type']
+        if key not in launch_media_cache:
+            from video_validation import frames
+            launch_media_cache[key]=frames(path,asset['duration_ms'],count=1)[0][1]
+        return launch_media_cache[key],'image/jpeg'
     engine.bind_account(TENANT, ACCOUNT)
     try:
         engine.get_entity(TENANT, ACCOUNT, ENTITY)
