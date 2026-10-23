@@ -126,7 +126,7 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2
     <div class="hello"><h1 id="hello-title">שלום</h1><p id="hello-sub">בודק מה קורה בפרסום…</p></div>
     <div class="stats" id="stats" aria-label="אתמול"></div>
     <p class="caption" id="stats-caption"></p>
-    <div class="label" id="drift-label" hidden>מטא שינתה משהו בלי אישור</div>
+    <div class="label" id="drift-label" hidden>שיפורי Advantage+ מופעלים לבדיקה</div>
     <div class="cards" id="drift"></div>
     <div class="label" id="todo-label">מה לעשות היום</div>
     <div class="cards" id="todo"><div class="skeleton"></div></div>
@@ -255,7 +255,7 @@ function outcomeCard(o){
 }
 // Enhancements Meta has on against the owner's rule. Turning off happens in Ads Manager.
 function driftCard(item,rule){
-  const card=el('article','card');card.append(el('span','pill stop','בניגוד לחוק שלך'),el('h3','',item.name));
+  const card=el('article','card');card.append(rule?el('span','pill stop','בניגוד לחוק שלך'):el('span','pill watch','לבדיקה · החוק לא אומת'),el('h3','',item.name));
   if(item.adset_name)card.append(el('p','fact','קבוצה: '+item.adset_name));
   const when=s=>s?' · מאז '+new Date(s).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
   if(item.features.length){
@@ -263,6 +263,7 @@ function driftCard(item,rule){
     const kinds=[...new Set(item.features.map(f=>f.kind_label))].join('; '),since=item.features.map(f=>f.since).filter(Boolean).sort()[0];
     card.append(el('p','fact',kinds+when(since)));
   }
+  if((item.unclear||[]).length)card.append(el('p','note','מצב לא ידוע (מטא לא החזירה כבוי או מופעל): '+item.unclear.map(f=>f.label).join(', ')));
   if(item.creative_replaced)card.append(el('p','note','הקריאייטיב של המודעה הוחלף'+when(item.creative_replaced.detected_at)+'.'));
   if(rule)card.append(el('p','fact','החוק שלך: "'+rule.quote+'"'));
   const a=el('div','actions'),l=el('a','btn primary','לכיבוי במטא');l.href=item.link;l.target='_blank';l.rel='noopener noreferrer';
@@ -337,7 +338,7 @@ function renderAds(){
 
 let chatTimer=null;
 async function loadChat(){
-  const s=$('suggest');if(!s.childElementCount)for(const q of ['איזו מודעה הכי משתלמת?','למה לעצור את המודעה?','כמה להוציא מחר?']){const c=el('button','chip',q);c.type='button';c.onclick=()=>{$('question').value=q;$('question').focus()};s.append(c)}
+  const s=$('suggest');if(!s.childElementCount)for(const q of ['איזו מודעה הכי משתלמת לאורך זמן?','מה משותף למודעות הכי טובות?','מה עבד ב-90 הימים האחרונים?','למה לעצור את המודעה?']){const c=el('button','chip',q);c.type='button';c.onclick=()=>{$('question').value=q;$('question').focus()};s.append(c)}
   try{const st=await api('/api/claude-chat');renderChat(st)}catch(e){showUnavailable(e.message)}
 }
 function showUnavailable(text){$('chat-unavailable').hidden=false;$('chat-unavailable').textContent=text}

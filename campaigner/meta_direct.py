@@ -221,3 +221,77 @@ def enrich_creative_images(token,ads,deadline):
             image=images.get(h) or {}
             if isinstance(image.get('url'),str):c['image_url']=image['url'];c['workspace_image_hash']=h
     except Exception:pass
+
+
+# Meta rejects DELETED in this filter (error 100/1815001); deleted ads keep their insights rows only.
+AD_STATUSES=['ACTIVE','PAUSED','ARCHIVED','CAMPAIGN_PAUSED','ADSET_PAUSED','PENDING_REVIEW','DISAPPROVED','PREAPPROVED','PENDING_BILLING_INFO','IN_PROCESS','WITH_ISSUES']
+HISTORY_CREATIVE_FIELDS='id,name,effective_status,creative{id,object_type,body,title,call_to_action_type,object_story_spec,asset_feed_spec,video_id,image_hash,product_set_id}'
+
+
+def _all_pages(token,path,request,deadline,max_pages=40):
+    """Every page on the fixed path; cursors only, never a provider-supplied next URL."""
+    rows=[];cursors=set();query=dict(request)
+    for _ in range(max_pages):
+        if time.monotonic()>deadline:raise ValueError('History deadline')
+        result=graph(token,path,query);batch=result.get('data')
+        if not isinstance(batch,list):raise ValueError('History rows missing')
+        rows.extend(batch);paging=result.get('paging') or {}
+        if not paging.get('next'):return rows
+        cursor=(paging.get('cursors') or {}).get('after')
+        if not isinstance(cursor,str) or not cursor or len(cursor)>4096 or cursor in cursors:raise ValueError('Invalid history cursor')
+        cursors.add(cursor);query={**request,'after':cursor}
+    raise ValueError('History pagination too long')
+
+
+def read_account_history(data_dir,min_creative_spend=200,max_creatives=1000):
+    """Ad-level totals for the whole account history and the last 90 full days, plus
+    creative text/format for ads that spent enough to compare. GET only.
+
+    Delivery and actions are read separately and merged by ad: an ad missing from
+    the actions read has unknown purchases, never zero.
+    """
+    deadline=time.monotonic()+300
+    token=get_token(data_dir);account=identity(token)
+    offset=float(account['timezone_offset_hours_utc'])
+    if not -14<=offset<=14:raise ValueError('Invalid account timezone offset')
+    today=datetime.now(timezone(timedelta(hours=offset))).date()
+    ranges={'all':{'date_preset':'maximum'},
+            '90':{'time_range':json.dumps({'since':(today-timedelta(days=90)).isoformat(),'until':(today-timedelta(days=1)).isoformat()})}}
+    common={'level':'ad','time_increment':'all_days','use_unified_attribution_setting':'true','limit':'500'}
+    windows={}
+    for key,span in ranges.items():
+        delivery={**common,**span,'fields':'ad_id,ad_name,adset_name,campaign_id,campaign_name,spend,impressions,date_start,date_stop'}
+        actions={**common,**span,'fields':'ad_id,actions,action_values,date_start,date_stop'}
+        merged={};orphans=0
+        for row in _all_pages(token,'act_'+ACCOUNT+'/insights',delivery,deadline):
+            ad=row.get('ad_id') if isinstance(row,dict) else None
+            if not isinstance(ad,str) or not ad.isdigit() or ad in merged:raise ValueError('History delivery identity invalid')
+            merged[ad]={**row,'actions_present':False}
+        for row in _all_pages(token,'act_'+ACCOUNT+'/insights',actions,deadline):
+            ad=row.get('ad_id') if isinstance(row,dict) else None
+            if not isinstance(ad,str) or not ad.isdigit():raise ValueError('History actions identity invalid')
+            if ad not in merged:
+                # Attributed actions in the window for an ad with no delivery row there; kept out, counted.
+                orphans+=1;continue
+            if merged[ad]['actions_present']:raise ValueError('History actions identity invalid')
+            merged[ad].update({k:row[k] for k in ('actions','action_values') if k in row},actions_present=True)
+        windows[key]={'request':{k:v for k,v in delivery.items() if k!='fields'},'rows':list(merged.values()),'complete':True,
+                      'actions_without_delivery':orphans}
+    def spend(row):
+        try:return float(row.get('spend') or 0)
+        except (TypeError,ValueError):return 0
+    wanted=[r['ad_id'] for r in sorted(windows['all']['rows'],key=spend,reverse=True) if spend(r)>=min_creative_spend][:max_creatives]
+    creatives={};failed=0
+    for start in range(0,len(wanted),50):
+        chunk=wanted[start:start+50]
+        request={'fields':HISTORY_CREATIVE_FIELDS,'filtering':json.dumps([{'field':'id','operator':'IN','value':chunk}]),
+                 'effective_status':json.dumps(AD_STATUSES),'limit':'50'}
+        try:
+            for ad in _all_pages(token,'act_'+ACCOUNT+'/ads',request,deadline,max_pages=3):
+                if isinstance(ad,dict) and ad.get('id') in chunk and isinstance(ad.get('creative'),dict):
+                    creatives[ad['id']]={'name':ad.get('name'),'effective_status':ad.get('effective_status'),**ad['creative']}
+        except (ValueError,KeyError,TypeError,OSError):failed+=len(chunk)
+    return {'verified':True,'account_id':ACCOUNT,'checked_at':datetime.now(timezone.utc).isoformat(),'today':today.isoformat(),
+            'windows':windows,'creatives':creatives,'creatives_requested':len(wanted),'creatives_failed':failed,
+            'query_settings':{'time_increment':'all_days','use_unified_attribution_setting':True,'action_report_time':'default_unchanged'},
+            'source':'direct_meta_api','live_action_allowed':False}

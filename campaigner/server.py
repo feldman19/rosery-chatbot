@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 import secrets
 import socket
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from analysis import summarize
@@ -18,6 +19,8 @@ from owner_action_proposals import build_owner_action_proposals
 from owner_action_results import execute_local
 from outcome_tracking import OutcomeTracker, OutcomeDenied
 from creative_drift import CreativeDrift
+from account_history import AccountHistory, chat_context as history_chat_context
+from meta_direct import read_account_history
 from rulebook import load_rulebook
 from change_history_evidence import load_saved_change_evidence
 from core import Campaigner, Denied
@@ -109,6 +112,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     decision_memory.bind("rosery", "393059510164294")
     outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3')
     drift=CreativeDrift(data/'creative-drift.sqlite3')
+    history=AccountHistory(data,reader=read_account_history if start_live and workspace=='manager' else None)
     try:
         # Verified launch readbacks are the starting state for ads not read live yet.
         drift.import_readbacks([(p.name,json.loads(p.read_text(encoding='utf-8')))
@@ -496,6 +500,16 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     context={'business':'ROSERY, Israeli jewelry and apparel brand','account_id':view.get('account_id'),'checked_at':view.get('checked_at'),'selected_ad':chosen,'available_ads':len(view.get('ads',[])),'image_provided':False}
                     try:context['rule_assessment']=chat_rule_context(management_report(live.snapshot()),body['ad_id'])
                     except (ValueError,KeyError,TypeError,OSError):context['rule_assessment']={'status':'unavailable'}
+                    if body['ad_id'] is None:
+                        # Account-wide questions also get the over-time history, trimmed to fit.
+                        try:context['account_history']=history_chat_context(history.summary(load_rulebook()))
+                        except Exception:context['account_history']={'status':'unavailable'}
+                        for size in (10,6,3):
+                            if len(json.dumps(context,ensure_ascii=False,sort_keys=True))<=17500:break
+                            assessment=context.get('rule_assessment') or {}
+                            if isinstance(assessment.get('decisions'),list):
+                                assessment['omitted_decisions']=assessment.get('omitted_decisions',0)+max(0,len(assessment['decisions'])-size)
+                                assessment['decisions']=assessment['decisions'][:size]
                     return self.reply(200,claude_chat.submit(body['question'],body['request_id'],context))
                 if self.path in ('/api/help', '/api/help/escalate'):
                     if set(body) not in ({'question'},{'question','request_id'}) or (self.path=='/api/help' and set(body)!={'question'}):
@@ -710,6 +724,16 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         drive_flow=DriveOAuth(data,local_server.server_port)
         if start_live and workspace=='manager':
             live.start()
+            def history_loop():
+                # Read-only account history, at most once a day.
+                while not live.stop_event.is_set():
+                    # Never alongside the 5-minute report refresh: two long Meta reads at once time out.
+                    for _ in range(60):
+                        if not live.running:break
+                        live.stop_event.wait(5)
+                    history.refresh_if_stale()
+                    live.stop_event.wait(3600)
+            threading.Thread(target=history_loop,daemon=True,name='rosery-readonly-history').start()
             if start_execution_workers:
                 preparation_loop.start_worker()
                 campaign_operations.start_worker()
