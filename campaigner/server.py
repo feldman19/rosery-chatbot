@@ -371,7 +371,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except (ValueError,KeyError,OSError):return self.reply(404,{'error':'Not found'})
                 self.send_response(200);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(raw)))
                 self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw);return
-            if self.path not in ('/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
+            if self.path not in ('/api/daily-brief', '/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
                 return self.reply(404, {'error': 'Not found'})
             if not hmac.compare_digest(self.headers.get('X-Local-Session', ''), session):
                 return self.reply(403, {'error': 'Invalid local session'})
@@ -444,6 +444,12 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         except Exception:report['creative_drift']={'status':'unavailable','items':[],'unknown':[],'provider_writes':0,'live_action_allowed':False}
                     return self.reply(200,report)
                 except (ValueError,KeyError,TypeError,OSError):return self.reply(503,{'error':'דוח הניהול אינו זמין כרגע. לא בוצע שינוי בקמפיינים.'})
+            if self.path == '/api/daily-brief':
+                # Morning summary text, read-only; delivery to the phone is separate.
+                if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
+                from daily_brief import build as build_brief
+                try:return self.reply(200,{'text':build_brief(owner_action_report(),owner_actions.status()['receipts'])})
+                except Exception:return self.reply(503,{'error':'הסיכום אינו זמין כרגע.'})
             if self.path == '/api/approve-execute':
                 if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
                 return self.reply(200,owner_actions.status())
@@ -846,6 +852,16 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     history.refresh_if_stale()
                     live.stop_event.wait(3600)
             threading.Thread(target=history_loop,daemon=True,name='rosery-readonly-history').start()
+            def brief_loop():
+                # Morning-summary text for the scheduled phone notification; local file, read-only toward Meta.
+                from daily_brief import build as build_brief
+                while not live.stop_event.wait(60):
+                    try:
+                        text=build_brief(owner_action_report(),owner_actions.status()['receipts'])
+                        pending=data/'daily-brief.pending';pending.write_text(text,encoding='utf-8');pending.replace(data/'daily-brief.txt')
+                    except Exception:pass
+                    live.stop_event.wait(1800)
+            threading.Thread(target=brief_loop,daemon=True,name='rosery-daily-brief').start()
             if start_execution_workers:
                 preparation_loop.start_worker()
                 campaign_operations.start_worker()

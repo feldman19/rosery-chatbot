@@ -17,10 +17,10 @@ class StructuredVisionTests(unittest.TestCase):
         self.assertFalse(schema['properties']['proposed_adsets']['items']['additionalProperties'])
         self.assertEqual(schema['properties']['assets']['maxItems'],30)
 
-    def test_cli_flags_preserve_no_tools_and_one_turn(self):
+    def test_cli_flags_preserve_no_tools_and_bounded_turns(self):
         args=vision_cli_args('claude')
         self.assertEqual(args[args.index('--tools')+1],'')
-        self.assertEqual(args[args.index('--max-turns')+1],'1')
+        self.assertEqual(args[args.index('--max-turns')+1],'3')  # no tools; extra turns only let a schema retry finish
         self.assertIn('--safe-mode',args);self.assertIn('--no-chrome',args)
         self.assertEqual(json.loads(args[args.index('--mcp-config')+1]),{'mcpServers':{}})
         self.assertEqual(json.loads(args[args.index('--json-schema')+1]),vision_output_schema())

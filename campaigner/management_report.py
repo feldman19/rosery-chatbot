@@ -173,6 +173,13 @@ def _detail_inventory(data):
                     target[identity]={**row,'_observed_at':active['checked_at'],'_source_path':'sources.meta.data.active_ads.ads'+('.adset' if kind=='adsets' else '')}
     return sets,ads,data.get('checked_at')
 
+def _active_ad_ids(data):
+    """Ids in a verified, complete active-ad read, or None. An ad with delivery that is absent from it is not active now."""
+    active=data.get('active_ads') or {};ads=active.get('ads')
+    if active.get('verified') is not True or active.get('complete') is not True or active.get('account_id')!=ACCOUNT or not isinstance(ads,list):return None
+    if not all(isinstance(ad,dict) and isinstance(ad.get('id'),str) and ad['id'] for ad in ads):return None
+    return {ad['id'] for ad in ads}
+
 def _configuration_blockers(campaign=None,adset=None,ad=None,campaign_at=None,adset_at=None,ad_at=None):
     """Known switch settings only: no claim that ACTIVE can/will deliver."""
     blockers=[];observed={}
@@ -284,7 +291,7 @@ def _drilldown(data,rows,campaign_inventory,reg_campaigns):
     sets_inventory,ads_inventory,observed_at=_detail_inventory(data);adset_groups={};ad_groups={};missing_sets=0
     source=data.get('inventory') or {};bound_campaign=source.get('campaign') or {}
     if source.get('verified') is not True or bound_campaign.get('account_id')!=ACCOUNT:bound_campaign={}
-    account_inventory_at=(data.get('account_campaigns') or {}).get('checked_at')
+    account_inventory_at=(data.get('account_campaigns') or {}).get('checked_at');active_ids=_active_ad_ids(data)
     for row in rows:
         ad_groups.setdefault(row['ad_id'],[]).append(row)
         if isinstance(row.get('adset_id'),str) and row['adset_id']:adset_groups.setdefault(row['adset_id'],[]).append(row)
@@ -302,6 +309,9 @@ def _drilldown(data,rows,campaign_inventory,reg_campaigns):
             entry['funnel'] = _funnel(own)
             entry['inventory_observed_at'] = current.get('_observed_at') if current else None
             entry['inventory_source_path'] = current.get('_source_path')
+            if kind=='ads' and not current and active_ids is not None and identity not in active_ids:
+                # Spent in the window but missing from the complete active read: paused or stopped since.
+                entry['configured_active']=False;entry['status_note']='not_in_complete_active_inventory'
             entry['change_evidence'] = entity_update_evidence(current, identity, kind, current.get('_source_path') or 'sources.meta.data.inventory.' + kind, current.get('_observed_at'))
             if not entry['hierarchy_complete']:entry['parent_ids_observed']={'campaign_ids':parents,'adset_ids':set_ids}
             parent_set=current if kind=='adsets' else sets_inventory.get(set_id) or {}

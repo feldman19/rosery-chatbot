@@ -95,6 +95,20 @@ class CreativeLaunchTests(unittest.TestCase):
         self.assertEqual(state['state'], 'blocked')
         self.assertEqual(state['claim_issues'][0]['claim'], 'משלוח חינם')
 
+    def test_claim_problem_gets_one_fresh_attempt(self):
+        asset = self.image()
+        calls = []
+        def flaky_copy(*a, **k):
+            calls.append(1)
+            if len(calls) == 1:
+                raise CreativeClaimReviewRequired([{'asset_id': 'a', 'source_name': 'img1.png', 'field': 'headline', 'category': 'delivery', 'claim': 'משלוח חינם'}])
+            return copy(*a, **k)
+        launch = self.launch(copy=flaky_copy)
+        launch.start({'goal': 'צמידים', 'sources': [{'id': asset['id'], 'sha256': asset['sha256']}], 'consent': True, 'campaign_id': None})
+        state = self.wait(launch)
+        self.assertEqual(state['state'], 'ready_for_owner', state.get('detail'))
+        self.assertEqual(len(calls), 2)
+
     def test_restart_marks_running_job_interrupted(self):
         (self.dir / 'creative-launch.json').write_text('{"state": "analyzing", "id": "launch-x"}', encoding='utf-8')
         self.assertEqual(self.launch().status()['state'], 'interrupted')

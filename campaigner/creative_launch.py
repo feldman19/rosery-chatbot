@@ -82,10 +82,14 @@ class CreativeLaunch:
             video = analysis.get('video_review') or {}
             self._save({**job, 'state': 'writing_copy'})
             copies = {}
+            from creative_claims import CreativeClaimReviewRequired
             for source in sources:
-                copies[source['id']] = self.copy(rows[source['id']], self.rulebook(),
-                                                 transcript=(video.get(source['id']) or {}).get('transcript'),
-                                                 source_name=source.get('name'))
+                args = dict(transcript=(video.get(source['id']) or {}).get('transcript'), source_name=source.get('name'))
+                # One fresh attempt when the copy makes a claim the owner's facts do not back; a second one blocks.
+                try:
+                    copies[source['id']] = self.copy(rows[source['id']], self.rulebook(), **args)
+                except CreativeClaimReviewRequired:
+                    copies[source['id']] = self.copy(rows[source['id']], self.rulebook(), **args)
             self._save({**job, 'state': 'planning'})
             report = self.report()
             strategy = self.plan(sources, analysis['assets'], report, self.rulebook(), campaign_id=job['campaign_id'])

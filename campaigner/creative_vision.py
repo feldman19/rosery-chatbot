@@ -65,7 +65,7 @@ def vision_timeout(payload):
 
 
 def vision_cli_args(executable):
-    return [executable,'-p','--safe-mode','--no-chrome','--tools','','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--no-session-persistence','--input-format','stream-json','--output-format','stream-json','--verbose','--max-turns','1','--json-schema',json.dumps(vision_output_schema(),separators=(',',':'))]
+    return [executable,'-p','--safe-mode','--no-chrome','--tools','','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--no-session-persistence','--input-format','stream-json','--output-format','stream-json','--verbose','--max-turns','3','--json-schema',json.dumps(vision_output_schema(),separators=(',',':'))]
 
 
 def parse_structured_vision_events(events,returncode=0):
