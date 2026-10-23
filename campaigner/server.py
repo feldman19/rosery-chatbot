@@ -255,6 +255,29 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         # A proposal the owner finalized in the simple screen's upload tab comes first.
         proposal_loader=lambda: operation_proposal(creative_launch.operation_report() or launch_proposal.report(work_intake.latest())))
     preparation_loop=PreparationLoop(data,key_file.read_bytes())
+    # --- updates (Claude): the owner's runner (run_owner.py) pulls new code and restarts only when nothing is half done ---
+    active_uploads=[0];active_uploads_lock=threading.Lock()
+    def busy_reasons():
+        reasons=[]
+        try:
+            if any(r.get('state') in ('checking','inflight') for r in owner_actions._receipts()):reasons.append('שינוי שאישרת מתבצע עכשיו במטא')
+        except Exception:reasons.append('לא ידוע אם שינוי שאישרת מתבצע')
+        try:
+            if any(j.get('state') in ('running','queued') for j in campaign_operations.status().get('jobs') or []):reasons.append('העלאה למטא מתבצעת עכשיו')
+        except Exception:reasons.append('לא ידוע אם העלאה למטא מתבצעת')
+        try:
+            if creative_launch.status().get('state') in ('analyzing','writing_copy','planning'):reasons.append('הכנת הצעה מתכנים חדשים')
+        except Exception:pass
+        try:
+            if any(t.get('state')=='running' for t in claude_chat.status().get('turns') or []):reasons.append('תשובה בצ\'אט')
+        except Exception:pass
+        with active_uploads_lock:
+            if active_uploads[0]:reasons.append('קבצים עולים עכשיו למחשב')
+        return reasons
+    def update_status():
+        try:status=json.loads((data/'update-status.json').read_text(encoding='utf-8'))
+        except (OSError,ValueError):status={'state':'no_runner'}
+        return {**(status if isinstance(status,dict) else {'state':'no_runner'}),'version':screen_version(),'busy':busy_reasons(),'provider_writes':0}
     strategy_desk=StrategyDesk(data,dossier=load_rosery_dossier(),
         dossier_loader=(lambda:load_rosery_dossier(include_owner_financials=True)) if workspace=='manager' else None)
     if strategy_desk.latest() is None:
@@ -415,6 +438,15 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 page = (ROOT / template).read_text(encoding='utf-8').replace('__SESSION__', session)
                 page = page.replace('</html>', '<script>' + (ROOT / 'pilot-format.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'registration-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'review-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'connection-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'operator-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'strategy-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-proposal-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'owner-instructions.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'preparation-loop-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'task-overview.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'work-home.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'live-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'decision-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'meta-execution-panel.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'pilot-ui.js').read_text(encoding='utf-8') + '</script></html>')
                 return self.reply(200, page, 'text/html; charset=utf-8')
+            if self.path == '/api/supervisor/busy':
+                # Only the owner's runner, which started this server and handed it this secret.
+                import os
+                expected=os.environ.get('ROSERY_SUPERVISOR_TOKEN','')
+                if len(expected)<32 or not hmac.compare_digest(self.headers.get('X-Supervisor-Token',''),expected):return self.reply(403,{'error':'Runner only'})
+                return self.reply(200,{'busy':busy_reasons()})
+            if self.path == '/api/update-status':
+                if workspace!='manager' or not hmac.compare_digest(self.headers.get('X-Local-Session',''),session):return self.reply(403,{'error':'Invalid local session'})
+                return self.reply(200,update_status())
             if self.path.startswith('/api/creative-launch/video/'):
                 from http.cookies import SimpleCookie
                 cookie=SimpleCookie()
@@ -627,7 +659,10 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         return self.reply(413, {'error':'הסרטון גדול מ-300MB; בחרו קובץ קטן יותר' if video else 'התמונה גדולה מ־20MB; בחרו קובץ קטן יותר'})
                     if size <= 0:raise ValueError('Empty upload')
                     name = unquote_to_bytes(self.headers.get('X-File-Name', '')).decode('utf-8', errors='strict')
-                    asset = local_uploads.put(self.rfile, size=size, name=name, mime=mime, upload_id=self.headers.get('X-Upload-Id', ''))
+                    with active_uploads_lock:active_uploads[0]+=1
+                    try:asset = local_uploads.put(self.rfile, size=size, name=name, mime=mime, upload_id=self.headers.get('X-Upload-Id', ''))
+                    finally:
+                        with active_uploads_lock:active_uploads[0]-=1
                     return self.reply(200, {'uploaded':True, 'asset':asset, 'provider_writes':0})
                 except TimeoutError:
                     return self.reply(408, {'error':'העלאת התמונה לא הסתיימה בזמן; אפשר לנסות שוב'})
@@ -753,6 +788,13 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     try:profit_settings.save(body)
                     except ValueError as error:return self.reply(400,{'error':str(error)})
                     return self.reply(200,profit_summary())
+                if self.path == '/api/update/request':
+                    # Ask the runner to look for a new version now. It updates only when nothing is half done.
+                    if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
+                    if body!={}:raise ValueError('No fields expected')
+                    import os
+                    pending=data/'update-request.pending';pending.write_text(json.dumps({'requested_at':datetime.now(timezone.utc).isoformat()}),encoding='utf-8');os.replace(pending,data/'update-request.json')
+                    return self.reply(200,update_status())
                 if self.path == '/api/creative-drift/keep':
                     # Local note that the owner keeps this state; nothing is sent to Meta.
                     if set(body)!={'ad_id'} or not isinstance(body['ad_id'],str) or not body['ad_id'].isdigit() or len(body['ad_id'])>40:

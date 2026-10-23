@@ -257,6 +257,9 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 .steps .on::before{background:var(--grow);border-color:var(--grow)}
 .steps .on.now::before{background:var(--surface);border-color:var(--grow);border-top-color:transparent;animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.newver{position:sticky;top:0;z-index:7;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--gold-soft);border-bottom:1px solid var(--line);font-weight:700}
+.newver .btn{flex:none;min-height:44px}
+.update{display:grid;gap:4px;justify-items:center}.update p{margin:0}.update .link{justify-self:center}
 .foot{text-align:center;font-size:13px;color:var(--muted);margin-top:8px}
 .foot a{color:var(--muted)}
 .skeleton{height:120px;border-radius:var(--r);background:linear-gradient(100deg,var(--line) 30%,var(--surface-2) 50%,var(--line) 70%) 0 0/300% 100%;animation:shimmer 1.3s linear infinite}
@@ -281,6 +284,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 
 <header><div class="wrap"><span class="logo">ROSERY</span><button class="fresh" id="fresh" type="button" aria-label="רענן נתונים"><span class="dot" id="fresh-dot"></span><span id="fresh-text">טוען…</span></button></div></header>
 
+<div class="newver" id="newver" role="alert" hidden><span>יש גרסה חדשה של המסך.</span><button class="btn primary" type="button" id="newver-go">רענן עכשיו</button></div>
 <main class="wrap">
   <section data-tab="today" aria-labelledby="hello-title">
     <div class="hello"><h1 id="hello-title" tabindex="-1">שלום</h1><p id="hello-sub">בודק מה קורה בפרסום…</p></div>
@@ -366,7 +370,11 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
   </section>
 
   <p class="foot"><a href="/advanced">למסך המלא</a></p>
-  <p class="foot" id="version">__VERSION__</p>
+  <div class="foot update" id="update">
+    <p id="version">__VERSION__</p>
+    <p id="update-state" role="status"></p>
+    <button class="link" type="button" id="update-check" hidden>בדוק עדכון עכשיו</button>
+  </div>
 
 </main>
 
@@ -1066,6 +1074,20 @@ function renderLearning(){
     const a=el('div','actions');a.append(chk);card.append(a);
     box.append(card)}
 }
+// --- updates (Claude): the runner on the computer pulls new versions; the screen says so and offers a refresh ---
+const pageVersion=$('version').textContent;
+async function loadUpdate(){
+  let st;try{st=await api('/api/update-status')}catch{return}
+  if(st.version&&st.version!==pageVersion)$('newver').hidden=false;
+  const words={up_to_date:'המערכת מעודכנת.',no_runner:'עדכון אוטומטי לא פעיל: כדי לקבל עדכונים לבד, הפעל את המערכת במחשב עם START-ROSERY.bat.'};
+  $('update-state').textContent=st.message||words[st.state]||'';
+  $('update-check').hidden=st.state==='no_runner';
+}
+$('newver-go').onclick=()=>location.reload();
+$('update-check').onclick=async()=>{const b=$('update-check');b.disabled=true;b.textContent='בודק…';
+  try{await api('/api/update/request',{});toast('בודק עדכון. אם יש גרסה חדשה, היא תותקן כשאין פעולה באמצע, ותופיע כאן הודעה.');setTimeout(loadUpdate,20000)}
+  catch(e){toast(e.message)}finally{b.disabled=false;b.textContent='בדוק עדכון עכשיו'}};
+setInterval(loadUpdate,60000);
 async function load(refresh){
   if(refresh){$('fresh-text').textContent='מרענן…';try{await api('/api/live/refresh',{})}catch{}}
   try{report=await api('/api/management-report')}catch(e){$('hello-sub').textContent=e.message;$('todo').replaceChildren();return}
@@ -1074,6 +1096,7 @@ async function load(refresh){
   await loadShadow(); // auto-mode-shadow refresh
   await loadLearning();
   renderHeader();renderPeriod();renderHero();renderDrift();renderToday();renderAds();
+  loadUpdate();
   loadProfit();
 }
 // BEGIN auto-mode-shadow

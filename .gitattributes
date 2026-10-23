@@ -1,3 +1,5 @@
 # Rule sources are hash-bound (rulebook.py); keep exact bytes on every OS.
 campaigner/rules/*.md text eol=lf
 campaigner/rules/*.json text eol=lf
+# Windows launcher: keep CRLF so cmd.exe reads it as written.
+*.bat text eol=crlf
