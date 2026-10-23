@@ -192,7 +192,7 @@ class CampaignTransport:
         # Identity comes from the persisted account upload receipt.
         try:result=self.read(token,identity,'id,status')
         except ProviderRejected as error:
-            if error.details.get('code')==100 and error.details.get('error_subcode')==33:return {'pending':True}
+            if error.details.get('code')==100 and error.details.get('error_subcode')==33:return {'pending':True,'not_found':True}
             raise
         if not result:return {'pending':True}
         return dict(result,account_id=ACCOUNT)

@@ -54,7 +54,7 @@ def validate_proposal_v2(obj):
         recipe=obj['creation_recipe']
         _closed(recipe,'adset_fields creative_fields optimization_type','creation_recipe')
         if not isinstance(recipe['adset_fields'],dict) or set(recipe['adset_fields'])-{'is_dynamic_creative','destination_type','bid_strategy'}:raise ValueError('creation_recipe: unsupported adset fields')
-        if not isinstance(recipe['creative_fields'],dict) or set(recipe['creative_fields'])-{'degrees_of_freedom_spec'}:raise ValueError('creation_recipe: unsupported creative fields')
+        if not isinstance(recipe['creative_fields'],dict) or set(recipe['creative_fields'])!={'degrees_of_freedom_spec'}:raise ValueError('creation_recipe: unsupported creative fields')
         if 'is_dynamic_creative' in recipe['adset_fields'] and type(recipe['adset_fields']['is_dynamic_creative']) is not bool:raise ValueError('creation_recipe: dynamic flag must be boolean')
         for field,allowed in (('destination_type',('WEBSITE',)),('bid_strategy',('LOWEST_COST_WITHOUT_CAP',))):
             if field in recipe['adset_fields'] and recipe['adset_fields'][field] not in allowed:raise ValueError('creation_recipe: unsupported '+field)
@@ -64,6 +64,7 @@ def validate_proposal_v2(obj):
             _closed(spec,'creative_features_spec','degrees_of_freedom_spec')
             features=spec['creative_features_spec']
             if not isinstance(features,dict):raise ValueError('creation_recipe: features must be object')
+            if features.get('standard_enhancements')!={'enroll_status':'OPT_OUT'} or features.get('inline_comment')!={'enroll_status':'OPT_IN'}:raise ValueError('creation_recipe: standard enhancements must opt out and inline comments must opt in')
             for feature,setting in features.items():
                 if not isinstance(feature,str) or not feature:raise ValueError('creation_recipe: invalid feature')
                 _closed(setting,'enroll_status','creative feature')

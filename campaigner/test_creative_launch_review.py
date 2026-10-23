@@ -14,7 +14,7 @@ class ReviewTests(fixtures.V2ExecutionTests):
         self.assertIn('Explicit creation_recipe',self.preview()['blocked_reasons'][0])
 
     def test_recipe_is_manifest_bound_and_sent(self):
-        self.proposal['creation_recipe']={'adset_fields':{'is_dynamic_creative':True,'destination_type':'WEBSITE','bid_strategy':'LOWEST_COST_WITHOUT_CAP'},'creative_fields':{},'optimization_type':'DEGREES_OF_FREEDOM'}
+        self.proposal['creation_recipe']={'adset_fields':{'is_dynamic_creative':True,'destination_type':'WEBSITE','bid_strategy':'LOWEST_COST_WITHOUT_CAP'},'creative_fields':{'degrees_of_freedom_spec':{'creative_features_spec':{'standard_enhancements':{'enroll_status':'OPT_OUT'},'inline_comment':{'enroll_status':'OPT_IN'}}}},'optimization_type':'DEGREES_OF_FREEDOM'}
         operation=self.preview()
         self.assertFalse(operation['blocked_reasons'])
         result=self.execute(operation)
@@ -99,11 +99,61 @@ class ReviewTests(fixtures.V2ExecutionTests):
         self.service.abandon_unknown_video(blocked_job['operation_id'],blocked_job['digest'],blocked_step['key'],True)
         job=self.service._get(operation['operation_id'])
         step=next(s for s in job['steps'] if s['kind']=='video')
+        self.service.reconcile(job['operation_id'],job['digest'])
         self.service.abandon_unknown_video(job['operation_id'],job['digest'],step['key'],True)
         self.proposal['request_revision']+=1
         self.provider.video_status='ready'
         self.assertEqual(self.execute(self.preview())['state'],'verified')
         self.assertEqual(sum(edge=='video' for edge,p in self.provider.writes),2)
+
+    def test_saved_video_abandon_requires_reconciled_failure(self):
+        for status in ('ready','processing','unavailable','error','not_found'):
+            with self.subTest(status=status):
+                operation=self.preview()
+                with patch.object(self.provider,'video_info',side_effect=ProviderRejected()):
+                    self.assertEqual(self.execute(operation)['state'],'unknown')
+                job=self.service._get(operation['operation_id'])
+                step=next(s for s in job['steps'] if s['kind']=='video')
+                with self.assertRaises(OperationBlocked):
+                    self.service.abandon_unknown_video(job['operation_id'],job['digest'],step['key'],True)
+                read={'id':step['provider_id'],'account_id':fixtures.ACCOUNT,'status':{'video_status':status}}
+                if status=='not_found':read={'pending':True,'not_found':True}
+                with patch.object(self.provider,'video_info',return_value=read) as poll:
+                    if status=='unavailable':poll.side_effect=ProviderRejected()
+                    self.service.reconcile(job['operation_id'],job['digest'])
+                if status in ('error','not_found'):
+                    self.service.abandon_unknown_video(job['operation_id'],job['digest'],step['key'],True)
+                    self.assertEqual(next(s for s in self.service._get(job['operation_id'])['steps'] if s['key']==step['key'])['state'],'abandoned')
+                else:
+                    with self.assertRaises(OperationBlocked):
+                        self.service.abandon_unknown_video(job['operation_id'],job['digest'],step['key'],True)
+                with self.service.db() as db:db.execute('DELETE FROM operations')
+                self.proposal['request_revision']+=1
+
+    def test_created_objects_readback_rejection_stays_reconcilable(self):
+        original=self.service._verify_created
+        for kind in ('adsets','adcreatives','ads'):
+            with self.subTest(kind=kind):
+                operation=self.preview()
+                def verify(token,step,job,params,identity):
+                    if step['kind']==kind:raise ProviderRejected()
+                    return original(token,step,job,params,identity)
+                with patch.object(self.service,'_verify_created',side_effect=verify):
+                    self.assertEqual(self.execute(operation)['state'],'unknown')
+                job=self.service._get(operation['operation_id'])
+                step=next(s for s in job['steps'] if s['kind']==kind and s.get('provider_id'))
+                self.assertEqual(step['state'],'unknown')
+                writes=list(self.provider.writes)
+                recovered=self.service.reconcile(job['operation_id'],job['digest'])
+                self.assertEqual(next(s for s in recovered['job']['steps'] if s['key']==step['key'])['state'],'verified')
+                self.assertEqual(self.provider.writes,writes)
+                with self.service.db() as db:db.execute('DELETE FROM operations')
+                self.proposal['request_revision']+=1
+
+    def test_degrees_spec_and_explicit_default_opt_out_required(self):
+        for fields in ({},{'degrees_of_freedom_spec':{'creative_features_spec':{}}}):
+            self.proposal['creation_recipe']['creative_fields']=fields
+            self.assertTrue(self.preview()['blocked_reasons'])
 
     def test_v1_list_mismatch_remains_exact(self):
         actual={'videos':[{'video_id':'123456','extra':True}]}
@@ -186,7 +236,7 @@ class ReviewTests(fixtures.V2ExecutionTests):
         with self.assertRaises(OperationBlocked):self.service.abandon_unknown_video(job['operation_id'],job['digest'],step['key'],False)
 
     def test_recipe_degrees_fields_readback_requested(self):
-        self.proposal['creation_recipe']['creative_fields']={'degrees_of_freedom_spec':{'creative_features_spec':{}}}
+        self.proposal['creation_recipe']['creative_fields']={'degrees_of_freedom_spec':{'creative_features_spec':{'standard_enhancements':{'enroll_status':'OPT_OUT'},'inline_comment':{'enroll_status':'OPT_IN'}}}}
         with patch.object(self.provider,'read',wraps=self.provider.read) as read:
             self.assertEqual(self.execute(self.preview())['state'],'verified')
         self.assertTrue(any('degrees_of_freedom_spec' in call.args[2] for call in read.call_args_list))

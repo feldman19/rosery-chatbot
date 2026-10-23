@@ -837,6 +837,7 @@ class CampaignOperations:
             if owner_confirmation is not True or not isinstance(digest_value,str) or not hmac.compare_digest(job['digest'],digest_value) or digest(job['manifest'])!=job['digest']:raise OperationBlocked('Exact owner waiver required')
             step=next((s for s in job['steps'] if s['key']==step_key),None)
             if job['state'] not in ('unknown','partial') or job.get('approval_status')!='consumed' or not step or step['kind']!='video' or step['state']!='unknown':raise OperationBlocked('Only unknown video can be abandoned')
+            if step.get('provider_id') and step.get('abandon_evidence',{}).get('provider_id')!=step['provider_id']:raise OperationBlocked('Reconcile must confirm video error or not found before abandon')
             step['state']='abandoned';step['owner_waiver']={'confirmed_at':self._now().isoformat(),'remote_orphan_possible':True}
             self._save(db,job)
             return self._response(job)
@@ -893,7 +894,10 @@ class CampaignOperations:
                             identity=step.get('provider_id')
                             if not isinstance(identity,str) or not ID.fullmatch(identity):raise OperationBlocked('Saved video identity missing')
                             verification_started=True
+                            step.pop('abandon_evidence',None)
                             read=self.transport.video_info(token,identity)
+                            if read.get('not_found') is True or (read.get('id')==identity and read.get('account_id')==ACCOUNT and (read.get('status') or {}).get('video_status')=='error'):
+                                step['abandon_evidence']={'provider_id':identity,'checked_at':self._now().isoformat(),'status':'not_found' if read.get('not_found') is True else 'error'}
                             if read.get('id')!=identity or read.get('account_id')!=ACCOUNT or (read.get('status') or {}).get('video_status')!='ready':raise OperationBlocked('Video not ready or wrong account')
                             result={'id':identity,'source_sha256':params['sha256'],'processing_status':'ready'}
                         elif step['kind'] in ('adsets','adcreatives','ads'):
@@ -992,9 +996,9 @@ class CampaignOperations:
                     try:step['result']=self._perform(token,step,job);step['state']='verified';self._put(job)
                     except DispatchStopped:step['state']='pending';raise
                     except ProviderRejected:
-                        if step['kind']=='video' and step.get('provider_id'):
+                        if step.get('provider_id'):
                             step['state']='unknown'
-                            raise OperationBlocked('Video status unavailable; reconcile saved identity') from None
+                            raise OperationBlocked('Provider status unavailable; reconcile saved identity') from None
                         step['state']='rejected';raise
                     except Exception:step['state']='unknown';raise
                 job['state']='verified';job['reason']=('All created API objects read back; creation remains PAUSED. Delivery and UI editability are not verified.' if job['action']=='prepare_launch' else 'Requested mutation fields read back. Delivery and downstream business effects are not verified.')
