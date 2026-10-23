@@ -50,6 +50,12 @@ def conversation_scope(context):
         window={'kind':'snapshot','value':checked}
     return {'account_id':account,'entity':entity,'window':window}
 
+KINDS=('מודעה מסוימת','תכנון קמפיין','מה עובד לי','שאלה כללית')
+
+def thread_title(question):
+    text=' '.join(question.split())
+    return text if len(text)<=40 else (text[:41].rsplit(' ',1)[0] if ' ' in text[:41] else text[:40])
+
 class ClaudeChat:
     def __init__(self,directory,runner=None):
         self.directory=Path(directory);self.path=self.directory/'claude-chat.sqlite3'
@@ -57,6 +63,16 @@ class ClaudeChat:
         self.auth_checked=0;self.auth_ok=False
         with self.db() as db:
             db.execute('CREATE TABLE IF NOT EXISTS turns(id TEXT PRIMARY KEY,question TEXT NOT NULL,context TEXT NOT NULL,state TEXT NOT NULL,answer TEXT,error TEXT,created_at TEXT NOT NULL)')
+            db.execute('CREATE TABLE IF NOT EXISTS threads(id TEXT PRIMARY KEY,title TEXT NOT NULL,kind TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,archived INTEGER NOT NULL DEFAULT 0,ad_id TEXT)')
+            if 'thread_id' not in [r[1] for r in db.execute('PRAGMA table_info(turns)')]:
+                db.execute('ALTER TABLE turns ADD COLUMN thread_id TEXT REFERENCES threads(id)')
+            if db.execute('SELECT 1 FROM turns WHERE thread_id IS NULL LIMIT 1').fetchone():
+                now=datetime.now(timezone.utc).isoformat();legacy=str(uuid.uuid4())
+                db.execute('INSERT INTO threads VALUES(?,?,?,?,?,?,?)',(legacy,'שיחות קודמות',KINDS[3],now,now,0,None))
+                db.execute('UPDATE turns SET thread_id=? WHERE thread_id IS NULL',(legacy,))
+            if 'answered_at' not in [r[1] for r in db.execute('PRAGMA table_info(turns)')]:
+                db.execute('ALTER TABLE turns ADD COLUMN answered_at TEXT')
+            db.execute('CREATE INDEX IF NOT EXISTS turns_thread ON turns(thread_id,created_at)')
             db.execute("UPDATE turns SET state='interrupted',error='התהליך הופסק. לא בוצע שינוי בקמפיינים.' WHERE state='running'")
     @contextmanager
     def db(self):
@@ -73,12 +89,58 @@ class ClaudeChat:
         with self.db() as db:
             db.row_factory=sqlite3.Row;rows=[dict(r) for r in db.execute('SELECT * FROM turns ORDER BY created_at DESC LIMIT 30')][::-1]
         return {'authenticated':self.auth_ok,'mode':'owner_local_cli','read_only':True,'tools_enabled':False,'turns':rows,'remote_available':False,'sharing_approved':self.sharing_approved()}
+    def thread(self,identity):
+        if not isinstance(identity,str) or not identity:raise ValueError('נדרש מזהה שיחה')
+        with self.db() as db:
+            db.row_factory=sqlite3.Row
+            row=db.execute('SELECT * FROM threads WHERE id=?',(identity,)).fetchone()
+        if row is None:raise ValueError('השיחה לא נמצאה')
+        return dict(row)
+    def create_thread(self,kind=None,ad_id=None,question=''):
+        if not isinstance(question,str) or len(question)>1000:raise ValueError('שאלה לא תקינה')
+        from assistant import _clean
+        question=_clean(question) if question else ''
+        if kind is None:
+            kind=KINDS[0] if ad_id else KINDS[1] if 'קמפיין' in question else KINDS[2] if any(x in question for x in ('עובד','עבד','לאורך זמן','משתלמת')) else KINDS[3]
+        if kind not in KINDS or (kind==KINDS[0] and (not isinstance(ad_id,str) or not ad_id.strip())) or (kind!=KINDS[0] and ad_id is not None):raise ValueError('בחר סוג שיחה ומזהה מודעה מתאים')
+        identity=str(uuid.uuid4());now=datetime.now(timezone.utc).isoformat()
+        with self.db() as db:db.execute('INSERT INTO threads VALUES(?,?,?,?,?,?,?)',(identity,thread_title(question) or 'שיחה חדשה',kind,now,now,0,ad_id))
+        return self.thread(identity)
+    def list_threads(self,search='',archived=False):
+        if not isinstance(search,str) or len(search)>1000 or not isinstance(archived,bool):raise ValueError('חיפוש לא תקין')
+        with self.db() as db:
+            db.row_factory=sqlite3.Row
+            rows=db.execute("""SELECT t.*,
+                (SELECT answer FROM turns WHERE thread_id=t.id ORDER BY created_at DESC,rowid DESC LIMIT 1) AS preview,
+                (SELECT MAX(answered_at) FROM turns WHERE thread_id=t.id AND state='answered') AS last_answer_at
+                FROM threads t WHERE archived=? AND (instr(lower(title),lower(?))>0 OR EXISTS
+                (SELECT 1 FROM turns WHERE thread_id=t.id AND instr(lower(question),lower(?))>0))
+                ORDER BY updated_at DESC,t.rowid DESC""",(int(archived),search,search)).fetchall()
+        return [dict(r) for r in rows]
+    def update_thread(self,identity,title=None,archived=None):
+        self.thread(identity)
+        if title is not None and (not isinstance(title,str) or not title.strip() or len(title)>120):raise ValueError('כותרת לא תקינה')
+        if archived is not None and not isinstance(archived,bool):raise ValueError('מצב ארכיון לא תקין')
+        with self.db() as db:
+            if title is not None:db.execute('UPDATE threads SET title=? WHERE id=?',(title.strip(),identity))
+            if archived is not None:db.execute('UPDATE threads SET archived=? WHERE id=?',(int(archived),identity))
+        return self.thread(identity)
+    def thread_status(self,identity):
+        thread=self.thread(identity);status=self.status()
+        with self.db() as db:
+            db.row_factory=sqlite3.Row
+            status['turns']=[dict(r) for r in db.execute('SELECT * FROM turns WHERE thread_id=? ORDER BY created_at,rowid',(identity,))]
+        return {**status,'thread':thread}
+    def resolve_thread(self,identity=None,ad_id=None,question=''):
+        if identity is not None:return self.thread(identity)
+        rows=self.list_threads()
+        return rows[0] if rows else self.create_thread(ad_id=ad_id,question=question)
     def sharing_approved(self):
         try:
             value=json.loads((self.directory/'claude-chat-sharing.json').read_text(encoding='utf-8'))
             return value.get('approved') is True and value.get('scope')=='owner_advisory_ad_metadata'
         except (OSError,ValueError):return False
-    def submit(self,question,request_id,context):
+    def submit(self,question,request_id,context,thread_id=None):
         if self.runner==self._run and not self.sharing_approved():raise ValueError('נדרש אישור שיתוף נתוני מודעה עם Anthropic')
         if not isinstance(question,str) or not 3<=len(question.strip())<=1000:raise ValueError('כתוב שאלה עד 1000 תווים')
         from assistant import _clean
@@ -86,17 +148,22 @@ class ClaudeChat:
         # Entity IDs belong only to host-built context, not the question body.
         question=_clean(question)
         identity=str(uuid.UUID(request_id))
+        thread=self.resolve_thread(thread_id,(context.get('selected_ad') or {}).get('id'),question)
+        if thread['archived']:raise ValueError('יש להחזיר את השיחה מהארכיון לפני שליחה')
+        if thread['ad_id'] != ((context.get('selected_ad') or {}).get('id')):raise ValueError('המודעה אינה תואמת לשיחה')
         raw=json.dumps(context,ensure_ascii=False,sort_keys=True)
         if len(raw)>18000:raise ValueError('ההקשר ארוך מדי')
         with self.lock:
             with self.db() as db:
-                prior=db.execute('SELECT question,context,state FROM turns WHERE id=?',(identity,)).fetchone()
+                prior=db.execute('SELECT question,context,state,thread_id FROM turns WHERE id=?',(identity,)).fetchone()
                 if prior:
-                    if prior[0]!=question or prior[1]!=raw:raise ValueError('מזהה השיחה כבר משויך לבקשה אחרת')
+                    if prior[0]!=question or prior[1]!=raw or prior[3]!=thread['id']:raise ValueError('מזהה השיחה כבר משויך לבקשה אחרת')
                     return {'id':identity,'state':prior[2],'replayed':True}
                 if self.active:raise ValueError('Claude כבר מטפל בשאלה. המתן לתשובה.')
                 if not self.status()['authenticated']:raise ValueError('נדרשת התחברות Claude Code במחשב')
-                db.execute('INSERT INTO turns VALUES(?,?,?,?,?,?,?)',(identity,question,raw,'running',None,None,datetime.now(timezone.utc).isoformat()))
+                now=datetime.now(timezone.utc).isoformat()
+                db.execute('INSERT INTO turns(id,question,context,state,created_at,thread_id) VALUES(?,?,?,?,?,?)',(identity,question,raw,'running',now,thread['id']))
+                db.execute('UPDATE threads SET updated_at=?,title=CASE WHEN title=? THEN ? ELSE title END WHERE id=?',(now,'שיחה חדשה',thread_title(question),thread['id']))
             self.active=identity
             threading.Thread(target=self._complete,args=(identity,question,context),daemon=True).start()
         return {'id':identity,'state':'running'}
@@ -104,7 +171,7 @@ class ClaudeChat:
         try:
             scope=conversation_scope(context);previous=[]
             with self.db() as db:
-                candidates=db.execute("SELECT question,answer,context FROM turns WHERE state='answered' AND id!=? ORDER BY created_at DESC LIMIT 200",(identity,)).fetchall()
+                candidates=db.execute("SELECT question,answer,context FROM turns WHERE state='answered' AND id!=? AND thread_id=(SELECT thread_id FROM turns WHERE id=?) ORDER BY created_at DESC,rowid DESC LIMIT 200",(identity,identity)).fetchall()
             if scope is not None:
                 for old_question,answer,raw_context in candidates:
                     try:old_context=json.loads(raw_context)
@@ -117,10 +184,11 @@ class ClaudeChat:
             prompt='ענה בעברית פשוטה. אל תציין שמות שדות פנימיים כגון rule_assessment, baseline_roas או enough_data; הסבר את משמעותם בעברית. לשאלות על אתמול או 3 ימים השתמש ב-account_metrics, ציין תקופה מדויקת והבחן בין הכנסה מיוחסת במטא למכירות החנות. נתון חסר אינו אפס. '+prompt
             answer=self.runner(prompt)
             if not isinstance(answer,str) or not answer.strip() or len(answer)>30000:raise ValueError('Invalid response')
-            with self.db() as db:db.execute("UPDATE turns SET state='answered',answer=? WHERE id=? AND state='running'",(answer,identity))
+            with self.db() as db:db.execute("UPDATE turns SET state='answered',answer=?,answered_at=? WHERE id=? AND state='running'",(answer,datetime.now(timezone.utc).isoformat(),identity))
         except Exception:
             with self.db() as db:db.execute("UPDATE turns SET state='failed',error=? WHERE id=? AND state='running'",('Claude לא החזיר תשובה תקינה. לא בוצעה פעולה; אין ניסיון חוזר אוטומטי.',identity))
         finally:
+            with self.db() as db:db.execute('UPDATE threads SET updated_at=? WHERE id=(SELECT thread_id FROM turns WHERE id=?)',(datetime.now(timezone.utc).isoformat(),identity))
             with self.lock:self.active=None
     def _run(self,prompt):
         exe=shutil.which('claude');env=subscription_environment()
