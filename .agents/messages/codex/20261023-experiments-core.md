@@ -1,0 +1,9 @@
+Build step 1 of the experiment engine described in `.agents/design/experiments.md` (read it first). New files only: `campaigner/experiments.py` and `campaigner/test_experiments.py`. Do not touch `server.py`, `simple-web.html` or rules (another task is editing the first two). No Meta calls at all in this step. Do not commit; Hebrew report at the end; owner-facing strings in Hebrew.
+
+- Plan model: question (Hebrew), variable, arms A/B (label, creative kind, asset ids), daily budget per arm (minor units), min/max days (7/21 default), start date; total cost; "what it will not prove" text.
+- State machine: planned → prepared → running → decided | inconclusive | interrupted | stopped_for_harm; illegal transitions refused; any edit to a running arm → interrupted.
+- Decision: Poisson rate of purchases per ₪ per arm with Gamma(0.5, small) prior; P(B>A) by exact Beta relation or Monte Carlo with a fixed seed (deterministic output); 90% interval of the lift. Verdict only when each arm has ≥ ₪600 spend and ≥ 5 purchases and P ≥ 0.95 or ≤ 0.05; max days reached otherwise → inconclusive with the interval; early harm stop as in the design. Missing daily data = unknown (no decision), never zero; every arm must have the same covered days.
+- Candidate ranking: input = open hypotheses + account-history trait groups (`account_history.py` output shape) + owner ideas; output = up to 3 proposals with a Hebrew "why", estimated cost to reach the evidence bar (from the account's CPA), and a refusal reason when creatives are missing for an arm (needs 5 ads per arm under the 5–8 rule).
+- Tests with synthetic data: clear winner decided; equal arms stay inconclusive at max days; too few purchases never decides; harm stop; missing day blocks; determinism (same input → same output); ranking refuses an unfillable arm.
+
+Run `cd campaigner && python -B -m unittest test_experiments` and the full suite; report counts (baseline here 6 failures, 19 errors).
