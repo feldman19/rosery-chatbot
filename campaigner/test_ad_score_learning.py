@@ -49,22 +49,29 @@ class ShadowTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def test_disagreement_is_judged_on_the_next_eleven_days(self):
+    def test_judged_when_follow_up_spend_reaches_600_but_never_before_7_days(self):
         strong_funnel = ad(7, 250, 1, 250, 20, 12)  # raw ROAS 1.0 but a strong funnel
         self.shadow.record(report('2026-10-01', [strong_funnel], {'1007': 'PAUSE'}))
-        for n in range(2, 13):
-            self.shadow.record(report(f'2026-10-{n:02d}', [], {}, [ad(7, 50, 1, 200, 3, 2)]))
-        result = self.shadow.summary(date(2026, 10, 20))
-        stop = [j for j in result['judged'] if j['topic'] == 'stop']
-        self.assertEqual(len(stop), 1)
-        self.assertEqual(stop[0]['follow_roas'], 4.0)
-        self.assertEqual(stop[0]['outcome'], 'score_right')
+        for n in range(2, 12):  # ₪200 a day: ₪600 after 3 days, but judged only after the 7th
+            self.shadow.record(report(f'2026-10-{n:02d}', [], {}, [ad(7, 200, 2, 800, 3, 2)]))
+        self.assertEqual(self.shadow.summary(date(2026, 10, 6))['judged'], [])  # 4 days: too early
+        stop = [j for j in self.shadow.summary(date(2026, 10, 20))['judged'] if j['topic'] == 'stop']
+        self.assertEqual((len(stop), stop[0]['follow_days'], stop[0]['follow_spend']), (1, 7, 1400))
+        self.assertEqual((stop[0]['follow_roas'], stop[0]['outcome']), (4.0, 'score_right'))
+
+    def test_slow_ad_waits_for_600_and_gives_up_after_21_days(self):
+        self.shadow.record(report('2026-10-01', [ad(12, 250, 1, 250, 20, 12)], {'1012': 'PAUSE'}))
+        for n in range(2, 23):  # ₪20 a day never reaches ₪600
+            self.shadow.record(report(f'2026-10-{n:02d}', [], {}, [ad(12, 20, 0, 0, 1, 0)]))
+        self.assertEqual(self.shadow.summary(date(2026, 10, 15))['judged'], [])  # still waiting
+        result = self.shadow.summary(date(2026, 10, 30))
+        self.assertEqual((result['not_judgeable'], result['score_right'] + result['rules_right']), (1, 0))
 
     def test_paused_ad_without_follow_up_is_not_judged(self):
         self.shadow.record(report('2026-10-01', [ad(8, 250, 1, 250, 20, 12)], {'1008': 'PAUSE'}))
-        for n in range(2, 13):  # the account's days were read; the paused ad simply had no delivery
+        for n in range(2, 23):  # the account's days were read; the paused ad simply had no delivery
             self.shadow.record(report(f'2026-10-{n:02d}', [], {}, []))
-        result = self.shadow.summary(date(2026, 10, 20))
+        result = self.shadow.summary(date(2026, 10, 30))
         self.assertEqual(result['not_judgeable'], 1)
         self.assertEqual(result['score_right'] + result['rules_right'], 0)
 
@@ -79,7 +86,7 @@ class ShadowTests(unittest.TestCase):
         hot = ad(10, 450, 6, 2700, 40, 25)  # the score may call it a winner while the rules say pause
         self.shadow.record(report('2026-10-01', [hot], {'1010': 'PAUSE'}))
         for n in range(2, 13):
-            self.shadow.record(report(f'2026-10-{n:02d}', [], {}, [ad(10, 50, 1, 200, 3, 2)]))
+            self.shadow.record(report(f'2026-10-{n:02d}', [], {}, [ad(10, 100, 1, 400, 3, 2)]))
         judged = self.shadow.summary(date(2026, 10, 20))['judged']
         self.assertEqual(len([j for j in judged if j['ad_id'] == '1010']), 1)
 

@@ -2,9 +2,11 @@
 
 Never changes a decision or writes to Meta. Each refresh stores, per ad, the rule engine's action and the
 score's verdict on the same complete 3-day window, plus yesterday's results. A disagreement about stopping
-or scaling is judged on the next 11 full days (days 4–14 of the spec): later ROAS below 2.6 means
-"stop" was right, 3 or more means "scale" was right. An ad with under ₪100 in those days (often because
-it was paused) cannot be judged and is counted apart: that is the survivor bias the backtest had too.
+or scaling is judged once the ad has spent ₪600 after it (about 3 purchases at the account's CPA), but
+never on fewer than 7 days, so each case holds a whole week with its weak Friday and Saturday (owner,
+2026-10-23). Later ROAS below 2.6 means "stop" was right, 3 or more means "scale" was right. An ad that
+does not reach ₪600 within 21 days (often because it was paused) cannot be judged and is counted apart:
+that is the survivor bias the backtest had too.
 """
 from contextlib import contextmanager
 from datetime import date, timedelta
@@ -13,8 +15,8 @@ import sqlite3
 
 import ad_score
 
-FOLLOW_DAYS = 11
-MIN_FOLLOW_SPEND = 100
+FOLLOW_SPEND = 600
+MIN_FOLLOW_DAYS, MAX_FOLLOW_DAYS = 7, 21
 STOP_RIGHT_BELOW, SCALE_RIGHT_FROM = 2.6, 3.0
 STOP_SIDE = {'rules': {'PAUSE'}, 'score': {'kill'}}
 SCALE_SIDE = {'rules': {'SCALE'}, 'score': {'winner'}}
@@ -69,16 +71,31 @@ class ScoreShadow:
                                    (row['id'], w1['until'], m['spend'], m['revenue'] or 0.0, m['purchases']))
         return count
 
-    def _follow(self, db, ad, day):
-        start, end = (date.fromisoformat(day) + timedelta(days=n) for n in (1, FOLLOW_DAYS))
-        rows = db.execute('SELECT spend, revenue, day FROM daily WHERE ad_id=? AND day BETWEEN ? AND ?',
-                          (ad, start.isoformat(), end.isoformat())).fetchall()
-        covered = db.execute('SELECT COUNT(*) FROM covered WHERE day BETWEEN ? AND ?', (start.isoformat(), end.isoformat())).fetchone()[0]
-        return sum(r[0] for r in rows), sum(r[1] for r in rows), covered
+    def _follow(self, db, ad, day, today):
+        """(state, spend, revenue, days): judged after ≥7 covered days once spend reaches ₪600; a day not read
+        before that point leaves it incomplete; 21 covered days without ₪600 → not judgeable; else pending."""
+        first = date.fromisoformat(day) + timedelta(days=1)
+        last = (first + timedelta(days=MAX_FOLLOW_DAYS - 1)).isoformat()
+        rows = {d: (s, r) for s, r, d in db.execute('SELECT spend, revenue, day FROM daily WHERE ad_id=? AND day BETWEEN ? AND ?',
+                                                     (ad, first.isoformat(), last)).fetchall()}
+        covered = {r[0] for r in db.execute('SELECT day FROM covered WHERE day BETWEEN ? AND ?', (first.isoformat(), last)).fetchall()}
+        spend = revenue = 0.0
+        for n in range(MAX_FOLLOW_DAYS):
+            current = (first + timedelta(days=n)).isoformat()
+            if current >= today.isoformat():
+                return 'pending', spend, revenue, n
+            if current not in covered:
+                return 'incomplete', spend, revenue, n  # days not read stay unknown, never zero
+            s, r = rows.get(current, (0.0, 0.0))
+            spend += s
+            revenue += r
+            if n + 1 >= MIN_FOLLOW_DAYS and spend >= FOLLOW_SPEND:
+                return 'judged', spend, revenue, n + 1
+        return 'not_judgeable', spend, revenue, MAX_FOLLOW_DAYS
 
     def judge(self, today):
-        """Every disagreement about stopping or scaling whose 11 follow-up days are over."""
-        cutoff = (today - timedelta(days=FOLLOW_DAYS + 1)).isoformat()
+        """Every disagreement about stopping or scaling whose follow-up has ended (judged or not judgeable)."""
+        cutoff = (today - timedelta(days=MIN_FOLLOW_DAYS + 1)).isoformat()
         judged = []
         with self._db() as db:
             for ad, day, raw in db.execute('SELECT ad_id, day, payload FROM calls WHERE day <= ? ORDER BY day', (cutoff,)).fetchall():
@@ -88,12 +105,12 @@ class ScoreShadow:
                     says_rules, says_score = rules in side['rules'], verdict in side['score']
                     if says_rules == says_score:
                         continue
-                    spend, revenue, days = self._follow(db, ad, day)
+                    state, spend, revenue, days = self._follow(db, ad, day, today)
                     item = {'ad_id': ad, 'name': call['name'], 'day': day, 'topic': topic, 'rules': rules, 'score_verdict': verdict,
-                            'follow_spend': round(spend, 2), 'follow_days_covered': days}
-                    if days < FOLLOW_DAYS:
-                        item['outcome'] = 'incomplete_follow_up'  # days not read stay unknown, never zero
-                    elif spend < MIN_FOLLOW_SPEND:
+                            'follow_spend': round(spend, 2), 'follow_days': days}
+                    if state in ('pending', 'incomplete'):
+                        item['outcome'] = 'incomplete_follow_up'
+                    elif state == 'not_judgeable':
                         item['outcome'] = 'not_judgeable'
                     else:
                         item['follow_roas'] = round(revenue / spend, 3)
