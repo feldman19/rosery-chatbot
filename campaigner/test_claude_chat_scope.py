@@ -7,9 +7,10 @@ class ChatScopeTests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory(dir=Path(__file__).parent);self.addCleanup(self.tmp.cleanup)
   self.prompts=[];self.chat=ClaudeChat(self.tmp.name,runner=lambda prompt:self.prompts.append(prompt) or 'local answer')
+  self.thread=self.chat.create_thread()
   self.context={'account_id':'123','checked_at':'2026-10-21T09:00:00Z','selected_ad':{'id':'ad_a'},'report_window':{'since':'2026-10-14','until':'2026-10-20'}}
  def seed(self,identity,context,question='previous',state='answered'):
-  with self.chat.db() as db:db.execute('INSERT INTO turns VALUES(?,?,?,?,?,?,?)',(identity,question,json.dumps(context),state,'answer-'+identity,None,'2026-10-21T09:00:'+identity.zfill(2)+'Z'))
+  with self.chat.db() as db:db.execute('INSERT INTO turns(id,question,context,state,answer,error,created_at,thread_id) VALUES(?,?,?,?,?,?,?,?)',(identity,question,json.dumps(context),state,'answer-'+identity,None,'2026-10-21T09:00:'+identity.zfill(2)+'Z',self.thread['id']))
  def complete(self,context):
   self.seed('99',context,state='running');self.chat._complete('99','current question',context)
   return json.loads(self.prompts[-1].split('\n',1)[1])

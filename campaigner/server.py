@@ -709,9 +709,28 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     if set(body) != {'id', 'payload', 'expected_revision'}:
                         raise ValueError('Invalid resubmission')
                     return self.reply(200, tasks.resubmit(body['id'], body['payload'], body['expected_revision']))
+                # BEGIN chat-threads: uses the existing session/origin gate.
+                if self.path in ('/api/claude-chat/threads','/api/claude-chat/thread','/api/claude-chat/create','/api/claude-chat/update'):
+                    if workspace != 'manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
+                    if self.path.endswith('/threads'):
+                        if set(body)-{'search','archived'}:raise ValueError('שדות לא תקינים')
+                        return self.reply(200,{'threads':claude_chat.list_threads(**body)})
+                    if self.path.endswith('/thread'):
+                        if set(body)!={'thread_id'}:raise ValueError('נדרש מזהה שיחה')
+                        return self.reply(200,claude_chat.thread_status(body['thread_id']))
+                    if self.path.endswith('/create'):
+                        if set(body)-{'kind','ad_id','question'}:raise ValueError('שדות לא תקינים')
+                        if body.get('ad_id') is not None and not any(a['id']==body['ad_id'] for a in build_workspace(live.snapshot()).get('ads',[])):raise ValueError('המודעה אינה בתמונת המצב')
+                        return self.reply(200,claude_chat.create_thread(**body))
+                    if set(body)-{'thread_id','title','archived'} or 'thread_id' not in body:raise ValueError('שדות לא תקינים')
+                    return self.reply(200,claude_chat.update_thread(body['thread_id'],body.get('title'),body.get('archived')))
+                # END chat-threads
                 if self.path == '/api/claude-chat':
                     if workspace != 'manager':return self.reply(403,{'error':'Owner-local only'})
-                    if set(body) != {'question','request_id','ad_id'}:raise ValueError('Exact chat fields required')
+                    if set(body) not in ({'question','request_id','ad_id'},{'question','request_id','ad_id','thread_id'}):raise ValueError('Exact chat fields required')
+                    if 'thread_id' in body and (not isinstance(body['thread_id'],str) or not body['thread_id']):raise ValueError('נדרש מזהה שיחה')
+                    thread=claude_chat.resolve_thread(body.get('thread_id'),body['ad_id'],body['question'])
+                    body['ad_id']=thread['ad_id']
                     view=build_workspace(live.snapshot());selected=None
                     if body['ad_id'] is not None:
                         selected=next((a for a in view.get('ads',[]) if a['id']==body['ad_id']),None)
@@ -740,7 +759,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                             if isinstance(assessment.get('decisions'),list):
                                 assessment['omitted_decisions']=assessment.get('omitted_decisions',0)+max(0,len(assessment['decisions'])-size)
                                 assessment['decisions']=assessment['decisions'][:size]
-                    return self.reply(200,claude_chat.submit(body['question'],body['request_id'],context))
+                    return self.reply(200,claude_chat.submit(body['question'],body['request_id'],context,thread['id']) if 'thread_id' in body else claude_chat.submit(body['question'],body['request_id'],context))
                 if self.path in ('/api/help', '/api/help/escalate'):
                     if set(body) not in ({'question'},{'question','request_id'}) or (self.path=='/api/help' and set(body)!={'question'}):
                         raise ValueError('יש להזין שאלה בלבד')

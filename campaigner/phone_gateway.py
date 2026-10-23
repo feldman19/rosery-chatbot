@@ -28,7 +28,7 @@ SESSION_SECONDS = 30 * 86400
 GET_ROUTES = {'/', '/api/management-report', '/api/outcomes', '/api/profit', '/api/creative-launch', '/api/automation-shadow',
               '/api/approve-execute', '/api/claude-chat', '/api/daily-brief', '/api/campaign-operations', '/api/learning',
               '/api/update-status'}
-POST_ROUTES = {'/api/approve-execute/preview', '/api/approve-execute/confirm', '/api/outcomes/mark', '/api/outcomes/answer',
+POST_ROUTES = {'/api/claude-chat/threads', '/api/claude-chat/thread', '/api/claude-chat/create', '/api/claude-chat/update', '/api/approve-execute/preview', '/api/approve-execute/confirm', '/api/outcomes/mark', '/api/outcomes/answer',
                '/api/creative-drift/keep', '/api/claude-chat', '/api/profit/settings', '/api/live/refresh',
                '/api/creative-launch/start', '/api/creative-launch/finalize', '/api/learning/outside-check', '/api/campaign-operations/preview',
                '/api/campaign-operations/approve', '/api/campaign-operations/execute', '/api/local-uploads', '/api/automation-shadow/policy', '/api/automation-shadow/stop',
