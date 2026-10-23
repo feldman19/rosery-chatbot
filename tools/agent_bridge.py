@@ -128,7 +128,8 @@ def propose(agent, task, brief):
     out.parent.mkdir(parents=True, exist_ok=True)
     prompt = (shared_rules() + f'\n\n# Design proposal for task {task}\n' + Path(brief).read_text(encoding='utf-8') +
               '\n\nRead the code you need, then write a design: approach, files touched, data flow, risks, '
-              'tests, and what you would ask the owner. Do not modify any file.')
+              'tests, and what you would ask the owner. Do not modify or create any file: reply with the full '
+              'design as your final message; the bridge saves it.')
     if agent == 'codex':
         subprocess.run([codex_exe(), 'exec', '-s', 'read-only', '-C', str(REPO), '-o', str(out), '-'],
                        input=prompt, text=True, encoding='utf-8', check=True, capture_output=True, timeout=1800)

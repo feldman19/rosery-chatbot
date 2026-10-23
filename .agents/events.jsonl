@@ -1,1 +1,6 @@
 {"at": "2026-10-23T11:50:52", "kind": "review", "reviewer": "codex", "commit": "42beed3", "file": ".agents\\reviews\\42beed3-by-codex.md"}
+{"at": "2026-10-23T12:12:20", "kind": "proposal", "agent": "codex", "task": "auto-mode", "file": ".agents\\design\\auto-mode\\codex.md"}
+{"at": "2026-10-23T12:12:22", "kind": "proposal", "agent": "codex", "task": "true-profit", "file": ".agents\\design\\true-profit\\codex.md"}
+{"at": "2026-10-23T12:13:28", "kind": "proposal", "agent": "claude", "task": "auto-mode", "file": ".agents\\design\\auto-mode\\claude.md"}
+{"at": "2026-10-23T12:13:32", "kind": "proposal", "agent": "claude", "task": "true-profit", "file": ".agents\\design\\true-profit\\claude.md"}
+{"at": "2026-10-23T12:16:05", "kind": "proposal", "agent": "claude", "task": "true-profit", "file": ".agents\\design\\true-profit\\claude.md"}
