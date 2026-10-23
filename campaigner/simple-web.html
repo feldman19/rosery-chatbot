@@ -259,7 +259,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
     <div class="hello"><h1 id="upload-title">תכנים חדשים</h1><p>מעלים תמונות או סרטונים, והמערכת מנתחת ומציעה איך להעלות אותם לפי החוקים שלך. שום דבר לא עולה למטא בלי האישור שלך.</p></div>
     <form class="card" id="launch-form">
       <label class="field"><span class="label">מה המטרה?</span><textarea id="launch-goal" rows="3" maxlength="2000" placeholder="למשל: קולקציית צמידים חדשה לחגים, גברים 25–40"></textarea></label>
-      <label class="field"><span class="label">קבצים (תמונות JPG/PNG או סרטוני MP4/MOV)</span><input id="launch-files" type="file" multiple accept="image/jpeg,image/png,video/mp4,video/quicktime"></label>
+      <label class="field"><span class="label">קבצים (תמונות JPG/PNG או סרטוני MP4/MOV)</span><span class="btn">בחר תמונות או סרטונים</span><span id="launch-filenames" class="fact"></span><input id="launch-files" hidden type="file" multiple accept="image/jpeg,image/png,video/mp4,video/quicktime"></label>
       <label class="field"><span class="label">לאיזה קמפיין?</span><select id="launch-campaign"><option value="">אבחר אחרי הניתוח</option></select></label>
       <label class="fact"><input id="launch-consent" type="checkbox"> אני מאשר לשלוח לניתוח ב-Claude את התמונות, פריימים מהסרטונים ותמלול הדיבור. הקבצים עצמם נשארים במחשב.</label>
       <button class="btn primary" id="launch-go" type="submit">נתח והכן הצעה</button>
@@ -328,12 +328,13 @@ function renderHeader(){
   $('fresh-text').textContent=mins===null?'אין נתונים':mins<2?'עודכן עכשיו':mins<60?'עודכן לפני '+mins+' דק׳':'עודכן ב-'+at.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
 }
 
+function isolate(value){return '\u2066'+value+'\u2069'}
 function renderStats(){
   const w=report?.windows?.['1']||{},m=w.metrics||{},box=$('stats');box.replaceChildren();
   const ret=typeof m.attributed_revenue==='number'&&m.spend?m.attributed_revenue/m.spend:m.roas;
   for(const [value,label] of [[ils(m.spend),'הוצאה'],[typeof m.purchases==='number'?String(Math.round(m.purchases)):'—','מכירות'],[typeof ret==='number'?'₪'+x(ret):'—','החזר על ₪1']]){
     const s=el('div','stat');s.append(el('b','num',value),el('span','',label));box.append(s)}
-  $('stats-caption').textContent=w.until?'אתמול ('+w.until.split('-').reverse().slice(0,2).join('.')+') · לפי מטא':'';
+  $('stats-caption').textContent=w.until?'אתמול ('+isolate(w.until.split('-').reverse().slice(0,2).join('.'))+') · לפי מטא':'';
 }
 
 // Hero: store sales yesterday (Shopify, not Meta attribution) against the 3- and 7-day daily average.
@@ -360,6 +361,7 @@ function renderHero(){
   hero.append(mx);box.append(hero);countUp(value,rev,ils);
 }
 
+function pauseExplanation(roas,daily){return (typeof roas!=='number'?'ההחזר אינו ידוע':roas<1?'מוציאה יותר ממה שהיא מכניסה':'מכניסה ₪'+x(roas)+' על כל ₪1, מתחת לסף העצירה שלך (2.6)')+'. ההוצאה היומית שלה כ-'+ils(daily)+'.'}
 function actionCard(item){
   const d=item.proposal_id&&item.proposal_id.startsWith('pause:')?decisionFor(item.proposal_id.slice(6)):null;
   const card=el('article','card'),[cls,word]=item.action==='PAUSE'?['stop','לעצור']:item.action==='SCALE'?['grow','להגדיל תקציב']:item.action==='ALERT'?['idle','לתשומת לב']:['watch','לשים עין'];
@@ -367,7 +369,8 @@ function actionCard(item){
   const title=(item.headline.match(/"([^"]+)"/)||[])[1]||item.headline;card.append(el('h3','',title));
   if(item.action==='PAUSE'&&d){
     const f=el('div','fact');f.append(factPart('הוציאה',ils(d.numbers.spend)),factPart('מכירות',String(d.numbers.purchases??'—')),factPart('החזר על ₪1','₪'+x(d.numbers.roas)));card.append(f);
-    card.append(el('p','','מוציאה יותר ממה שהיא מכניסה. עצירה חוסכת כ-'+ils(item.saving_per_day)+' ביום.'));
+    card.append(el('p','',pauseExplanation(d.numbers.roas,item.saving_per_day)));
+    card.append(el('p','fact','הנתונים ב-3 ימים מלאים.'));
   }else if(item.action==='SCALE'){
     const m=item.headline.match(/₪([\d,]+)\D+₪([\d,]+)/);
     if(m){const c=el('div','change');c.append(el('s','num','₪'+m[1]),el('span','','←'),el('span','num','₪'+m[2]),el('span','',' ביום'));card.append(c)}
@@ -438,6 +441,11 @@ function renderProfit(){
   if(profitWindow==='7'&&meta&&typeof meta.roas==='number')card.append(el('p','fact','לשם השוואה, ROAS לפי מטא: '+x(meta.roas)+' (הכנסה מיוחסת, לפני עלויות)'));
   const det=el('details','why');det.append(el('summary','','פירוט'));const inner=el('div');
   inner.append(el('p','','הכנסה בלי מע"מ: '+ils(w.revenue_ex_vat)+' · עלות סחורה: '+ils(w.cogs_ex_vat)+' · רווח גולמי: '+pct(w.gross_margin)));
+  const basis=w.revenue_basis||{};
+  inner.append(el('p','','הכנסה זו היא מכירות מוצרים נטו אחרי הנחות והחזרות, ללא משלוח. מכירות החנות כוללות גם משלוח ומסים.'));
+  inner.append(el('p','','מוצרים נטו לפני התאמת מע״מ: '+ils(basis.net_sales)+' · משלוח שנגבה: '+ils(basis.shipping_charges)+' · מסים רשומים: '+ils(basis.taxes)+' · סך מכירות באותו מקור: '+ils(basis.total_sales)));
+  inner.append(el('p','','הנחות: '+ils(basis.discounts)+' · החזרות: '+ils(basis.returns)+' · '+(basis.vat_removed?'הוסר מע״מ לפי ההגדרות שלך.':'לא הוסר מע״מ נוסף.')+(profit.settings?.mode==='simple'?' במצב הפשוט המשלוח אינו נכלל בתרומה.':' במצב המפורט המשלוח שנגבה נוסף לתרומה.')));
+  if(typeof meta?.store_revenue==='number'&&typeof basis.total_sales==='number'&&Math.abs(meta.store_revenue-basis.total_sales)>1)inner.append(el('p','note','סך מכירות החנות שונה בין המקורות. יש לבדוק תקופה ורענון; הפער אינו מוסבר במלואו.'));
   inner.append(el('p','','כיסוי עלויות: '+pct(w.cost_coverage)+(w.revenue_without_cost_ex_vat?' · מכירות בלי עלות רשומה: '+ils(w.revenue_without_cost_ex_vat):'')));
   for(const c of w.cost_lines||[])inner.append(el('p','',c.name+' ('+c.type+'): '+ils(c.cost)));
   for(const m of w.missing||[])inner.append(el('p','note','חסר לחישוב: '+m));
@@ -486,13 +494,13 @@ function renderToday(){
   const tracked=new Set((outcomes?.items||[]).map(o=>o.proposal_id));
   $('hello-title').textContent=greeting();
   const items=(today?.items||[]).filter(i=>!hidden.has(i.headline)&&!tracked.has(i.proposal_id)),todo=$('todo');todo.replaceChildren();
-  const approve=items.filter(i=>i.kind==='approve').length;
+  const approve=items.filter(i=>i.kind==='approve').length+(report?.creative_drift?.status==='ready'?(report.creative_drift.items||[]).length:0);
   $('badge').hidden=!approve;$('badge').textContent=String(approve);
   if(!today){$('hello-sub').textContent='אין עדיין נתונים. לחץ על "רענן" למעלה.';return}
   if(today.status==='blocked'){$('hello-sub').textContent='לא הצלחתי לבדוק היום — חסרים נתונים.';todo.append(emptyState('!','צריך לרענן נתונים','לחץ על הנקודה למעלה כדי למשוך נתונים חדשים ממטא.'));return}
-  $('hello-sub').textContent=approve?(approve===1?'דבר אחד מחכה לך היום':approve+' דברים מחכים לך היום'):'הכל רץ כמו שצריך';
+  $('hello-sub').textContent=approve?(approve+' דברים מחכים לך היום'):'הכל רץ כמו שצריך';
   $('todo-label').hidden=!items.length;
-  if(!items.length){const c=today.counts||{};todo.append(emptyState('✓','אין מה לשנות היום',(c.SUCCESS||0)+(c.HOLD||0)+' מודעות רצות טוב, '+((c.KEEP_TESTING||0)+(c.UNTESTED||0))+' עדיין בבדיקה.'))}
+  if(!items.length&&!approve){const c=today.counts||{};todo.append(emptyState('✓','אין מה לשנות היום',(c.SUCCESS||0)+(c.HOLD||0)+' מודעות רצות טוב, '+((c.KEEP_TESTING||0)+(c.UNTESTED||0))+' עדיין בבדיקה.'))}
   for(const i of items)todo.append(actionCard(i));
   if(items.length){const more=el('button','link','לכל המודעות ←');more.type='button';more.onclick=()=>go('ads');todo.append(more)}
 }
@@ -504,7 +512,10 @@ function renderAds(){
   for(const [key,label] of [['all','הכל'],['act','דורש פעולה'],['good','רצות טוב'],['test','בבדיקה']]){
     if(key!=='all'&&!counts[key])continue;
     const b=el('button','chip',label+' '+counts[key]);b.type='button';b.setAttribute('aria-pressed',String(filter===key));b.onclick=()=>{filter=key;renderAds()};f.append(b)}
-  const w=report?.recommendations?.rule_engine?.window;$('ads-sub').textContent=w?'3 ימים מלאים · '+w.since.split('-').reverse().slice(0,2).join('.')+'–'+w.until.split('-').reverse().slice(0,2).join('.'):'3 הימים האחרונים';
+  const w=report?.recommendations?.rule_engine?.window;$('ads-sub').textContent=w?'3 ימים מלאים · '+isolate(w.since.split('-').reverse().slice(0,2).join('.')+'–'+w.until.split('-').reverse().slice(0,2).join('.')):'3 הימים האחרונים';
+  const spent=report?.windows?.['3']?.ads;
+  const stopped=Array.isArray(spent)?spent.filter(a=>a.spend>0&&a.configured_active===false).length:null;
+  $('ads-sub').textContent+=' · מוצגות רק מודעות פעילות; '+(stopped===null?'מספר המודעות שכבר מושהות אינו ידוע':stopped+' מודעות שהוציאו ב-3 הימים כבר מושהות');
   const list=$('ads');list.replaceChildren();
   const matching=all.filter(d=>filter==='all'||GROUP[d.action]===filter);
   // Ads that barely spent are noise for a quick look; keep them one tap away.
@@ -560,18 +571,19 @@ function renderLaunch(){
   if(s.state==='blocked'||s.state==='interrupted'){const c=el('article','card');c.append(el('span','pill stop','נעצר'),el('p','',s.detail||'ההכנה נעצרה'));
     for(const i of s.claim_issues||[])c.append(el('p','note','"'+i.claim+'" ב'+i.field+': צריך אימות לפני שמשתמשים בזה'));box.append(c)}
   if(s.state!=='ready_for_owner'||!s.draft)return;
+  if(Date.parse(s.draft.expires_at)<=Date.now())box.append(el('p','note','ההצעה פגה, הכן מחדש. המשך לאישור יחדש את התוקף.'));
   const d=s.draft,rows=Object.fromEntries((s.analysis||[]).map(r=>[r.asset_id,r]));
   for(const q of d.owner_questions||[]){const c=el('article','card');c.append(el('span','pill watch','שאלה אליך'),el('p','',q));box.append(c)}
   for(const g of d.adsets){
     const card=el('article','card'),existing=g.target.mode==='existing';
     card.append(el('span','pill '+(existing?'watch':'grow'),existing?'הוספה לאד-סט קיים':'אד-סט חדש'),el('h3','',g.label),el('p','fact',g.rationale));
-    if(!existing){const f=el('label','field');f.append(el('span','label','תקציב יומי (₪) לאד-סט הזה'));const i=document.createElement('input');i.type='number';i.min='1';i.step='1';i.dataset.adset=g.key;i.className='launch-budget';f.append(i);card.append(f)
+    if(!existing){const f=el('label','field');f.append(el('span','label','תקציב יומי (₪) לאד-סט הזה'));const i=document.createElement('input');i.type='number';i.min='1';i.step='1';i.dataset.adset=g.key;i.className='launch-budget';i.value=lastLaunchBudget();f.append(i);card.append(f)
       // Audience: proposed from the analysis, the owner confirms; targeting is then copied from a live ad set of that gender.
       const au=(s.audiences||{})[g.key]||{},q=el('label','field'),sel=document.createElement('select');sel.className='launch-gender';sel.dataset.adset=g.key;
       for(const [v,l] of [['','בחר קהל'],['men','גברים'],['women','נשים']]){const o=document.createElement('option');o.value=v;o.textContent=l;o.selected=(au.gender||'')===v;sel.append(o)}
       q.append(el('span','label','קהל (הטירגוט יועתק מאד-סט פעיל של אותו מגדר)'),sel);card.append(q);if(au.reason)card.append(el('p','fact',au.reason))}
     for(const ad of d.ads.filter(a=>a.adset_key===g.key)){
-      const r=rows[ad.asset_id]||{},row=el('div','adrow'),img=el('img','thumb');img.alt='';(ad.video?mediaUrl(ad.video.thumbnail_asset_id,ad.video.thumbnail_sha256):mediaUrl(ad.asset_id,ad.sha256)).then(u=>img.src=u);
+      const r=rows[ad.asset_id]||{},row=el('div','adrow'),img=el('img','thumb');img.alt='';(ad.video?mediaUrl(ad.video.thumbnail_asset_id,ad.video.thumbnail_sha256):mediaUrl(ad.asset_id,ad.sha256)).then(u=>img.src=u).catch(()=>{img.alt='התצוגה המקדימה אינה זמינה'});
       const info=el('div');info.append(el('strong','',(ad.media_kind==='video'?'🎬 ':'')+(r.observed_product||ad.source_name)),
         el('span','fact','זווית: '+(r.angle||'—')),el('span','fact','קהל (השערה): '+(r.audience_hypothesis||'—')),el('span','fact','מה רואים: '+(r.visual_description||'—')));
       if(ad.media_kind==='video')info.append(el('span','fact',r.audio_status==='checked'?'מה אומרים: '+(r.transcript||'אין דיבור'):'הקול לא נבדק'));
@@ -589,13 +601,15 @@ function renderLaunch(){
   const confirms=[];
   for(const g of d.adsets.filter(g=>g.target.mode==='existing')){const l=el('label','fact'),c=document.createElement('input');c.type='checkbox';c.dataset.adset=g.target.adset_id;confirms.push(c);l.append(c,' זו אותה זווית כמו במודעות שכבר רצות ב"'+g.label+'"');next.append(l)}
   next.append(el('p','fact','לפני ההעלאה תראה בדיוק מה ייווצר. הכל נוצר במצב מושהה, ושום דבר לא מתחיל לרוץ עד שתפעיל.'));
+  next.append(el('p','fact','אד-סטים חדשים עם אותו קהל יאוחדו לאד-סט אחד, והתקציבים היומיים שבחרת יחוברו.'));
   const go=el('button','btn primary','המשך לאישור');go.type='button';
   go.onclick=async()=>{
-    const budgets={},genders={};for(const i of document.querySelectorAll('.launch-budget'))budgets[i.dataset.adset]=Math.round(Number(i.value)*100);
+    const budgets={},genders={};for(const i of document.querySelectorAll('.launch-budget')){const amount=launchBudgetMinor(i.value);if(amount===null){toast('יש להזין תקציב יומי בין ₪1 ל-₪2,000');i.focus();return}budgets[i.dataset.adset]=amount}
     for(const i of document.querySelectorAll('.launch-gender'))if(i.value)genders[i.dataset.adset]=i.value;
     go.disabled=true;go.textContent='מכין תצוגה מדויקת מול מטא…';
     try{
       const fin=await api('/api/creative-launch/finalize',{campaign_id:sel.value,budgets,genders,confirm_same_angle:confirms.filter(c=>c.checked).map(c=>c.dataset.adset)});
+      try{const values=Object.values(budgets);if(values.length)localStorage.setItem('rosery-launch-budget',String(values[values.length-1]/100))}catch{}
       const pv=await api('/api/campaign-operations/preview',{action:'prepare_launch',expected_source:fin.expected_source,owner_confirmations:fin.owner_confirmations});
       launchSheet(pv.operation);
     }catch(e){toast(e.message)}
@@ -604,12 +618,33 @@ function renderLaunch(){
   next.append(go);box.append(next);
 }
 // Exact manifest from the write path (Codex's campaign_operations); only "אשר והעלה" writes, everything PAUSED.
+function lastLaunchBudget(){try{const n=Number(localStorage.getItem('rosery-launch-budget'));return n>=1&&n<=2000?n:100}catch{return 100}}
+function launchBudgetMinor(value){const n=Number(value);return value.trim()&&Number.isFinite(n)&&n>=1&&n<=2000?Math.round(n*100):null}
+function launchBlockReason(reason){
+  if(reason.includes('ads_per_adset:'))return 'בכל אד-סט צריך 5–8 מודעות לפי החוק שלך; כאן יש '+launchCounts()+'. אפשר לבחור לכל המודעות את אותו קהל כדי לאחד אותן לאד-סט אחד';
+  if(/expired/i.test(reason))return 'ההצעה פגה, הכן מחדש';
+  if(/Campaign budget conflicts/i.test(reason))return 'לקמפיין כבר יש תקציב משלו, שמתנגש בתקציב האד-סט. בחר קמפיין עם תקציב ברמת האד-סט.';
+  if(/No active ad set of that gender/i.test(reason))return 'אין בקמפיין אד-סט פעיל של המגדר שבחרת שממנו אפשר להעתיק קהל.';
+  return 'ההעלאה חסומה כרגע. פרטי הבדיקה מופיעים למטה.';
+}
+function launchCounts(){
+  const draft=launchState?.draft,counts={};
+  for(const g of draft?.adsets||[]){const gender=document.querySelector('.launch-gender[data-adset="'+g.key+'"]')?.value;
+    const key=g.target.mode==='new'?(gender||g.key):g.key;
+    counts[key]=(counts[key]||0)+(draft.ads||[]).filter(a=>a.adset_key===g.key).length;
+    if(g.target.mode==='existing'){
+      const live=report?.windows?.['3']?.ads;
+      if(!Array.isArray(live)){counts[key]='מספר המודעות הקיימות אינו ידוע';continue}
+      counts[key]+=live.filter(a=>a.adset_id===g.target.adset_id&&a.configured_active===true).length;
+    }}
+  return Object.values(counts).join(', ')||'מספר לא ידוע';
+}
 function launchSheet(op){
   closeSheet();const sheet=el('div','sheet'),panel=el('div','sheet-panel');sheet.append(panel);document.body.append(sheet);
   sheet.onclick=e=>{if(e.target===sheet)closeSheet()};
   const m=op.manifest||{},sets=m.adsets||[],ads=(m.steps||[]).filter(x=>x.kind==='ads').length;
   panel.append(el('h2','',op.blocked_reasons?.length?'אי אפשר להעלות כרגע':'מה ייווצר במטא'));
-  for(const r of op.blocked_reasons||[])panel.append(el('p','note',r));
+  for(const r of op.blocked_reasons||[]){panel.append(el('p','note',launchBlockReason(r)));panel.append(el('small','fact',r))}
   if(op.blocked_reasons?.length){const c=el('button','btn','סגור');c.type='button';c.onclick=closeSheet;panel.append(c);return}
   const campaign=(launchState?.campaigns||[]).find(c=>c.id===m.campaign_id);
   panel.append(el('p','fact','קמפיין: '+(campaign?campaign.name:m.campaign_id)));
@@ -668,18 +703,23 @@ $('launch-form').onsubmit=async e=>{
 };
 let chatTimer=null;
 async function loadChat(){
-  const s=$('suggest');if(!s.childElementCount)for(const q of ['איזו מודעה הכי משתלמת לאורך זמן?','מה משותף למודעות הכי טובות?','מה עבד ב-90 הימים האחרונים?','למה לעצור את המודעה?']){const c=el('button','chip',q);c.type='button';c.onclick=()=>{$('question').value=q;$('question').focus()};s.append(c)}
+  const s=$('suggest');if(!s.childElementCount)for(const q of ['איזו מודעה הכי משתלמת לאורך זמן?','מה משותף למודעות הכי טובות?','מה עבד ב-90 הימים האחרונים?']){const c=el('button','chip',q);c.type='button';c.onclick=()=>{$('question').value=q;$('question').focus()};s.append(c)}
   try{const st=await api('/api/claude-chat');renderChat(st)}catch(e){showUnavailable(e.message)}
 }
 function showUnavailable(text){$('chat-unavailable').hidden=false;$('chat-unavailable').textContent=text}
+function safeAnswer(node,text){
+  String(text).split('\n').forEach((line,i)=>{if(i)node.append(document.createElement('br'));
+    line.split(/(\*\*[^*]+\*\*)/g).forEach(part=>{if(part.startsWith('**')&&part.endsWith('**'))node.append(el('strong','',part.slice(2,-2)));else node.append(document.createTextNode(part))})});
+}
 function renderChat(st){
   const chat=$('chat');chat.replaceChildren();
   if(st&&st.authenticated===false)showUnavailable('השיחה עובדת רק כש-Claude מחובר במחשב שבו המערכת רצה.');
   for(const t of (st?.turns||[]).slice(-10)){chat.append(el('div','bubble me',t.question));
-    chat.append(el('div','bubble bot'+(t.answer?'':' wait'),t.answer||(t.state==='failed'?'לא התקבלה תשובה. נסה שוב.':'חושב…')))}
+    const answer=el('div','bubble bot'+(t.answer?'':' wait'));safeAnswer(answer,t.answer||(t.state==='failed'?'לא התקבלה תשובה. נסה שוב.':'חושב…'));chat.append(answer)}
   const waiting=(st?.turns||[]).some(t=>t.state==='running');clearTimeout(chatTimer);
   if(waiting)chatTimer=setTimeout(loadChat,2500);
 }
+$('launch-files').onchange=()=>{$('launch-filenames').textContent=[...$('launch-files').files].map(f=>f.name).join(' · ')};
 $('composer').onsubmit=async e=>{
   e.preventDefault();const q=$('question').value.trim();if(q.length<3)return;
   $('send').disabled=true;
@@ -744,11 +784,11 @@ function renderLearning(){
     const judged=(ev.for||0)+(ev.against||0);
     const today=h.id==='ctr_weight_not_needed'?(sh.variant||{}).today_disagreements:sh.today_disagreements;
     card.append(el('p','',judged?('עד עכשיו: '+(h.for_label||'הציון צדק')+' ב-'+ev.for+', '+(h.against_label||'החוקים צדקו')+' ב-'+ev.against+(ev.not_judgeable?' · '+ev.not_judgeable+' לא ניתן לבדוק (המודעה נעצרה)':'')+'. צריך לפחות '+ev.needed+' מקרים ותוצאה שמקרה לא מסביר.')
-      :'נאספים נתונים: '+(sh.days||0)+' ימים, '+(today||0)+' מחלוקות היום. כל מחלוקת נשפטת אחרי ₪600 הוצאה נוספת, לפחות 7 ימים ועד 21 יום.'));
+      :'נאספים נתונים: '+((sh.days||0)===1?'יום אחד':(sh.days||0)+' ימים')+', '+(today||0)+' מחלוקות היום. כל מחלוקת נשפטת אחרי ₪600 הוצאה נוספת, לפחות 7 ימים ועד 21 יום.'));
     if(h.origin)card.append(el('p','fact','מאיפה ההשערה: '+h.origin));
     if(h.backtest)card.append(el('p','fact','בדיקה על העבר ('+h.backtest.ads+' מודעות): '+h.backtest.note));
     const out=h.outside||{},REL={supports:'תומך',contradicts:'סותר',context:'הקשר'};
-    if(out.summary)card.append(el('p','','מה ידוע בחוץ (הקשר, לא הוכחה לחשבון שלך): '+out.summary));
+    if(out.summary){const parts=String(out.summary).match(/^([\s\S]*?[.!?](?=\s|$)|[^\n]+)([\s\S]*)$/);card.append(el('p','','מה ידוע בחוץ (הקשר, לא הוכחה לחשבון שלך): '+parts[1]));if(parts[2].trim()){const det=el('details','why');det.append(el('summary','','פירוט'),el('p','',parts[2].trim()));card.append(det)}}
     for(const src of h.sources||[]){const a=el('a','link',REL[src.relation]+': '+src.claim+' · '+src.source);a.href=src.url;a.target='_blank';a.rel='noopener noreferrer';card.append(a)}
     if(out.state==='failed')card.append(el('p','note','הבדיקה מול מקורות נכשלה: '+(out.detail||'')));
     const chk=el('button','btn',out.state==='running'?'בודק מול מקורות…':'בדוק מול מקורות חיצוניים');chk.type='button';chk.disabled=out.state==='running';

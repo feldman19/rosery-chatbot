@@ -139,6 +139,44 @@ class CreativeLaunchTests(unittest.TestCase):
         (self.dir / 'creative-launch.json').write_text('{"state": "analyzing", "id": "launch-x"}', encoding='utf-8')
         self.assertEqual(self.launch().status()['state'], 'interrupted')
 
+    def test_finalize_merges_same_gender_and_keeps_total_budget(self):
+        import copy as copying
+        asset = self.image()
+        launch = self.launch()
+        launch.start({'goal': 'צמידים', 'sources': [{'id': asset['id'], 'sha256': asset['sha256']}],
+                      'consent': True, 'campaign_id': None})
+        state = self.wait(launch)
+        draft = state['draft']
+        group, ad = draft['adsets'][0], draft['ads'][0]
+        draft['adsets'], draft['ads'] = [], []
+        for i in range(6):
+            g, a = copying.deepcopy(group), copying.deepcopy(ad)
+            g['key'] = f'group-{i}'
+            a['asset_id'] = f'local_asset-test-{i}'
+            a['adset_key'] = g['key']
+            a['media_kind'] = 'video'
+            a['review']['audio_status'] = 'checked'
+            a['video'] = {'duration_ms': 30000, 'width': 1080, 'height': 1920,
+                          'technical_valid': True, 'thumbnail_asset_id': 'thumbnail-test',
+                          'thumbnail_sha256': 'a' * 64}
+            draft['adsets'].append(g)
+            draft['ads'].append(a)
+        launch._save(state)
+        body = {'campaign_id': '120246379886090730',
+                'budgets': {g['key']: 10000 for g in draft['adsets']},
+                'genders': {g['key']: 'men' if i < 5 else 'women' for i, g in enumerate(draft['adsets'])},
+                'confirm_same_angle': []}
+        launch.finalize(body)
+        proposal = launch.operation_report()['proposal']
+        self.assertEqual(len(proposal['adsets']), 2)
+        self.assertEqual([g['budget_minor'] for g in proposal['adsets']], [50000, 10000])
+        self.assertEqual([sum(a['adset_key'] == g['key'] for a in proposal['ads']) for g in proposal['adsets']], [5, 1])
+        self.assertIn('תכנים חדשים | גברים |', proposal['adsets'][0]['label'])
+        self.assertTrue(proposal['adsets'][0]['label'].startswith('וידאו |'))
+        # Repeating finalize starts from the original draft, without accumulating budgets.
+        launch.finalize(body)
+        self.assertEqual(launch.operation_report()['proposal']['adsets'][0]['budget_minor'], 50000)
+
     @unittest.skipUnless(FFMPEG, 'ffmpeg is not installed')
     def test_video_gets_thumbnail_and_audio_status(self):
         raw = make_clip(self.dir / 'v.mp4')

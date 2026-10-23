@@ -145,6 +145,12 @@ def window_profit(row, days, meta_spend, settings):
             'cost_coverage': _out(with_cost / (with_cost + without_cost), 3) if with_cost is not None and without_cost is not None
                              and with_cost + without_cost > 0 else None,
             'gross_margin': _out(margin, 3),
+            'revenue_basis': {'net_sales': _out(_dec(row.get('net_sales')), 2),
+                              'shipping_charges': _out(_dec(row.get('shipping_charges')), 2),
+                              'taxes': _out(taxes, 2), 'discounts': _out(_dec(row.get('discounts')), 2),
+                              'returns': _out(_dec(row.get('returns')), 2),
+                              'total_sales': _out(_dec(row.get('total_sales')), 2),
+                              'shipping_ex_vat': _out(shipping, 2), 'vat_removed': sales_vat},
             'cost_lines': lines, 'contribution': _out(contribution), 'meta_spend': _out(spend),
             'contribution_per_shekel': _out(contribution / spend, 2) if contribution is not None and spend else None,
             'after_ads': _out(after_ads),

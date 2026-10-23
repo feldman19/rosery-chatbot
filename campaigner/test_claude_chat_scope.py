@@ -30,6 +30,11 @@ class ChatScopeTests(unittest.TestCase):
  def test_unknown_scope_has_no_history(self):
   self.seed('01',{'selected_ad':{'id':'ad_a'}})
   self.assertEqual(self.complete({'selected_ad':{'id':'ad_a'}})['previous_turns'],[])
+ def test_owner_language_instruction_and_account_metrics_are_sent(self):
+  context={**self.context,'account_metrics':{'1':{'since':'2026-10-22','until':'2026-10-22','metrics':{'spend':90}}}}
+  sent=self.complete(context)
+  self.assertEqual(sent['selected_context']['account_metrics']['1']['metrics']['spend'],90)
+  self.assertIn('אל תציין שמות שדות פנימיים',self.prompts[-1].split('\n',1)[0])
  def test_only_latest_four_matching_turns_are_sent(self):
   for i in range(1,7):self.seed(str(i).zfill(2),self.context,question=str(i))
   self.assertEqual([p['question'] for p in self.complete(self.context)['previous_turns']],['3','4','5','6'])

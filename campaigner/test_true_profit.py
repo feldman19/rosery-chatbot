@@ -22,6 +22,19 @@ def detailed(*fields):
 
 
 class WindowProfitTests(unittest.TestCase):
+    def test_revenue_basis_explains_shipping_without_changing_contribution(self):
+        w = true_profit.window_profit({**ROW, 'discounts': '-118', 'returns': '-236',
+                                       'total_sales': '12980'}, 7, 2000, SIMPLE)
+        basis = w['revenue_basis']
+        self.assertEqual((basis['net_sales'], basis['shipping_charges'], basis['total_sales']),
+                         (11800, 1180, 12980))
+        self.assertEqual(basis['shipping_ex_vat'], 1000)
+        self.assertTrue(basis['vat_removed'])
+        self.assertEqual(w['contribution'], 8000)
+        missing = true_profit.window_profit(ROW, 7, 2000, SIMPLE)['revenue_basis']
+        self.assertIsNone(missing['total_sales'])
+        self.assertIsNone(missing['returns'])
+
     def test_simple_removes_vat_and_subtracts_cogs(self):
         w = true_profit.window_profit(ROW, 7, 2000, SIMPLE)
         self.assertEqual((w['revenue_ex_vat'], w['cogs_ex_vat'], w['contribution']), (10000, 2000, 8000))

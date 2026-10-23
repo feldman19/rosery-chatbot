@@ -156,6 +156,31 @@ class CreativeLaunch:
             elif group['target']['adset_id'] not in confirmed:
                 raise ValueError(f'צריך לאשר שזו אותה זווית כמו באד-סט הקיים "{group["label"]}"')
         now = self.clock()
+        # A single audience in this campaign gets one new ad set. Preserve the
+        # owner's total daily budget; the exact merged budget is previewed before approval.
+        merged, groups, keys = {}, [], {}
+        for group in proposal['adsets']:
+            if group['target']['mode'] != 'new':
+                groups.append(group)
+                continue
+            gender = group['targeting_mode']
+            if gender in merged:
+                merged[gender]['budget_minor'] += group['budget_minor']
+                keys[group['key']] = merged[gender]['key']
+            else:
+                merged[gender] = group
+                groups.append(group)
+                keys[group['key']] = group['key']
+        for group in merged.values():
+            members = [a for a in proposal['ads'] if keys.get(a['adset_key']) == group['key']]
+            media = 'וידאו' if all(a['media_kind'] == 'video' for a in members) else 'תמונות' if all(a['media_kind'] == 'image' for a in members) else 'תכנים'
+            gender = 'גברים' if group['targeting_mode'] == 'copy_men' else 'נשים'
+            group['label'] = f'{media} | תכנים חדשים | {gender} | {now:%d/%m}'
+            if group['budget_minor'] > 200000:
+                raise ValueError('התקציב היומי המאוחד גבוה מ-₪2,000. הקטן את התקציבים.')
+        for ad in proposal['ads']:
+            ad['adset_key'] = keys.get(ad['adset_key'], ad['adset_key'])
+        proposal['adsets'] = groups
         proposal['strategy']['campaign_id'] = body['campaign_id']
         # Bound to the rulebook as it is now, with the same digest the write path checks.
         proposal['rules'] = {'rulebook_sha256': digest(self.rulebook()),
