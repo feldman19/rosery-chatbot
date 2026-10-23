@@ -40,7 +40,7 @@ class CampaignTransport:
         if node=='act_'+ACCOUNT or isinstance(node,str) and re.fullmatch(r'[0-9]{5,30}',node):return node
         raise ValueError('Unsupported Meta node')
 
-    def _request(self,token,path,method='GET',params=None,data=None,content_type=None):
+    def _request(self,token,path,method='GET',params=None,data=None,content_type=None,timeout=25):
         if not isinstance(token,str) or not token:raise ValueError('Execution credential missing')
         headers={'Authorization':'Bearer '+token,'Accept':'application/json'}
         if method=='GET':url=ORIGIN+path+('?' + urlencode(params or {}) if params else '')
@@ -52,7 +52,7 @@ class CampaignTransport:
             headers['Content-Type']=content_type
         request=urllib.request.Request(url,data=data,headers=headers,method=method)
         try:
-            with urllib.request.build_opener(NoRedirect()).open(request,timeout=25) as response:raw=response.read(2097153)
+            with urllib.request.build_opener(NoRedirect()).open(request,timeout=timeout) as response:raw=response.read(2097153)
             if len(raw)>2097152:raise ValueError()
             result=json.loads(raw)
             if not isinstance(result,dict):raise ValueError()
@@ -147,6 +147,55 @@ class CampaignTransport:
     def create(self,token,edge,params):
         if edge not in ('adsets','adcreatives','ads'):raise ValueError('Unsupported creation edge')
         return self._request(token,'act_'+ACCOUNT+'/'+edge,'POST',params)
+
+    def create_v2(self,token,edge,params,campaign_id):
+        from meta_batch import validate_creation_v2
+        validate_creation_v2(edge,params,campaign_id)
+        return self._request(token,'act_'+ACCOUNT+'/'+edge,'POST',params)
+
+    def campaigns(self,token):
+        return {'complete':True,'data':self._pages(token,'act_'+ACCOUNT+'/campaigns','id,account_id,name,status,effective_status,objective')}
+
+    def _pages(self,token,path,fields):
+        rows=[];cursor=None;seen=set();deadline=time.monotonic()+60
+        for page in range(10):
+            if time.monotonic()>=deadline:raise ValueError('Inventory deadline exceeded')
+            params={'fields':fields,'limit':100}
+            if cursor:params['after']=cursor
+            raw=self._request(token,path,params=params)
+            if not isinstance(raw.get('data'),list) or len(raw['data'])>100:raise ValueError('Inventory page invalid')
+            rows.extend(raw['data']);paging=raw.get('paging') or {}
+            if not paging.get('next'):return rows
+            cursor=(paging.get('cursors') or {}).get('after')
+            if not isinstance(cursor,str) or not 1<=len(cursor)<=2048 or cursor in seen:raise ValueError('Inventory cursor invalid')
+            seen.add(cursor)
+        raise ValueError('Inventory exceeds bounded coverage')
+
+    def inventory_v2(self,token,campaign_id):
+        self._node(campaign_id)
+        # Product is inferred again from names by the executor; same-angle reuse
+        # requires an explicit owner confirmation bound to the manifest.
+        return {'complete':True,
+                'adsets':self._pages(token,campaign_id+'/adsets','id,account_id,campaign_id,name,status,effective_status,daily_budget,lifetime_budget'),
+                'ads':self._pages(token,campaign_id+'/ads','id,account_id,campaign_id,adset_id,name,status,effective_status')}
+
+    def upload_video(self,token,raw,name):
+        if not isinstance(raw,bytes) or not 12<=len(raw)<=64*1024*1024 or raw[4:8]!=b'ftyp':raise ValueError('Bounded MP4 required')
+        if not isinstance(name,str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,120}',name):raise ValueError('Safe video upload name required')
+        boundary='----ROSERY'+secrets.token_hex(16)
+        mime='video/quicktime' if raw[8:12]==b'qt  ' else 'video/mp4'
+        data=(f'--{boundary}\r\nContent-Disposition: form-data; name="source"; filename="{name}"\r\nContent-Type: {mime}\r\n\r\n'.encode()+raw+f'\r\n--{boundary}--\r\n'.encode())
+        return self._request(token,'act_'+ACCOUNT+'/advideos','POST',data=data,content_type='multipart/form-data; boundary='+boundary,timeout=min(600,60+len(raw)/(256*1024)))
+
+    def video_info(self,token,identity):
+        self._node(identity)
+        # Identity comes from the persisted account upload receipt.
+        try:result=self.read(token,identity,'id,status')
+        except ProviderRejected as error:
+            if error.details.get('code')==100 and error.details.get('error_subcode')==33:return {'pending':True,'not_found':True}
+            raise
+        if not result:return {'pending':True}
+        return dict(result,account_id=ACCOUNT)
 
     def update(self,token,node,params):
         if not (set(params)=={'status'} and params['status'] in ('PAUSED','ACTIVE') or set(params) in ({'daily_budget'},{'lifetime_budget'}) and str(next(iter(params.values()))).isdigit()):raise ValueError('Unsupported mutation')
