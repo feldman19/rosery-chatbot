@@ -295,14 +295,15 @@ function renderProfit(){
   card.append(chips);
   const meta=report?.windows?.[profitWindow]?.metrics;
   const s=el('div','stats');
-  for(const [v,l] of [[typeof w.contribution_per_shekel==='number'?'₪'+x(w.contribution_per_shekel):'—',w.label+' לכל ₪1 פרסום'],[ils(w.contribution),w.label],[ils(w.after_ads),'אחרי הוצאת מטא']]){const d=el('div','stat');d.append(el('b','num',v),el('span','',l));s.append(d)}
+  for(const [v,l] of [[typeof w.contribution_per_shekel==='number'?'₪'+x(w.contribution_per_shekel):'—','תרומה לכל ₪1 פרסום'],[ils(w.contribution),'תרומה אחרי עלויות'],[ils(w.after_ads),'אחרי הוצאת מטא']]){const d=el('div','stat');d.append(el('b','num',v),el('span','',l));s.append(d)}
   card.append(s);
+  // Net profit is its own figure, never the contribution relabelled.
+  if(typeof w.net_profit==='number')card.append(el('p','change','רווח נקי (אחרי מטא והוצאות קבועות): '+ils(w.net_profit)));
   if(profitWindow==='7'&&meta&&typeof meta.roas==='number')card.append(el('p','fact','לשם השוואה, ROAS לפי מטא: '+x(meta.roas)+' (הכנסה מיוחסת, לפני עלויות)'));
   const det=el('details','why');det.append(el('summary','','פירוט'));const inner=el('div');
   inner.append(el('p','','הכנסה בלי מע"מ: '+ils(w.revenue_ex_vat)+' · עלות סחורה: '+ils(w.cogs_ex_vat)+' · רווח גולמי: '+pct(w.gross_margin)));
   inner.append(el('p','','כיסוי עלויות: '+pct(w.cost_coverage)+(w.revenue_without_cost_ex_vat?' · מכירות בלי עלות רשומה: '+ils(w.revenue_without_cost_ex_vat):'')));
   for(const c of w.cost_lines||[])inner.append(el('p','',c.name+' ('+c.type+'): '+ils(c.cost)));
-  if(typeof w.net_profit==='number')inner.append(el('p','','רווח נקי אחרי הוצאות קבועות: '+ils(w.net_profit)));
   for(const m of w.missing||[])inner.append(el('p','note','חסר לחישוב: '+m));
   if((profit.products||[]).length){inner.append(el('p','fact','המוצרים הכי רווחיים (90 יום, רווח גולמי):'));for(const p of profit.products.slice(0,5))inner.append(el('p','',p.product+' · '+ils(p.sales_ex_vat)+' מכירות · '+pct(p.gross_margin)))}
   for(const l of profit.limits||[])inner.append(el('p','note',l));

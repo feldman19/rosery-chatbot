@@ -8,6 +8,7 @@ from pathlib import Path
 import secrets
 import socket
 import threading
+from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from analysis import summarize
@@ -118,7 +119,10 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     def profit_summary(snapshot=None,report=None):
         # --- true profit (Claude) ---
         snapshot=snapshot or live.snapshot();report=report or management_report(snapshot)
-        spend={'7':(((report.get('windows') or {}).get('7') or {}).get('metrics') or {}).get('spend'),'90':history.spend('90')}
+        seven=(report.get('windows') or {}).get('7') or {}
+        try:seven_last=date.fromisoformat(seven.get('until'))
+        except (TypeError,ValueError):seven_last=None
+        spend={'7':((seven.get('metrics') or {}).get('spend'),seven_last),'90':history.spend('90')}
         return true_profit.summary(((snapshot.get('sources') or {}).get('shopify') or {}).get('data'),spend,profit_settings.load())
     try:
         # Verified launch readbacks are the starting state for ads not read live yet.

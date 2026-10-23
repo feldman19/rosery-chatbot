@@ -121,6 +121,15 @@ class AccountHistoryTests(unittest.TestCase):
         self.assertEqual(summary['windows']['all']['coverage']['ads_purchases_unknown'], 1)
         self.assertNotIn('90', summary['windows'])
 
+    def test_spend_needs_a_complete_window_with_dates(self):
+        stored = history_file([live_row('1', 600, 6, 3000), live_row('2', 400, 3, 600)])
+        stored['windows']['90'] = {'rows': [live_row('1', 600)], 'complete': True,
+                                   'request': {'time_range': json.dumps({'since': '2026-07-24', 'until': '2026-10-22'})}}
+        (self.dir / 'account-history.json').write_text(json.dumps(stored), encoding='utf-8')
+        spend, last = AccountHistory(self.dir).spend('90')
+        self.assertEqual((spend, last.isoformat()), (600, '2026-10-22'))
+        self.assertEqual(AccountHistory(self.dir).spend('all'), (None, None))
+
     def test_no_history_is_unavailable(self):
         self.assertEqual(AccountHistory(self.dir).summary()['status'], 'unavailable')
 

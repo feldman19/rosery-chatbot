@@ -188,13 +188,18 @@ class AccountHistory:
             return False
 
     def spend(self, window):
-        """Meta spend for one stored window ('90' or 'all'), or None when it was not read."""
+        """(Meta spend, last full day) for one complete stored window such as '90'; (None, None) otherwise."""
         stored = self._stored()
-        rows = ((stored or {}).get('windows') or {}).get(window, {}).get('rows')
-        if not isinstance(rows, list):
-            return None
+        part = ((stored or {}).get('windows') or {}).get(window) or {}
+        rows = part.get('rows')
+        if part.get('complete') is not True or not isinstance(rows, list):
+            return None, None
+        try:
+            last = datetime.fromisoformat(json.loads(part['request']['time_range'])['until']).date()
+        except (KeyError, TypeError, ValueError):
+            return None, None
         values = [_float(r.get('spend')) for r in rows]
-        return sum(values) if all(v is not None for v in values) else None
+        return (sum(values), last) if all(v is not None for v in values) else (None, None)
 
     def _memory(self):
         try:

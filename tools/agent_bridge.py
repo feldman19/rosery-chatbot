@@ -75,7 +75,9 @@ def codex_task(task, brief):
     result.parent.mkdir(parents=True, exist_ok=True)
     log = AGENTS / 'logs' / f'codex-{task}-{stamp()}.jsonl'
     log.parent.mkdir(parents=True, exist_ok=True)
-    command = [codex_exe(), 'exec', '-s', 'workspace-write', '-C', str(tree), '--json', '-o', str(result), '-']
+    # A worktree commits into the main repository's .git; without it the sandbox cannot commit.
+    command = [codex_exe(), 'exec', '-s', 'workspace-write', '-C', str(tree), '--add-dir', str(REPO / '.git'),
+               '--json', '-o', str(result), '-']
     with log.open('w', encoding='utf-8') as out:
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=out, stderr=subprocess.STDOUT,
                                    text=True, encoding='utf-8')

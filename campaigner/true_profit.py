@@ -9,9 +9,13 @@ otherwise the result is a contribution. Sales without a recorded cost are left o
 of the cost calculation and shown, never treated as zero cost. Shopify records VAT
 as zero for this store, so by default net sales include VAT and it is removed here.
 """
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 import json
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+STORE_TZ = 'Asia/Jerusalem'
 
 FIELD_TYPES = {'per_order': 'לכל הזמנה', 'percent_of_revenue': 'אחוז מההכנסה', 'per_unit': 'לכל יחידה',
                'monthly_fixed': 'קבוע חודשי'}
@@ -120,15 +124,17 @@ def window_profit(row, days, meta_spend, settings):
             base = {'per_order': orders, 'per_unit': units, 'percent_of_revenue': with_cost,
                     'monthly_fixed': Decimal(days) / Decimal(30)}[field['type']]
             if base is None:
+                # A cost that cannot be computed is unknown, so everything after it is unknown too.
                 missing.append(f'בסיס לחישוב "{field["name"]}"')
+                variable = None
                 continue
             cost = amount * base / (100 if field['type'] == 'percent_of_revenue' else 1)
             lines.append({'name': field['name'], 'type': FIELD_TYPES[field['type']], 'cost': _out(cost)})
             if field['type'] == 'monthly_fixed':
                 fixed += cost
-            else:
+            elif variable is not None:
                 variable += cost
-    contribution = gross - variable if gross is not None else None
+    contribution = gross - variable if gross is not None and variable is not None else None
     spend = _dec(meta_spend)
     if spend is None:
         missing.append('הוצאת מטא לאותה תקופה')
@@ -143,16 +149,19 @@ def window_profit(row, days, meta_spend, settings):
             'contribution_per_shekel': _out(contribution / spend, 2) if contribution is not None and spend else None,
             'after_ads': _out(after_ads),
             'net_profit': _out(after_ads - fixed) if has_fixed and after_ads is not None else None,
-            'label': 'רווח נקי' if has_fixed else 'תרומה אחרי עלויות', 'missing': missing}
+            # The label always matches `contribution`; net profit is a separate value with its own label.
+            'label': 'תרומה אחרי עלויות', 'missing': missing}
 
 
 def products(rows, settings, limit=10):
     rate = Decimal(str(settings['vat_rate']))
     result = []
     for row in rows or []:
-        recorded, unrecorded = _dec(row.get('net_sales_with_cost_recorded')), _dec(row.get('net_sales_without_cost_recorded')) or Decimal(0)
+        recorded, unrecorded = _dec(row.get('net_sales_with_cost_recorded')), _dec(row.get('net_sales_without_cost_recorded'))
         net = _dec(row.get('net_sales'))
-        if net is not None and recorded is not None and recorded + unrecorded > 0:
+        if recorded is None or unrecorded is None or recorded + unrecorded <= 0:
+            continue  # unknown cost coverage: no margin is shown for this product
+        if net is not None:
             recorded = net * recorded / (recorded + unrecorded)  # same returns-adjusted share as the totals
         sales = _ex_vat(recorded, settings['sales_include_vat'], rate)
         cogs = _dec(row.get('cost_of_goods_sold'))
@@ -167,14 +176,32 @@ def products(rows, settings, limit=10):
     return result[:limit]
 
 
+def shopify_last_day(checked_at):
+    """Last full day ShopifyQL's 'UNTIL yesterday' covered, in the store's timezone."""
+    try:
+        stamp = datetime.fromisoformat(checked_at)
+        return (stamp.astimezone(ZoneInfo(STORE_TZ)).date() - timedelta(days=1)) if stamp.tzinfo else None
+    except (TypeError, ValueError, ZoneInfoNotFoundError):
+        return None
+
+
 def summary(shopify_data, spend_by_window, settings):
+    """spend_by_window: {'7': (spend, last_day), '90': (spend, last_day)}; a spend whose period
+    does not end on the same day as Shopify's is not used."""
     profit = (shopify_data or {}).get('profit') if isinstance(shopify_data, dict) else None
     if not isinstance(profit, dict) or not isinstance(profit.get('windows'), dict):
         return {'status': 'unavailable', 'reason': 'נתוני הרווחיות משופיפיי עוד לא נקראו.', 'settings': settings}
+    last_day = shopify_last_day(profit.get('checked_at'))
     windows = {}
     for key, row in profit['windows'].items():
-        if isinstance(row, dict):
-            windows[key] = window_profit(row, int(key), spend_by_window.get(key), settings)
+        if not isinstance(row, dict):
+            continue
+        spend, spend_last_day = spend_by_window.get(key) or (None, None)
+        aligned = spend is not None and last_day is not None and spend_last_day == last_day
+        windows[key] = window_profit(row, int(key), spend if aligned else None, settings)
+        if spend is not None and not aligned:
+            windows[key]['missing'][-1] = 'הוצאת מטא לא מאותה תקופה כמו נתוני שופיפיי (צריך רענון)'
+        windows[key]['period_last_day'] = last_day.isoformat() if last_day else None
     return {'status': 'ready', 'checked_at': profit.get('checked_at'), 'settings': settings, 'windows': windows,
             'products': products(profit.get('products_90'), settings),
             'limits': ['התרומה מחושבת לכל החנות. ROAS של מטא מוצג בנפרד ואינו מתמזג איתה.',

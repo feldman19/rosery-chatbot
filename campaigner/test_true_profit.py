@@ -57,8 +57,14 @@ class WindowProfitTests(unittest.TestCase):
         self.assertEqual(costs, {'משלוח': 2000, 'סליקה': 200, 'אריזה': 600, 'שכירות': 3000})
         # 10000 sales - 2000 cogs + 1000 shipping collected - 2800 variable = 6200
         self.assertEqual((w['contribution'], w['after_ads'], w['net_profit']), (6200, 4200, 1200))
-        self.assertEqual(w['label'], 'רווח נקי')
+        # The label always names the contribution; net profit is a separate value.
+        self.assertEqual(w['label'], 'תרומה אחרי עלויות')
         self.assertEqual(w['gross_margin'], 0.8)
+
+    def test_cost_with_missing_basis_makes_the_result_unknown(self):
+        w = true_profit.window_profit({**ROW, 'net_items_sold': None}, 7, 2000, detailed(('אריזה', 'per_unit', 4, False)))
+        self.assertEqual((w['contribution'], w['after_ads'], w['contribution_per_shekel']), (None, None, None))
+        self.assertIn('בסיס לחישוב "אריזה"', w['missing'])
 
 
 class SettingsTests(unittest.TestCase):
@@ -80,15 +86,31 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(store.load()['mode'], 'simple')
 
     def test_products_ranked_by_gross_profit(self):
-        rows = [{'product_title': 'A', 'net_sales_with_cost_recorded': '1180', 'cost_of_goods_sold': '100', 'net_items_sold': '5'},
-                {'product_title': 'B', 'net_sales_with_cost_recorded': '11800', 'cost_of_goods_sold': '5000', 'net_items_sold': '9'},
-                {'product_title': 'no cost', 'net_sales_with_cost_recorded': '0', 'cost_of_goods_sold': None}]
+        rows = [{'product_title': 'A', 'net_sales_with_cost_recorded': '1180', 'net_sales_without_cost_recorded': '0',
+                 'cost_of_goods_sold': '100', 'net_items_sold': '5'},
+                {'product_title': 'B', 'net_sales_with_cost_recorded': '11800', 'net_sales_without_cost_recorded': '0',
+                 'cost_of_goods_sold': '5000', 'net_items_sold': '9'},
+                {'product_title': 'no cost', 'net_sales_with_cost_recorded': '0', 'net_sales_without_cost_recorded': '0',
+                 'cost_of_goods_sold': None}]
         result = true_profit.products(rows, SIMPLE)
         self.assertEqual([p['product'] for p in result], ['B', 'A'])
         self.assertEqual(result[1]['gross_margin'], 0.9)
 
+    def test_product_with_unknown_coverage_is_not_ranked(self):
+        rows = [{'product_title': 'A', 'net_sales': '1180', 'net_sales_with_cost_recorded': '1180', 'cost_of_goods_sold': '100'}]
+        self.assertEqual(true_profit.products(rows, SIMPLE), [])
+
     def test_summary_unavailable_without_shopify_profit(self):
         self.assertEqual(true_profit.summary({}, {}, SIMPLE)['status'], 'unavailable')
+
+    def test_spend_from_a_different_period_is_not_used(self):
+        from datetime import date
+        shop = {'profit': {'checked_at': '2026-10-23T09:00:00+00:00', 'windows': {'7': dict(ROW), '90': dict(ROW)},
+                           'products_90': []}}
+        result = true_profit.summary(shop, {'7': (2000, date(2026, 10, 22)), '90': (9000, date(2026, 10, 20))}, SIMPLE)
+        self.assertEqual(result['windows']['7']['contribution_per_shekel'], 4.0)
+        self.assertIsNone(result['windows']['90']['contribution_per_shekel'])
+        self.assertIn('לא מאותה תקופה', result['windows']['90']['missing'][-1])
 
 
 class ShopifyProfitReadTests(unittest.TestCase):
