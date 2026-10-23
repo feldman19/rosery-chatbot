@@ -75,6 +75,22 @@ from urllib.parse import urlsplit,parse_qs,unquote_to_bytes
 from shopify_direct import configure as configure_shopify, read_reports as read_shopify_reports, status as shopify_status, SetupError
 
 ROOT = Path(__file__).resolve().parent
+
+
+def screen_version():
+    """Which code the owner's screen is running, shown at its foot so the phone can tell an old copy from a new one."""
+    from datetime import datetime as _dt
+    import subprocess
+    try:
+        done = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True, timeout=5)
+        commit = done.stdout.strip() if done.returncode == 0 and re.fullmatch(r'[0-9a-f]{7,12}', done.stdout.strip()) else None
+    except (OSError, subprocess.SubprocessError):
+        commit = None
+    try:
+        changed = _dt.fromtimestamp((ROOT / 'simple-web.html').stat().st_mtime).strftime('%d.%m %H:%M')
+    except OSError:
+        changed = None
+    return ' · '.join(x for x in (('גרסה ' + commit) if commit else None, ('המסך עודכן ' + changed) if changed else None) if x) or 'גרסה לא ידועה'
 TENANT, ACTOR, ACCOUNT, ENTITY = 'demo-rosery', 'local-owner', 'demo-meta', 'demo-launch'
 
 
@@ -390,7 +406,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 return self.reply(200,page,'text/html; charset=utf-8')
             if workspace=='manager' and self.path.split('?',1)[0]=='/':
                 # Simple owner screen first; the full workspace stays at /advanced.
-                page=(ROOT/'simple-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
+                page=(ROOT/'simple-web.html').read_text(encoding='utf-8').replace('__SESSION__',session).replace('__VERSION__',screen_version())
                 return self.reply(200,page,'text/html; charset=utf-8')
             if self.path.split('?',1)[0] == '/' or (self.path == '/lab' and workspace == 'manager'):
                 template = 'manager.html' if workspace == 'manager' else 'dashboard.html'

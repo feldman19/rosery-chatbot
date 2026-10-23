@@ -26,6 +26,12 @@ class HomeScreenTests(unittest.TestCase):
         self.assertNotIn('<div class="label"', PAGE)
         self.assertEqual(len(re.findall(r'<h1 id="[\w-]+" tabindex="-1"', PAGE)), 4)
 
+    def test_the_screen_shows_which_version_it_runs(self):
+        import server
+        self.assertIn('__VERSION__', PAGE)
+        version = server.screen_version()
+        self.assertRegex(version, r'^(גרסה [0-9a-f]{7,12} · )?המסך עודכן \d\d\.\d\d \d\d:\d\d$')
+
     def test_unknown_is_never_shown_as_zero(self):
         self.assertIn("'לא ידוע עדיין'", PAGE)
         self.assertIn("'לא ידוע'", PAGE)
