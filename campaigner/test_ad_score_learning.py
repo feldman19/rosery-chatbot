@@ -1,3 +1,4 @@
+from contextlib import closing
 from datetime import date, datetime, timezone
 import json
 from pathlib import Path
@@ -117,7 +118,7 @@ class VariantNoCtrTests(unittest.TestCase):
     def test_variant_recorded_beside_the_main_score_and_decision_kept(self):
         self.shadow.record(report('2026-10-01', [ad(20, *self.LOW_CTR_HOT[:5], clicks=30, impressions=30000)], {'1020': 'HOLD'}))
         import sqlite3, json
-        with sqlite3.connect(self.shadow.path) as db:
+        with closing(sqlite3.connect(self.shadow.path)) as db, db:
             call = json.loads(db.execute('SELECT payload FROM calls').fetchone()[0])
         self.assertEqual((call['rules'], call['score']['verdict'], call['variant']['verdict']), ('HOLD', 'success', 'winner'))
         self.assertEqual(self.shadow.summary(date(2026, 10, 2))['variant']['today_disagreements'], 1)
@@ -140,7 +141,7 @@ class VariantNoCtrTests(unittest.TestCase):
 
     def test_calls_from_before_the_variant_are_skipped(self):
         import sqlite3, json
-        with sqlite3.connect(self.shadow.path) as db:
+        with closing(sqlite3.connect(self.shadow.path)) as db, db:
             db.execute('INSERT INTO calls VALUES (?,?,?)', ('1', '2026-10-01', json.dumps(
                 {'name': 'old', 'rules': 'PAUSE', 'score': {'verdict': 'hold'}, 'agree': False})))
         self.assertEqual(self.shadow.judge_variant(date(2026, 10, 30)), [])
