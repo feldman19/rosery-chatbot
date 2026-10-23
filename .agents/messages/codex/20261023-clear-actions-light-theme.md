@@ -1,0 +1,13 @@
+Owner request (2026-10-23, his words, summarized): the action cards are unclear and the screen is too dark. Fix on your branch, tests where logic changes, do not commit, Hebrew report at the end. Never call a Meta write; do not edit `campaigner/rules/*`. All UI text Hebrew. Files: `campaigner/simple-web.html`, `campaigner/server.py`, `campaigner/outcome_tracking.py` (it already records offers with `first_offered` / `last_offered`), `campaigner/creative_drift.py` (features carry `since`).
+
+1. Say exactly what changes. Every action card and its preview sheet names the action in full:
+   - pause: "לעצור את כל המודעה" + one line "המודעה תפסיק לרוץ. אפשר להפעיל מחדש."
+   - Advantage+ drift: "לכבות רק את שיפורי Advantage+" + "המודעה ממשיכה לרוץ; רק השיפורים האלה נכבים: <list>".
+   - scale: "להגדיל תקציב יומי של האד-סט ב-20%: ₪X → ₪Y".
+   The pill and the button text follow the same words ("עצור מודעה", "כבה שיפורים", "הגדל תקציב"), never a bare "כבה" / "אשר ובצע" without the object.
+2. How long it waits. Each card shows "מחכה לאישור שלך N ימים" (or "מהיום" / "מאתמול") from the first time it was offered: pause/scale from the outcome tracker's offers (`first_offered`), drift from the earliest `since` of its features. Expose it through `/api/management-report` (add a field to each today item / drift item; missing → no line, never 0).
+3. Dismiss manually, and see what was dismissed. Replace the per-day localStorage "לא עכשיו" with a server-side record (local JSON in the data folder): "הסר מהרשימה" asks once ("להסיר? אפשר להחזיר מ'הוסרו'"), stores proposal id + time; the item stays hidden while its content is the same (same proposal id and same numbers bucket) and comes back automatically if the recommendation changes (e.g. a new day with worse numbers — say so on the card: "חזרה כי הנתונים השתנו"). A collapsed "הוסרו (N)" section lists dismissed items with "החזר". Dismissing never writes to Meta.
+4. Untouched items. If an item has been waiting ≥3 days without action or dismissal, mark it softly ("לא נגעת בזה 4 ימים") and sort it to the top.
+5. Light, professional theme as the default (white/very light grey surfaces, dark ink, the brand emerald as accent, gold only as a small accent); dark mode stays available via a toggle in the header (remember the choice in localStorage) and follows the system only if the owner chose "אוטומטי". Check contrast (text ≥ 4.5:1), the hero card, pills, sheets, tab bar, inputs and the upload tab in both themes. Keep the existing layout and IDs.
+
+Run the full suite (`cd campaigner && python -B -m unittest discover -p "test_*.py"`; baseline here 6 failures, 19 errors) and report.
