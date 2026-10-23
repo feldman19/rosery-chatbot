@@ -610,6 +610,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     elif action=='reconcile':
                         if set(body)!={'operation_id','digest'}:raise ValueError('Exact operation ID and digest required')
                         result=campaign_operations.reconcile(body['operation_id'],body['digest'])
+                    elif action=='abandon-video':
+                        if set(body)!={'operation_id','digest','step_key','owner_confirmation'} or body['owner_confirmation'] is not True:raise ValueError('Exact owner video waiver required')
+                        result=campaign_operations.abandon_unknown_video(body['operation_id'],body['digest'],body['step_key'],body['owner_confirmation'])
                     elif action=='execute':
                         if set(body)!={'operation_id'}:raise ValueError('Only operation ID accepted')
                         result=campaign_operations.enqueue(body['operation_id'])

@@ -86,7 +86,7 @@ class V2Provider(FakeProvider):
     def __init__(self):
         super().__init__()
         self.campaign = '999999999999999'
-        self.nodes[self.campaign] = dict(self.nodes[PARENT], id=self.campaign)
+        self.nodes[self.campaign] = dict(self.nodes[PARENT], id=self.campaign,daily_budget='0',lifetime_budget='0')
         self.video_status = 'ready'
         self.inventory_complete = True
         self.omit_campaign = False
@@ -124,6 +124,7 @@ class V2ExecutionTests(unittest.TestCase):
         self.provider = V2Provider()
         self.now = datetime(2026, 10, 23, 10, tzinfo=timezone.utc)
         self.proposal = make_valid_proposal_v2()
+        self.proposal['creation_recipe']={'adset_fields':{},'creative_fields':{},'optimization_type':'DEGREES_OF_FREEDOM'}
         self.proposal['strategy']['campaign_id'] = self.provider.campaign
         # A complete five-ad new group, mixed image/video, no forced story pair.
         self.proposal['adsets'] = self.proposal['adsets'][:1]
@@ -206,6 +207,7 @@ class V2ExecutionTests(unittest.TestCase):
 
     def test_pending_video_blocks_reupload_across_proposal_revisions(self):
         self.provider.video_status='processing'
+        ticks=iter(range(10000));self.service.monotonic=lambda:next(ticks)
         operation=self.preview()
         with patch('campaign_operations.time.sleep'):
             self.execute(operation)
@@ -263,22 +265,24 @@ class V2ExecutionTests(unittest.TestCase):
         self.assertTrue(self.preview()['blocked_reasons'])
         self.book['rules']['existing_adset_reuse'] = {'params': {'max_active_ads_exclusive': 5, 'same_product': True, 'same_angle': True}}
         self.bind_book()
-        live = {'id': '123456789', 'account_id': ACCOUNT, 'campaign_id': self.provider.campaign, 'status': 'PAUSED', 'effective_status': 'PAUSED', 'product': 'ring', 'angle': 'style'}
+        live = {'id': '123456789', 'account_id': ACCOUNT, 'campaign_id': self.provider.campaign, 'status': 'PAUSED', 'effective_status': 'PAUSED', 'name':'ring', 'product': 'ring', 'angle': 'style'}
         self.provider.nodes[live['id']] = live
         self.book['rules']['existing_adset_reuse']['params']['unrecognized_condition']=True
         self.bind_book()
         self.assertTrue(self.preview()['blocked_reasons'])
         self.book['rules']['existing_adset_reuse']['params'].pop('unrecognized_condition')
         self.bind_book()
-        live['product'] = None
+        live['name'] = ''
         self.assertTrue(self.preview()['blocked_reasons'])
-        live['product'] = 'ring'
+        live['name'] = 'ring'
+        from account_history import CATEGORIES
+        group['product']=next(label for label,words in CATEGORIES if 'ring' in words)
         for index in range(5):
             identity=str(800000+index)
             self.provider.nodes[identity]={'id':identity,'account_id':ACCOUNT,'campaign_id':self.provider.campaign,'adset_id':live['id'],'status':'ACTIVE','effective_status':'ACTIVE'}
         self.assertTrue(self.preview()['blocked_reasons'])
         for index in range(5):self.provider.nodes.pop(str(800000+index))
-        operation = self.preview()
+        operation = self.service.preview({'action':'prepare_launch','expected_source':self.binding(),'owner_confirmations':[{'adset_id':live['id'],'same_angle':True}]})['operation']
         self.assertEqual(operation['blocked_reasons'], [])
         result = self.execute(operation)
         self.assertEqual(result['state'], 'verified')
@@ -322,7 +326,7 @@ class V2ExecutionTests(unittest.TestCase):
         self.provider.video_status = 'error'
         operation = self.preview()
         result = self.execute(operation)
-        self.assertEqual(result['state'], 'unknown')
+        self.assertEqual(result['state'], 'partial')
         count = sum(edge == 'video' for edge, p in self.provider.writes)
         self.service = self.new_service()
         self.service.execute(operation['operation_id'])
@@ -331,6 +335,7 @@ class V2ExecutionTests(unittest.TestCase):
 
     def test_video_timeout(self):
         self.provider.video_status = 'processing'
+        ticks=iter(range(10000));self.service.monotonic=lambda:next(ticks)
         operation = self.preview()
         with patch('campaign_operations.time.sleep'):
             result = self.execute(operation)
@@ -365,6 +370,7 @@ class V2ExecutionTests(unittest.TestCase):
 
     def test_reconcile_saved_video_reads_only(self):
         self.provider.video_status = 'processing'
+        ticks=iter(range(10000));self.service.monotonic=lambda:next(ticks)
         operation = self.preview()
         with patch('campaign_operations.time.sleep'):
             self.execute(operation)
@@ -379,11 +385,11 @@ class V2ExecutionTests(unittest.TestCase):
 class V2TransportTests(unittest.TestCase):
     def test_video_account_edge_readback(self):
         transport=CampaignTransport()
-        with patch.object(transport,'_request',return_value={'data':[{'id':'123456','status':{'video_status':'ready'}}]}) as request:
+        with patch.object(transport,'_request',return_value={'id':'123456','status':{'video_status':'ready'}}) as request:
             self.assertEqual(transport.video_info('synthetic','123456')['account_id'],ACCOUNT)
-            self.assertEqual(request.call_args.args[1],'act_'+ACCOUNT+'/advideos')
-        with patch.object(transport,'_request',return_value={'data':[]}):
-            with self.assertRaises(ValueError):transport.video_info('synthetic','123456')
+            self.assertEqual(request.call_args.args[1],'123456')
+        with patch.object(transport,'_request',return_value={}):
+            self.assertTrue(transport.video_info('synthetic','123456')['pending'])
 
     def test_v2_does_not_use_legacy_batch(self):
         transport=CampaignTransport()

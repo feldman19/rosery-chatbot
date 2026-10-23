@@ -26,7 +26,8 @@ def validate_creation_v2(edge,params,campaign_id):
     allowed={'adsets':{'name','campaign_id','status','daily_budget','targeting','optimization_goal','billing_event','promoted_object'},
              'ads':{'name','status','adset_id','creative'},
              'adcreatives':{'name','object_story_spec','asset_feed_spec','url_tags'}}
-    if set(params)!=allowed[edge]:raise BatchRejected('Exact v2 creation fields required')
+    extras={'adsets':{'is_dynamic_creative','destination_type','bid_strategy'},'adcreatives':{'degrees_of_freedom_spec'},'ads':set()}
+    if not allowed[edge]<=set(params) or set(params)-allowed[edge]-extras[edge]:raise BatchRejected('Exact v2 creation fields required')
     # Scan all input without allowing asset_feed_spec to weaken the legacy scan.
     _safe({k:v for k,v in params.items() if k!='asset_feed_spec'})
     if not isinstance(params['name'],str) or not 1<=len(params['name'])<=300:raise BatchRejected('Bounded name required')
@@ -41,7 +42,7 @@ def validate_creation_v2(edge,params,campaign_id):
         feed=params['asset_feed_spec']
         if not isinstance(feed,dict):raise BatchRejected('V2 variation feed required')
         media='videos' if feed.get('ad_formats')==['SINGLE_VIDEO'] else 'images' if feed.get('ad_formats')==['SINGLE_IMAGE'] else None
-        if media is None or set(feed)!={'bodies','titles','descriptions','link_urls','call_to_action_types','ad_formats',media}:raise BatchRejected('Exact v2 feed fields required')
+        if media is None or set(feed)-{'optimization_type'}!={'bodies','titles','descriptions','link_urls','call_to_action_types','ad_formats',media}:raise BatchRejected('Exact v2 feed fields required')
         _safe(feed)
         for key in ('bodies','titles'):
             if not isinstance(feed[key],list) or len(feed[key])!=5 or any(not isinstance(x,dict) or set(x)!={'text'} or not isinstance(x['text'],str) or not x['text'].strip() or len(x['text'])>4000 for x in feed[key]):raise BatchRejected('Five text/title variations required')

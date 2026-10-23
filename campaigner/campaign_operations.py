@@ -146,7 +146,7 @@ class CampaignOperations:
     def _public(self,job):
         fresh=self._stamp(job['created_at'])<=self._now()<self._stamp(job['expires_at'])
         eligible=job['approval_status']=='approved' and job['state']=='prepared' and not job['blocked_reasons'] and fresh
-        uncertain=any(s['state'] in ('inflight','unknown') for s in job['steps'])
+        uncertain=any(s['state'] in ('inflight','unknown','abandoned') for s in job['steps'])
         cancellable=job['state'] in ('prepared','approved','scheduled','queued') and all(s['state']=='pending' for s in job['steps'])
         return {k:job.get(k) for k in ('operation_id','digest','action','state','approval_status','before','after','budget','files','blocked_reasons','approval_requirements','expires_at','manifest','scheduled_at','reason','timings','created_at','historical_source_reuse')}|{'full_launch_ready':False if job['action']=='prepare_launch' else None,'completion_scope':('single_ad_five_copy_api_readback' if job.get('manifest',{}).get('schema_version')==2 else 'dedicated_feed_story_single_copy_api_readback' if job.get('manifest',{}).get('format_mode')=='dedicated_feed_story_single_copy' else 'feed_only_single_copy_api_readback') if job['action']=='prepare_launch' and job['state']=='verified' else None,'execution_ready':eligible and not job['scheduled_at'],'schedule_ready':eligible and bool(job['scheduled_at']) and self._stamp(job['scheduled_at'])>self._now(),'can_cancel':cancellable,'provider_write_attempted':any(s['state']!='pending' for s in job['steps']),'provider_write_performed':None if uncertain else any(s['state']=='verified' for s in job['steps'])}
     def _response(self,job):
@@ -173,14 +173,17 @@ class CampaignOperations:
         try:
             source=self._proposal()
             if source.get('schema_version')==2:
-                token=self.credentials();self._account(token)
-                for row in self._v2_campaigns(token):
+                cached=getattr(self,'_campaign_cache',None)
+                if cached is None or self.monotonic()-cached[0]>=30:
+                    token=self.credentials();self._account(token)
+                    cached=(self.monotonic(),self._v2_campaigns(token),self._now().isoformat());self._campaign_cache=cached
+                for row in cached[1]:
                     entities[row['id']]={'entity_type':'campaign','entity_id':row['id'],'name':row.get('name',row['id']),
-                                         'status':row.get('status'),'observed_at':self._now().isoformat(),'currency':'ILS','requires_fresh_preview':True}
+                                         'status':row.get('status'),'observed_at':cached[2],'currency':'ILS','requires_fresh_preview':True}
             blueprint=attach_probe(build_blueprint(source),self.directory,self.key)
             workflow=execution_workflow(blueprint,source.get('required_format'))
             workflow['owner_budget_entry']=(source.get('operation_config') or {}).get('owner_budget_entry') is True
-        except (ValueError,KeyError,TypeError,OSError):
+        except Exception:
             blueprint={'execution_available':False,'input_complete':False,'issues':[{'reason':'current_signed_proposal_unavailable'}]}
             workflow=execution_workflow(blueprint)
         return {'account_id':ACCOUNT,'campaign_id':PARENT,'capabilities':{'prepare_launch':True,'set_budget':True,'pause':True,'activate':True,'schedule':True,'full_launch':False,'paired_images_single_copy':True},'full_launch_blueprint':blueprint,'launch_workflow':workflow,'entities':list(entities.values()), 'proposals':[self._response(x)['operation'] for x in jobs[-30:]],'jobs':[self._response(x)['job'] for x in jobs[-30:]],'default_creation_status':'PAUSED','placement_customization':workflow.get('request_format')=='dedicated_feed_story_single_copy','limitations':['Campaign activation requires complete exact descendant budget/status inventory and fresh readback','Cached entity states require fresh preview before changes','Paired-image single-copy creation is separate from rendered QA, editability and full-launch readiness']}
@@ -355,14 +358,14 @@ class CampaignOperations:
         if path.is_symlink() or not path.is_file() or not 12<=path.stat().st_size<=64*1024*1024:raise OperationBlocked('Bounded cached video missing')
         raw=path.read_bytes()
         if hashlib.sha256(raw).hexdigest()!=sha or raw[4:8]!=b'ftyp':raise OperationBlocked('Video hash/container mismatch')
-        return raw,{'id':identity,'sha256':sha,'size':len(raw),'mime':'video/mp4','source_kind':row.get('source_kind','drive')}
+        return raw,{'id':identity,'sha256':sha,'size':len(raw),'mime':'video/quicktime' if raw[8:12]==b'qt  ' else 'video/mp4','source_kind':row.get('source_kind','drive')}
 
-    def _v2_context(self,token,proposal):
+    def _v2_context(self,token,proposal,check_time=True):
         from launch_proposal_schema import validate_proposal_v2
         from rulebook import load_rulebook
         try:validate_proposal_v2(proposal)
         except ValueError as error:raise OperationBlocked(str(error)) from None
-        if not self._stamp(proposal['prepared_at'])<=self._now()<self._stamp(proposal['expires_at']):raise OperationBlocked('Proposal expired or future dated')
+        if check_time and not self._stamp(proposal['prepared_at'])<=self._now()<self._stamp(proposal['expires_at']):raise OperationBlocked('Proposal expired or future dated')
         if proposal['blockers'] or proposal['owner_questions']:raise OperationBlocked('Unresolved proposal blockers/questions')
         book=load_rulebook()
         if book.get('status')!='available' or digest(book)!=proposal['rules']['rulebook_sha256']:raise OperationBlocked('Verified rulebook changed or unavailable')
@@ -389,6 +392,13 @@ class CampaignOperations:
         if any(row.get('adset_id') not in sets for row in inventory['ads']):raise OperationBlocked('Live inventory parent coverage mismatch')
         return dict(parent,launch_inventory=inventory,rulebook=book)
 
+    def _execution_context(self,context,proposal,selection):
+        chosen=selection.get('selected_adset_keys',[g['key'] for g in proposal['adsets']])
+        targets={g['target']['adset_id'] for g in proposal['adsets'] if g['key'] in chosen and g['target']['mode']=='existing'}
+        clean={k:v for k,v in context.items() if k not in ('effective_status','launch_inventory')}
+        clean['launch_inventory']={edge:[{k:v for k,v in row.items() if k!='effective_status'} for row in context['launch_inventory'][edge] if (row['id'] if edge=='adsets' else row['adset_id']) in targets] for edge in ('adsets','ads')}
+        return clean
+
     def _v2_campaigns(self,token):
         listing=self.transport.campaigns(token)
         if not isinstance(listing,dict) or listing.get('complete') is not True or not isinstance(listing.get('data'),list) or not 1<=len(listing['data'])<=1000:raise OperationBlocked('Complete verified campaign list required')
@@ -401,12 +411,17 @@ class CampaignOperations:
 
     def _prepare_v2(self,body,proposal,jobid,context):
         # Only explicit selectors; no v1 single-copy narrowing, scheduling or overrides.
-        if set(body)-{'action','expected_source','selected_adset_keys','selected_asset_ids','format_mode'} or body.get('format_mode','single_ad_flexible')!='single_ad_flexible':raise OperationBlocked('Unsupported v2 selector/override')
+        if set(body)-{'action','expected_source','selected_adset_keys','selected_asset_ids','format_mode','owner_confirmations'} or body.get('format_mode','single_ad_flexible')!='single_ad_flexible':raise OperationBlocked('Unsupported v2 selector/override')
+        confirmations=body.get('owner_confirmations',[])
+        if not isinstance(confirmations,list) or len(confirmations)>5 or any(not isinstance(r,dict) or set(r)!={'adset_id','same_angle'} or not isinstance(r['adset_id'],str) or not ID.fullmatch(r['adset_id']) or r['same_angle'] is not True for r in confirmations) or len({r['adset_id'] for r in confirmations})!=len(confirmations):raise OperationBlocked('Explicit unique owner confirmations required')
         groups=proposal['adsets'];ads=proposal['ads'];campaign=proposal['strategy']['campaign_id']
         chosen=body.get('selected_adset_keys',[g['key'] for g in groups])
         selected=body.get('selected_asset_ids',[a['asset_id'] for a in ads if a['adset_key'] in chosen])
         for values,known in ((chosen,{g['key'] for g in groups}),(selected,{a['asset_id'] for a in ads if a['adset_key'] in chosen})):
             if not isinstance(values,list) or not values or any(not isinstance(x,str) for x in values) or len(set(values))!=len(values) or not set(values)<=known:raise OperationBlocked('Unknown or duplicate v2 selection')
+        recipe=proposal.get('creation_recipe')
+        if not isinstance(recipe,dict) or set(recipe)!={'adset_fields','creative_fields','optimization_type'}:raise OperationBlocked('Explicit creation_recipe required; live PAUSED canary approval pending')
+        if set(recipe['adset_fields'])-{'is_dynamic_creative','destination_type','bid_strategy'} or set(recipe['creative_fields'])-{'degrees_of_freedom_spec'}:raise OperationBlocked('Unsupported recipe fields')
         book=context['rulebook'];count_rule=book['rules']['ads_per_adset']['params']
         if set(count_rule)!={'min','max'} or any(type(count_rule[k]) is not int for k in ('min','max')) or not 1<=count_rule['min']<=count_rule['max']<=15:raise OperationBlocked('Unsupported ad count rule')
         steps=[];files=[];manifest_groups=[];copy_choices=[]
@@ -422,17 +437,23 @@ class CampaignOperations:
                 matches=[r for r in context['launch_inventory']['adsets'] if r['id']==target['adset_id']]
                 if len(matches)!=1 or matches[0]['status'] not in ('ACTIVE','PAUSED'):raise OperationBlocked('Existing adset unavailable')
                 live=matches[0]
-                if live.get('product')!=group['product'] or live.get('angle')!=group['angle']:raise OperationBlocked('Existing product/angle unknown or mismatched')
+                from launch_strategy import product_of
+                product=product_of(live.get('name'),*[r.get('name') for r in context['launch_inventory']['ads'] if r['adset_id']==live['id']])
+                confirmations=body.get('owner_confirmations',[])
+                if product!=group['product']:raise OperationBlocked('Existing product unknown or mismatched')
+                if {'adset_id':live['id'],'same_angle':True} not in confirmations:raise OperationBlocked('Explicit owner same-angle confirmation required')
                 existing=[r for r in context['launch_inventory']['ads'] if r['adset_id']==live['id']]
                 if sum(r['status']=='ACTIVE' for r in existing)>=params['max_active_ads_exclusive']:raise OperationBlocked('Existing reuse active count condition failed')
                 total=sum(r['status'] not in ('ARCHIVED','DELETED') for r in existing)+len(members)
                 setref=live['id'];setparams={'existing_adset_id':live['id']}
             else:
                 total=len(members)
+                if any(str(context.get(k,'0'))!='0' for k in ('daily_budget','lifetime_budget')):raise OperationBlocked('Campaign budget conflicts with adset budget')
                 name=group['label']+' | '+self._stamp(proposal['prepared_at']).date().isoformat()+' | OPS '+jobid[:8]
                 setparams={'name':name,'campaign_id':campaign,'status':'PAUSED','daily_budget':group['budget_minor'],
                            'targeting':{'geo_locations':{'countries':['IL']},'age_min':18,'publisher_platforms':['facebook','instagram'],'facebook_positions':['feed'],'instagram_positions':['stream']},
                            'optimization_goal':'OFFSITE_CONVERSIONS','billing_event':'IMPRESSIONS','promoted_object':{'pixel_id':PIXEL,'custom_event_type':'PURCHASE'}}
+                setparams.update(recipe['adset_fields'])
                 steps.append(self._step(setkey,'adsets',setparams,setparams));setref={'ref':setkey,'field':'id'}
             if not count_rule['min']<=total<=count_rule['max']:raise OperationBlocked('ads_per_adset: live plus proposed count outside rule')
             manifest_groups.append({'key':group['key'],'mode':target['mode'],'params':setparams})
@@ -440,7 +461,7 @@ class CampaignOperations:
                 prefix=setkey+'ad'+str(n);kind=ad['media_kind']
                 _,info=self._video_source(ad) if kind=='video' else self._source(ad)
                 files.append(info)
-                media={'asset_id':ad['asset_id'],'sha256':ad['sha256'],'source_kind':ad['source_kind'],'name':prefix+'-'+jobid[:8]+('.mp4' if kind=='video' else '.png'),'mime':info['mime']}
+                media={'asset_id':ad['asset_id'],'sha256':ad['sha256'],'source_kind':ad['source_kind'],'name':prefix+'-'+jobid[:8]+('.mov' if info['mime']=='video/quicktime' else '.mp4' if kind=='video' else '.png' if info['mime']=='image/png' else '.jpg'),'mime':info['mime']}
                 steps.append(self._step(prefix+'media',kind,media,{}))
                 feed={'bodies':[{'text':x} for x in ad['primary_text_options']], 'titles':[{'text':x} for x in ad['headline_options']],
                       'descriptions':[{'text':ad['description']}], 'link_urls':[{'website_url':ad['destination_url']}], 'call_to_action_types':['SHOP_NOW'], 'ad_formats':['SINGLE_VIDEO' if kind=='video' else 'SINGLE_IMAGE']}
@@ -448,18 +469,20 @@ class CampaignOperations:
                 else:
                     thumbnail={'asset_id':ad['video']['thumbnail_asset_id'],'sha256':ad['video']['thumbnail_sha256'],'source_kind':'device' if ad['video']['thumbnail_asset_id'].startswith('local_') else 'drive'}
                     _,thumbinfo=self._source(thumbnail);files.append(thumbinfo)
-                    thumbparams=dict(thumbnail,name=prefix+'-thumbnail.png',mime=thumbinfo['mime'])
+                    thumbparams=dict(thumbnail,name=prefix+'-thumbnail'+('.png' if thumbinfo['mime']=='image/png' else '.jpg'),mime=thumbinfo['mime'])
                     steps.append(self._step(prefix+'thumbnail','image',thumbparams,{}))
                     feed['videos']=[{'video_id':{'ref':prefix+'media','field':'id'},'thumbnail_hash':{'ref':prefix+'thumbnail','field':'hash'}}]
                 creative={'name':prefix+' | OPS '+jobid[:8], 'object_story_spec':{'page_id':PAGE,'instagram_user_id':INSTAGRAM}, 'asset_feed_spec':feed,'url_tags':ad['url_tags']}
+                if proposal.get('schema_version')==2:
+                    feed['optimization_type']=recipe['optimization_type'];creative.update(recipe['creative_fields'])
                 steps.append(self._step(prefix+'creative','adcreatives',creative,creative))
                 adparams={'name':ad['source_name']+' | OPS '+jobid[:8],'adset_id':setref,'creative':{'creative_id':{'ref':prefix+'creative','field':'id'}},'status':'PAUSED'}
                 steps.append(self._step(prefix,'ads',adparams,adparams))
                 copy_choices.append({'asset_id':ad['asset_id'],'primary_texts':ad['primary_text_options'],'headlines':ad['headline_options']})
-        return steps,files,{'schema_version':2,'adsets':manifest_groups,'selection':body,'copy_choices':copy_choices,'format_mode':'single_ad_flexible','additional_text_options_assigned':True,'old_adsets_changed':False,'live_context_digest':digest(context),'proposal_digest':digest(proposal)}
+        return steps,files,{'schema_version':2,'adsets':manifest_groups,'selection':body,'copy_choices':copy_choices,'format_mode':'single_ad_flexible','additional_text_options_assigned':True,'old_adsets_changed':False,'live_context_digest':digest(self._execution_context(context,proposal,body)),'proposal_digest':digest(proposal)}
 
     def preview(self,body):
-        if not isinstance(body,dict) or set(body)-{'action','expected_source','selected_adset_keys','selected_asset_ids','copy_variant_indices','format_mode','creation_budget_minor','entity_type','entity_id','budget_minor','budget_type','scheduled_at'}:raise OperationBlocked('Unsupported preview fields')
+        if not isinstance(body,dict) or set(body)-{'action','expected_source','selected_adset_keys','selected_asset_ids','copy_variant_indices','format_mode','creation_budget_minor','entity_type','entity_id','budget_minor','budget_type','scheduled_at','owner_confirmations'}:raise OperationBlocked('Unsupported preview fields')
         action=body.get('action')
         if action not in ('prepare_launch','set_budget','pause','activate'):raise OperationBlocked('Unsupported action')
         if action!='prepare_launch' and any(key in body for key in ('expected_source','selected_adset_keys','selected_asset_ids','copy_variant_indices','format_mode','creation_budget_minor')):raise OperationBlocked('Creative selection is only supported for preparation')
@@ -534,20 +557,20 @@ class CampaignOperations:
             job={'operation_id':identity,'digest':digest(manifest),'intent':intent,'action':action,'state':'blocked' if blocked else 'prepared','approval_status':'pending','before':before,'after':after,'budget':budget,'files':files,'manifest':manifest,'steps':steps,'blocked_reasons':blocked,'approval_requirements':['exact_manifest','media_transfer'] if action=='prepare_launch' else ['exact_manifest'],'created_at':now.isoformat(),'expires_at':(now+timedelta(days=7) if scheduled else now+timedelta(minutes=15)).isoformat(),'scheduled_at':scheduled,'source_digest':source,'reason':None}
             if action=='prepare_launch':
                 from creative_reuse import historical_source_reuse
-                job['historical_source_reuse']=historical_source_reuse(priors,files,ACCOUNT,PARENT)
+                job['historical_source_reuse']=historical_source_reuse(priors,files,ACCOUNT,manifest.get('campaign_id',PARENT))
             self._save(db,job)
         return self._response(job)
 
-    def _valid(self,job):
+    def _valid(self,job,check_time=True):
         if job['blocked_reasons']:raise OperationBlocked('Hard prerequisites remain blocked')
         now=self._now()
-        if not self._stamp(job['created_at'])<=now<self._stamp(job['expires_at']):raise OperationBlocked('Operation expired')
+        if check_time and not self._stamp(job['created_at'])<=now<self._stamp(job['expires_at']):raise OperationBlocked('Operation expired')
         if digest(job['manifest'])!=job['digest']:raise OperationBlocked('Manifest changed')
         if job['source_digest'] and digest(self._proposal())!=job['source_digest']:raise OperationBlocked('Proposal or request revision changed')
         if job['manifest'].get('schema_version')==2:
             from rulebook import load_rulebook
             proposal=self._proposal()
-            if not self._stamp(proposal['prepared_at'])<=now<self._stamp(proposal['expires_at']):raise OperationBlocked('V2 proposal expired')
+            if check_time and not job.get('approved_at') and not self._stamp(proposal['prepared_at'])<=now<self._stamp(proposal['expires_at']):raise OperationBlocked('V2 proposal expired')
             if digest(load_rulebook())!=proposal['rules']['rulebook_sha256']:raise OperationBlocked('V2 rulebook changed')
 
     def approve(self,operation_id,digest_value):
@@ -555,7 +578,9 @@ class CampaignOperations:
             job=self._get(operation_id);self._valid(job)
             if not isinstance(digest_value,str) or not hmac.compare_digest(job['digest'],digest_value):raise OperationBlocked('Exact displayed manifest digest required')
             if job['state'] not in ('prepared','scheduled') or job['approval_status']!='pending':raise OperationBlocked('Operation cannot be reapproved')
-            job['approval_status']='approved';job['approved_at']=self._now().isoformat();self._put(job)
+            job['approval_status']='approved';job['approved_at']=self._now().isoformat()
+            if job['manifest'].get('schema_version')==2:job['expires_at']=(self._now()+timedelta(minutes=15)).isoformat()
+            self._put(job)
             return self._response(job)
 
     def cancel(self,operation_id,digest_value):
@@ -590,7 +615,7 @@ class CampaignOperations:
         items already handed to transport. It applies to the next dispatch.
         """
         try:
-            self._valid(job)
+            self._valid(job,check_time=job['manifest'].get('schema_version')!=2)
             if getattr(self,'stop_event',None) is not None and self.stop_event.is_set():raise OperationBlocked('Worker stop requested')
             with self.db() as db:
                 row=db.execute('SELECT payload,signature FROM operation_stops WHERE id=?',(job['operation_id'],)).fetchone()
@@ -624,7 +649,7 @@ class CampaignOperations:
                     except ValueError:return False
                 elif not self._match(actual[k],v):return False
             return True
-        if isinstance(expected,list):return actual==expected
+        if isinstance(expected,list):return isinstance(actual,list) and len(actual)==len(expected) and all(self._match(a,e) for a,e in zip(actual,expected))
         if type(expected) is int:return not isinstance(actual,bool) and str(actual)==str(expected)
         return actual==expected
 
@@ -662,7 +687,7 @@ class CampaignOperations:
             for old in priors:
                 for candidate in old['steps']:
                     if old['operation_id']==job['operation_id'] and candidate['key']==step['key']:continue
-                    if candidate['kind']=='video' and candidate['params'].get('sha256')==info['sha256'] and candidate['state']!='pending':
+                    if candidate['kind']=='video' and candidate['params'].get('sha256')==info['sha256'] and candidate['state'] not in ('pending','rejected','abandoned'):
                         if candidate['state']!='verified':raise OperationBlocked('Prior video upload requires reconciliation; no re-upload')
                         prior=candidate
             if prior:
@@ -677,14 +702,18 @@ class CampaignOperations:
             step['provider_id']=identity;self._put(job)
             # A saved identity is never permission to re-upload after timeout.
             deadline=self.monotonic()+60
-            for attempt in range(30):
-                if self.monotonic()>=deadline:break
+            while self.monotonic()<deadline:
                 read=self._measured_call(job,'receipt_readback',self.transport.video_info,token,identity)
+                if not read or read.get('pending') is True:
+                    time.sleep(1)
+                    continue
                 if read.get('id')!=identity or read.get('account_id')!=ACCOUNT:raise OperationBlocked('Video account readback mismatch')
                 status=(read.get('status') or {}).get('video_status')
                 if status=='ready':return {'id':identity,'source_sha256':info['sha256'],'processing_status':'ready'}
+                if status in ('error','rejected'):
+                    step['state']='rejected';self._put(job);raise ProviderRejected('Video processing rejected')
                 if status not in ('processing','uploading'):raise OperationBlocked('Video processing failed or unknown')
-                if attempt<29:time.sleep(1)
+                time.sleep(1)
             raise OperationBlocked('Video processing timeout; no re-upload allowed')
         if kind=='image':
             row={'asset_id':params['asset_id'],'sha256':params['sha256'],'source_kind':params.get('source_kind','drive')};raw,info=self._source(row)
@@ -725,7 +754,9 @@ class CampaignOperations:
     def _verify_created(self,token,step,job,params,identity):
         kind=step['kind']
         fields={'adsets':'id,account_id,name,status,campaign_id,targeting,optimization_goal,billing_event,promoted_object,start_time,end_time,daily_budget,lifetime_budget,bid_strategy,destination_type,is_dynamic_creative','adcreatives':'id,account_id,name,object_story_spec,url_tags','ads':'id,account_id,name,status,adset_id,campaign_id,creative{id}'}[kind]
-        if kind=='adcreatives' and 'asset_feed_spec' in params:fields+=',asset_feed_spec'
+        if job['manifest'].get('schema_version')==2:
+            fields=','.join(['id','account_id']+[('creative{id}' if k=='creative' else k) for k in params]+(['campaign_id'] if kind=='ads' else []))
+        elif kind=='adcreatives' and 'asset_feed_spec' in params:fields+=',asset_feed_spec'
         read=self._measured_call(job,'receipt_readback',self.transport.read,token,identity,fields)
         if read.get('id')!=identity or read.get('account_id')!=ACCOUNT:raise OperationBlocked('Created object account mismatch')
         expected=dict(params)
@@ -792,6 +823,21 @@ class CampaignOperations:
             raise ProviderRejected('One or more batch items rejected')
         return True
 
+    def abandon_unknown_video(self,operation_id,digest_value,step_key,owner_confirmation=False):
+        """Explicit owner waiver of an ambiguous upload, never an automatic retry.
+
+        A remote orphan may exist. This records that risk and permits a new
+        proposal to upload the source; it never resumes this consumed job.
+        """
+        with self.lock,self.db() as db:
+            job=self._load(db,operation_id)
+            if owner_confirmation is not True or not isinstance(digest_value,str) or not hmac.compare_digest(job['digest'],digest_value) or digest(job['manifest'])!=job['digest']:raise OperationBlocked('Exact owner waiver required')
+            step=next((s for s in job['steps'] if s['key']==step_key),None)
+            if job['state'] not in ('unknown','partial') or job.get('approval_status')!='consumed' or not step or step['kind']!='video' or step['state']!='unknown' or step.get('provider_id'):raise OperationBlocked('Only unknown video without provider identity can be abandoned')
+            step['state']='abandoned';step['owner_waiver']={'confirmed_at':self._now().isoformat(),'remote_orphan_possible':True}
+            self._save(db,job)
+            return self._response(job)
+
     def reconcile(self,operation_id,digest_value):
         """Read saved identities only; never resume creation or discover by name.
 
@@ -824,7 +870,7 @@ class CampaignOperations:
                 job['execution_evidence']=json.loads(canonical({k:job.get(k) for k in ('state','reason','finished_at','steps')}))
             try:
                 for step in job['steps']:
-                    if step['state'] in ('pending','rejected'):continue
+                    if step['state'] in ('pending','rejected','abandoned'):continue
                     was_verified=step['state']=='verified';verification_started=False
                     try:
                         params=self._resolve(step['params'],job['steps'])
@@ -909,9 +955,11 @@ class CampaignOperations:
                     if job['action']=='prepare_launch':
                         proposal=self._proposal()
                         if job['manifest'].get('schema_version')==2:
-                            current=self._v2_context(token,proposal)
+                            current=self._v2_context(token,proposal,check_time=False)
                         else:current=self._entity(token,'campaign',PARENT)
-                        if current!=job['before']:raise OperationBlocked('Parent campaign changed since preview')
+                        if job['manifest'].get('schema_version')==2:
+                            if self._execution_context(current,proposal,job['manifest']['selection'])!=self._execution_context(job['before'],proposal,job['manifest']['selection']):raise OperationBlocked('Selected campaign context changed since preview')
+                        elif current!=job['before']:raise OperationBlocked('Parent campaign changed since preview')
                         # Revalidate every cached source/config immediately before first write.
                         proposal=self._proposal()
                         if digest(proposal)!=job['source_digest']:raise OperationBlocked('Proposal or request revision changed during preflight')
