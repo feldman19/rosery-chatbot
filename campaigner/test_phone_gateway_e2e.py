@@ -8,6 +8,7 @@ import http.client
 import ipaddress
 import json
 import re
+import shutil
 import tempfile
 import threading
 import unittest
@@ -103,6 +104,28 @@ class PhoneGatewayEndToEndTests(unittest.TestCase):
             status, _, body = self.call(method, path, b'{}' if method == 'POST' else None, phone)
             self.assertEqual(status, 404, path)
             self.assertIn('לא זמין מהטלפון', json.loads(body)['error'])
+
+    @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'ffmpeg not installed')
+    def test_uploaded_video_plays_on_the_phone_in_full(self):
+        from test_launch_video_preview import make_media
+        video, _ = make_media(self.temp.name)
+        phone = self.signed_in()
+        token = re.search("const token='([^']+)'", self.call('GET', '/', headers=phone)[2]).group(1)
+        session = {**phone, 'X-Local-Session': token}
+        status, _, body = self.call('POST', '/api/local-uploads', video, {**session, 'Content-Type': 'video/mp4',
+                                    'X-File-Name': 'clip.mp4', 'X-Upload-Id': 'phone_preview_clip_upload'})
+        self.assertEqual(status, 200, body)
+        asset = json.loads(body)['asset']
+        path = f"/api/creative-launch/video/{asset['id']}~{asset['sha256']}"
+        conn = http.client.HTTPConnection(PC, self.gateway.server_port, timeout=30, source_address=(PHONE, 0))
+        try:
+            conn.request('GET', path, headers=session)
+            response = conn.getresponse()
+            self.assertEqual((response.status, response.getheader('Content-Type')), (200, 'video/mp4'))
+            self.assertEqual(response.read(), video)
+        finally:
+            conn.close()
+        self.assertEqual(self.call('GET', path, headers=phone)[0], 403)  # the local session is still required
 
     def test_five_wrong_codes_lock_sign_in(self):
         wrong = '000000' if self.code != '000000' else '111111'
