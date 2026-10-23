@@ -17,6 +17,10 @@ def operation_proposal(report):
         return report
     result = copy.deepcopy(report)
     p = result['proposal']
+    if 'schema_version' in p and p['schema_version'] != 1:
+        from launch_proposal_schema import validate_proposal_v2
+        validate_proposal_v2(p)
+        return result
     # Owner's full launch requirement is not narrowed by this legacy recipe.
     p['required_format'] = p.get('required_format') or 'dedicated_feed_story_five_copy'
     paired = p['required_format'] == 'dedicated_feed_story_single_copy'

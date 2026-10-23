@@ -148,6 +148,54 @@ class CampaignTransport:
         if edge not in ('adsets','adcreatives','ads'):raise ValueError('Unsupported creation edge')
         return self._request(token,'act_'+ACCOUNT+'/'+edge,'POST',params)
 
+    def create_v2(self,token,edge,params,campaign_id):
+        from meta_batch import validate_creation_v2
+        validate_creation_v2(edge,params,campaign_id)
+        return self._request(token,'act_'+ACCOUNT+'/'+edge,'POST',params)
+
+    def campaigns(self,token):
+        return {'complete':True,'data':self._pages(token,'act_'+ACCOUNT+'/campaigns','id,account_id,name,status,effective_status,objective')}
+
+    def _pages(self,token,path,fields):
+        rows=[];cursor=None;seen=set();deadline=time.monotonic()+60
+        for page in range(10):
+            if time.monotonic()>=deadline:raise ValueError('Inventory deadline exceeded')
+            params={'fields':fields,'limit':100}
+            if cursor:params['after']=cursor
+            raw=self._request(token,path,params=params)
+            if not isinstance(raw.get('data'),list) or len(raw['data'])>100:raise ValueError('Inventory page invalid')
+            rows.extend(raw['data']);paging=raw.get('paging') or {}
+            if not paging.get('next'):return rows
+            cursor=(paging.get('cursors') or {}).get('after')
+            if not isinstance(cursor,str) or not 1<=len(cursor)<=2048 or cursor in seen:raise ValueError('Inventory cursor invalid')
+            seen.add(cursor)
+        raise ValueError('Inventory exceeds bounded coverage')
+
+    def inventory_v2(self,token,campaign_id):
+        self._node(campaign_id)
+        # Caller verifies campaign membership first. Product/angle are deliberately
+        # absent: Meta has no such authoritative fields; reuse fails closed unless
+        # a trusted transport can supply independently verified metadata.
+        return {'complete':True,
+                'adsets':self._pages(token,campaign_id+'/adsets','id,account_id,campaign_id,name,status,effective_status,daily_budget,lifetime_budget'),
+                'ads':self._pages(token,campaign_id+'/ads','id,account_id,campaign_id,adset_id,name,status,effective_status')}
+
+    def upload_video(self,token,raw,name):
+        if not isinstance(raw,bytes) or not 12<=len(raw)<=64*1024*1024 or raw[4:8]!=b'ftyp':raise ValueError('Bounded MP4 required')
+        if not isinstance(name,str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,120}',name):raise ValueError('Safe video upload name required')
+        boundary='----ROSERY'+secrets.token_hex(16)
+        data=(f'--{boundary}\r\nContent-Disposition: form-data; name="source"; filename="{name}"\r\nContent-Type: video/mp4\r\n\r\n'.encode()+raw+f'\r\n--{boundary}--\r\n'.encode())
+        return self._request(token,'act_'+ACCOUNT+'/advideos','POST',data=data,content_type='multipart/form-data; boundary='+boundary)
+
+    def video_info(self,token,identity):
+        self._node(identity)
+        # Prove account membership through the account edge, not an assumed
+        # account_id field on the generic Video node. Bounded coverage fails shut.
+        rows=self._pages(token,'act_'+ACCOUNT+'/advideos','id,status')
+        matches=[row for row in rows if isinstance(row,dict) and row.get('id')==identity]
+        if len(matches)!=1:raise ValueError('Video account membership unavailable')
+        return dict(matches[0],account_id=ACCOUNT)
+
     def update(self,token,node,params):
         if not (set(params)=={'status'} and params['status'] in ('PAUSED','ACTIVE') or set(params) in ({'daily_budget'},{'lifetime_budget'}) and str(next(iter(params.values()))).isdigit()):raise ValueError('Unsupported mutation')
         return self._request(token,self._node(node),'POST',params)

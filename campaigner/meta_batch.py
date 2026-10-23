@@ -15,6 +15,49 @@ ACCOUNT='393059510164294';PARENT='120246379886090730';MAX_BATCH=50
 CREATION={'adsets':{'name','status','campaign_id','targeting','optimization_goal','billing_event','promoted_object','start_time','end_time','daily_budget','lifetime_budget'},'adcreatives':{'name','object_story_spec'},'ads':{'name','status','adset_id','creative','tracking_specs'}}
 class BatchRejected(ValueError):pass
 
+
+def validate_creation_v2(edge,params,campaign_id):
+    """Separate v2 resolved-write boundary; legacy batch allowlists stay intact.
+
+    V2 uses sequential journaled dispatch, not the v1 batch/placement recipe.
+    Account membership and exact approval are verified by CampaignOperations.
+    """
+    if not _id(campaign_id) or edge not in CREATION or not isinstance(params,dict):raise BatchRejected('Invalid v2 creation scope')
+    allowed={'adsets':{'name','campaign_id','status','daily_budget','targeting','optimization_goal','billing_event','promoted_object'},
+             'ads':{'name','status','adset_id','creative'},
+             'adcreatives':{'name','object_story_spec','asset_feed_spec','url_tags'}}
+    if set(params)!=allowed[edge]:raise BatchRejected('Exact v2 creation fields required')
+    # Scan all input without allowing asset_feed_spec to weaken the legacy scan.
+    _safe({k:v for k,v in params.items() if k!='asset_feed_spec'})
+    if not isinstance(params['name'],str) or not 1<=len(params['name'])<=300:raise BatchRejected('Bounded name required')
+    if edge=='adsets':
+        if params['campaign_id']!=campaign_id or params['status']!='PAUSED' or type(params['daily_budget']) is not int or not 1<=params['daily_budget']<=200000:raise BatchRejected('Paused v2 parent/budget required')
+        if params['targeting']!={'geo_locations':{'countries':['IL']},'age_min':18,'publisher_platforms':['facebook','instagram'],'facebook_positions':['feed'],'instagram_positions':['stream']} or params['optimization_goal']!='OFFSITE_CONVERSIONS' or params['billing_event']!='IMPRESSIONS' or params['promoted_object']!={'pixel_id':'723893636602228','custom_event_type':'PURCHASE'}:raise BatchRejected('Fixed v2 targeting/optimization required')
+    elif edge=='ads':
+        if params['status']!='PAUSED' or not _id(params['adset_id']) or not isinstance(params['creative'],dict) or set(params['creative'])!={'creative_id'} or not _id(params['creative']['creative_id']):raise BatchRejected('Paused ad with resolved IDs required')
+    else:
+        if params['object_story_spec']!={'page_id':'170018166205299','instagram_user_id':'17841461774110293'}:raise BatchRejected('Fixed v2 creative identity required')
+        if not isinstance(params['url_tags'],str) or len(params['url_tags'])>4000:raise BatchRejected('Bounded tracking required')
+        feed=params['asset_feed_spec']
+        if not isinstance(feed,dict):raise BatchRejected('V2 variation feed required')
+        media='videos' if feed.get('ad_formats')==['SINGLE_VIDEO'] else 'images' if feed.get('ad_formats')==['SINGLE_IMAGE'] else None
+        if media is None or set(feed)!={'bodies','titles','descriptions','link_urls','call_to_action_types','ad_formats',media}:raise BatchRejected('Exact v2 feed fields required')
+        _safe(feed)
+        for key in ('bodies','titles'):
+            if not isinstance(feed[key],list) or len(feed[key])!=5 or any(not isinstance(x,dict) or set(x)!={'text'} or not isinstance(x['text'],str) or not x['text'].strip() or len(x['text'])>4000 for x in feed[key]):raise BatchRejected('Five text/title variations required')
+        if feed['call_to_action_types']!=['SHOP_NOW'] or not isinstance(feed['descriptions'],list) or len(feed['descriptions'])!=1 or set(feed['descriptions'][0])!={'text'} or not isinstance(feed['descriptions'][0]['text'],str):raise BatchRejected('Exact description/CTA required')
+        from urllib.parse import urlsplit
+        if not isinstance(feed['link_urls'],list) or len(feed['link_urls'])!=1 or not isinstance(feed['link_urls'][0],dict) or set(feed['link_urls'][0])!={'website_url'}:raise BatchRejected('One exact destination required')
+        url=urlsplit(feed['link_urls'][0]['website_url'])
+        if url.scheme!='https' or url.hostname!='roseryjewelry.com' or url.username or url.password or url.port not in (None,443):raise BatchRejected('Exact ROSERY destination required')
+        rows=feed[media]
+        if not isinstance(rows,list) or len(rows)!=1 or not isinstance(rows[0],dict):raise BatchRejected('Single media required')
+        if media=='images':
+            if set(rows[0])!={'hash'} or not isinstance(rows[0]['hash'],str) or not re.fullmatch('[A-Za-z0-9]{8,128}',rows[0]['hash']):raise BatchRejected('Resolved image hash required')
+        elif set(rows[0])!={'video_id','thumbnail_hash'} or not _id(rows[0]['video_id']) or not isinstance(rows[0]['thumbnail_hash'],str) or not re.fullmatch('[A-Za-z0-9]{8,128}',rows[0]['thumbnail_hash']):raise BatchRejected('Resolved video and thumbnail required')
+    if len(_json(params))>65536:raise BatchRejected('Bounded v2 payload required')
+    return params
+
 def _json(value):return json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False)
 def _id(value):return isinstance(value,str) and bool(re.fullmatch(r'[0-9]{5,30}',value))
 def _safe(value):
