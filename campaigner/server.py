@@ -472,14 +472,15 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 if self.headers.get('Transfer-Encoding') or len(self.headers.get_all('Content-Length', [])) != 1:
                     return self.reply(400, {'error':'נדרש גודל קובץ מדויק להעלאה'})
                 mime = self.headers.get('Content-Type', '')
-                if mime not in ('image/jpeg', 'image/png'):
-                    return self.reply(415, {'error':'אפשר להעלות תמונות JPG או PNG בלבד'})
+                video = mime in ('video/mp4', 'video/quicktime')
+                if mime not in ('image/jpeg', 'image/png') and not video:
+                    return self.reply(415, {'error':'אפשר להעלות תמונות JPG או PNG וסרטוני MP4 או MOV'})
                 try:
                     length = self.headers.get('Content-Length', '')
                     if not length.isascii() or not length.isdigit():raise ValueError('Invalid upload size')
                     size = int(length)
-                    if size > 20 * 1024 * 1024:
-                        return self.reply(413, {'error':'התמונה גדולה מ־20MB; בחרו קובץ קטן יותר'})
+                    if size > (300 if video else 20) * 1024 * 1024:
+                        return self.reply(413, {'error':'הסרטון גדול מ-300MB; בחרו קובץ קטן יותר' if video else 'התמונה גדולה מ־20MB; בחרו קובץ קטן יותר'})
                     if size <= 0:raise ValueError('Empty upload')
                     name = unquote_to_bytes(self.headers.get('X-File-Name', '')).decode('utf-8', errors='strict')
                     asset = local_uploads.put(self.rfile, size=size, name=name, mime=mime, upload_id=self.headers.get('X-Upload-Id', ''))
