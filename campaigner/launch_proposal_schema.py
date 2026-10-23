@@ -109,8 +109,10 @@ def validate_proposal_v2(obj):
         if group['key'] in groups:
             raise ValueError('duplicate adset key')
         groups.add(group['key'])
-        if group['targeting_mode'] != 'broad_il_adult':
-            raise ValueError('targeting_mode: broad_il_adult required')
+        # copy_men / copy_women: exact targeting of a live ad set of that gender in the chosen campaign (owner rule:
+        # copy men/women targeting exactly; hard gender separation). The owner confirms the gender before this.
+        if group['targeting_mode'] not in ('broad_il_adult', 'copy_men', 'copy_women'):
+            raise ValueError('targeting_mode: broad_il_adult, copy_men or copy_women required')
         target = group['target']
         if not isinstance(target, dict) or target.get('mode') not in ('new', 'existing'):
             raise ValueError('target.mode: new or existing required')

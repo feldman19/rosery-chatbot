@@ -1,3 +1,4 @@
+import unittest
 import json,unittest
 from urllib.parse import parse_qs
 from meta_batch import *
@@ -69,5 +70,28 @@ class BatchTests(unittest.TestCase):
  def test_success_does_not_resubmit(self):
   s=BatchSession(plan_batches([item()]));s.run_next(lambda b:[success()],lambda state:None)
   self.assertEqual(s.run_next(lambda b:self.fail('duplicate'),lambda state:None)['state'],'finished')
+
+
+
+class CopiedTargetingTests(unittest.TestCase):
+    def test_copied_targeting_keeps_known_keys_and_audience_ids(self):
+        from campaign_operations import copied_targeting, copy_template
+        raw = {'genders': [1], 'age_min': 18, 'geo_locations': {'countries': ['IL']}, 'excluded_custom_audiences': [{'id': '120252833157650730', 'name': 'x'}],
+               'targeting_automation': {'advantage_audience': 1}, 'unknown_key': 1}
+        self.assertEqual(copied_targeting(raw), {'genders': [1], 'age_min': 18, 'geo_locations': {'countries': ['IL']},
+                                                 'excluded_custom_audiences': [{'id': '120252833157650730'}], 'targeting_automation': {'advantage_audience': 1}})
+        sets = [{'id': '100001', 'status': 'ACTIVE', 'targeting': raw}, {'id': '100009', 'status': 'PAUSED', 'targeting': raw},
+                {'id': '100005', 'status': 'ACTIVE', 'targeting': dict(raw, genders=[2])}]
+        self.assertEqual(copy_template(sets, 1)['id'], '100001')
+        self.assertEqual(copy_template(sets, 2)['id'], '100005')
+        self.assertIsNone(copy_template(sets[1:2], 1))
+
+    def test_batch_guard_accepts_only_single_gender_israel(self):
+        from meta_batch import _targeting_ok
+        self.assertTrue(_targeting_ok({'genders': [2], 'geo_locations': {'countries': ['IL']}}))
+        self.assertFalse(_targeting_ok({'genders': [1, 2], 'geo_locations': {'countries': ['IL']}}))
+        self.assertFalse(_targeting_ok({'genders': [1], 'geo_locations': {'countries': ['US']}}))
+        self.assertFalse(_targeting_ok({'genders': [1], 'geo_locations': {'countries': ['IL']}, 'evil': 1}))
+
 
 if __name__=='__main__':unittest.main()

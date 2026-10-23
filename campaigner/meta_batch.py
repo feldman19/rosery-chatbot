@@ -16,6 +16,17 @@ CREATION={'adsets':{'name','status','campaign_id','targeting','optimization_goal
 class BatchRejected(ValueError):pass
 
 
+BROAD_TARGETING={'geo_locations':{'countries':['IL']},'age_min':18,'publisher_platforms':['facebook','instagram'],'facebook_positions':['feed','story','facebook_reels'],'instagram_positions':['stream','story','reels']}
+
+
+def _targeting_ok(targeting):
+    """Fixed broad targeting, or one copied from a live single-gender Israel ad set (owner rule: copy men/women exactly)."""
+    if targeting==BROAD_TARGETING:return True
+    from campaign_operations import COPIED_TARGETING
+    return (isinstance(targeting,dict) and set(targeting)<=COPIED_TARGETING and targeting.get('genders') in ([1],[2])
+            and (targeting.get('geo_locations') or {}).get('countries')==['IL'])
+
+
 def validate_creation_v2(edge,params,campaign_id):
     """Separate v2 resolved-write boundary; legacy batch allowlists stay intact.
 
@@ -33,7 +44,7 @@ def validate_creation_v2(edge,params,campaign_id):
     if not isinstance(params['name'],str) or not 1<=len(params['name'])<=300:raise BatchRejected('Bounded name required')
     if edge=='adsets':
         if params['campaign_id']!=campaign_id or params['status']!='PAUSED' or type(params['daily_budget']) is not int or not 1<=params['daily_budget']<=200000:raise BatchRejected('Paused v2 parent/budget required')
-        if params['targeting']!={'geo_locations':{'countries':['IL']},'age_min':18,'publisher_platforms':['facebook','instagram'],'facebook_positions':['feed'],'instagram_positions':['stream']} or params['optimization_goal']!='OFFSITE_CONVERSIONS' or params['billing_event']!='IMPRESSIONS' or params['promoted_object']!={'pixel_id':'723893636602228','custom_event_type':'PURCHASE'}:raise BatchRejected('Fixed v2 targeting/optimization required')
+        if not _targeting_ok(params['targeting']) or params['optimization_goal']!='OFFSITE_CONVERSIONS' or params['billing_event']!='IMPRESSIONS' or params['promoted_object']!={'pixel_id':'723893636602228','custom_event_type':'PURCHASE'}:raise BatchRejected('Fixed v2 targeting/optimization required')
     elif edge=='ads':
         if params['status']!='PAUSED' or not _id(params['adset_id']) or not isinstance(params['creative'],dict) or set(params['creative'])!={'creative_id'} or not _id(params['creative']['creative_id']):raise BatchRejected('Paused ad with resolved IDs required')
     else:

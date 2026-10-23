@@ -561,7 +561,11 @@ function renderLaunch(){
   for(const g of d.adsets){
     const card=el('article','card'),existing=g.target.mode==='existing';
     card.append(el('span','pill '+(existing?'watch':'grow'),existing?'הוספה לאד-סט קיים':'אד-סט חדש'),el('h3','',g.label),el('p','fact',g.rationale));
-    if(!existing){const f=el('label','field');f.append(el('span','label','תקציב יומי (₪) לאד-סט הזה'));const i=document.createElement('input');i.type='number';i.min='1';i.step='1';i.dataset.adset=g.key;i.className='launch-budget';f.append(i);card.append(f)}
+    if(!existing){const f=el('label','field');f.append(el('span','label','תקציב יומי (₪) לאד-סט הזה'));const i=document.createElement('input');i.type='number';i.min='1';i.step='1';i.dataset.adset=g.key;i.className='launch-budget';f.append(i);card.append(f)
+      // Audience: proposed from the analysis, the owner confirms; targeting is then copied from a live ad set of that gender.
+      const au=(s.audiences||{})[g.key]||{},q=el('label','field'),sel=document.createElement('select');sel.className='launch-gender';sel.dataset.adset=g.key;
+      for(const [v,l] of [['','בחר קהל'],['men','גברים'],['women','נשים']]){const o=document.createElement('option');o.value=v;o.textContent=l;o.selected=(au.gender||'')===v;sel.append(o)}
+      q.append(el('span','label','קהל (הטירגוט יועתק מאד-סט פעיל של אותו מגדר)'),sel);card.append(q);if(au.reason)card.append(el('p','fact',au.reason))}
     for(const ad of d.ads.filter(a=>a.adset_key===g.key)){
       const r=rows[ad.asset_id]||{},row=el('div','adrow'),img=el('img','thumb');img.alt='';mediaUrl(ad.asset_id,ad.sha256).then(u=>img.src=u);
       const info=el('div');info.append(el('strong','',(ad.media_kind==='video'?'🎬 ':'')+(r.observed_product||ad.source_name)),
@@ -574,8 +578,62 @@ function renderLaunch(){
     }
     box.append(card);
   }
-  const next=el('article','card');next.append(el('p','note','שלב הבא: אישור והעלאה למטא במצב מושהה. החיבור הזה יופעל אחרי בדיקה חיה אחת באישורך.'));
-  const go=el('button','btn primary','המשך לאישור');go.type='button';go.disabled=true;next.append(go);box.append(next);
+  const next=el('article','card'),pick=el('label','field'),sel=document.createElement('select');
+  pick.append(el('span','label','לאיזה קמפיין להעלות?'));
+  for(const c of s.campaigns||[]){const o=document.createElement('option');o.value=c.id;o.textContent=c.name;o.selected=c.id===s.campaign_id;sel.append(o)}
+  pick.append(sel);next.append(pick);
+  const confirms=[];
+  for(const g of d.adsets.filter(g=>g.target.mode==='existing')){const l=el('label','fact'),c=document.createElement('input');c.type='checkbox';c.dataset.adset=g.target.adset_id;confirms.push(c);l.append(c,' זו אותה זווית כמו במודעות שכבר רצות ב"'+g.label+'"');next.append(l)}
+  next.append(el('p','fact','לפני ההעלאה תראה בדיוק מה ייווצר. הכל נוצר במצב מושהה, ושום דבר לא מתחיל לרוץ עד שתפעיל.'));
+  const go=el('button','btn primary','המשך לאישור');go.type='button';
+  go.onclick=async()=>{
+    const budgets={},genders={};for(const i of document.querySelectorAll('.launch-budget'))budgets[i.dataset.adset]=Math.round(Number(i.value)*100);
+    for(const i of document.querySelectorAll('.launch-gender'))if(i.value)genders[i.dataset.adset]=i.value;
+    go.disabled=true;go.textContent='מכין תצוגה מדויקת מול מטא…';
+    try{
+      const fin=await api('/api/creative-launch/finalize',{campaign_id:sel.value,budgets,genders,confirm_same_angle:confirms.filter(c=>c.checked).map(c=>c.dataset.adset)});
+      const pv=await api('/api/campaign-operations/preview',{action:'prepare_launch',expected_source:fin.expected_source,owner_confirmations:fin.owner_confirmations});
+      launchSheet(pv.operation);
+    }catch(e){toast(e.message)}
+    finally{go.disabled=false;go.textContent='המשך לאישור'}
+  };
+  next.append(go);box.append(next);
+}
+// Exact manifest from the write path (Codex's campaign_operations); only "אשר והעלה" writes, everything PAUSED.
+function launchSheet(op){
+  closeSheet();const sheet=el('div','sheet'),panel=el('div','sheet-panel');sheet.append(panel);document.body.append(sheet);
+  sheet.onclick=e=>{if(e.target===sheet)closeSheet()};
+  const m=op.manifest||{},sets=m.adsets||[],ads=(m.steps||[]).filter(x=>x.kind==='ads').length;
+  panel.append(el('h2','',op.blocked_reasons?.length?'אי אפשר להעלות כרגע':'מה ייווצר במטא'));
+  for(const r of op.blocked_reasons||[])panel.append(el('p','note',r));
+  if(op.blocked_reasons?.length){const c=el('button','btn','סגור');c.type='button';c.onclick=closeSheet;panel.append(c);return}
+  const diff=el('div','diff');
+  for(const g of sets){const r=el('div'),p=g.params||{};
+    r.append(el('span','',g.mode==='existing'?'הוספה לאד-סט קיים':'אד-סט חדש: '+(p.name||'')),el('s','',''),el('i','',''),el('b','num',p.daily_budget?ils(p.daily_budget/100)+' ליום':'תקציב לא משתנה'));diff.append(r)}
+  const r=el('div');r.append(el('span','','מודעות חדשות'),el('s','',''),el('i','',''),el('b','num',String(ads)));diff.append(r);
+  panel.append(diff);
+  for(const g of sets){const t=(g.params||{}).targeting;if(!t)continue;
+    const who=t.genders?.[0]===1?'גברים':t.genders?.[0]===2?'נשים':'כל המגדרים',age=t.age_min+(t.age_max?'–'+t.age_max:'+');
+    panel.append(el('p','fact','קהל: '+who+' '+age+' בישראל'+(t.excluded_custom_audiences?.length?' · בלי רוכשים אחרונים':'')+
+      (g.targeting_source?' · מועתק בדיוק מ"'+(g.targeting_source.name||g.targeting_source.adset_id)+'"':'')))}
+  panel.append(el('p','fact','כל מודעה: 5 טקסטים ו-5 כותרות · כל שיפורי Advantage+ כבויים (חוץ מתגובות רלוונטיות) · הכל מושהה'));
+  panel.append(el('p','fact','קוד אישור: '+op.digest.slice(0,12)+' · תקף עד '+new Date(op.expires_at).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})));
+  const a=el('div','actions'),go=el('button','btn primary','אשר והעלה במצב מושהה'),no=el('button','btn ghost','ביטול');go.type=no.type='button';no.onclick=closeSheet;
+  go.onclick=async()=>{go.disabled=no.disabled=true;go.textContent='מעלה למטא ובודק…';
+    try{await api('/api/campaign-operations/approve',{operation_id:op.operation_id,digest:op.digest});
+      await api('/api/campaign-operations/execute',{operation_id:op.operation_id});closeSheet();toast('ההעלאה התחילה. הכל נוצר במצב מושהה.');watchOperation(op.operation_id)}
+    catch(e){closeSheet();toast(e.message)}};
+  a.append(go,no);panel.append(a);
+}
+async function watchOperation(id){
+  for(let i=0;i<120;i++){
+    await new Promise(r=>setTimeout(r,5000));
+    let st;try{st=await api('/api/campaign-operations')}catch{continue}
+    const job=(st.jobs||[]).find(j=>(j.operation||j).operation_id===id||j.id===id);if(!job)continue;
+    const state=(job.operation||job).state||job.state;
+    if(['verified','unknown','partial','not_applied','blocked','cancelled'].includes(state)){
+      toast(state==='verified'?'✓ הועלה למטא במצב מושהה ואומת':'ההעלאה נעצרה ('+state+'). לא בוצע ניסיון חוזר; בדוק לפני שממשיכים.');return}
+  }
 }
 $('launch-form').onsubmit=async e=>{
   e.preventDefault();const err=$('launch-error');err.hidden=true;

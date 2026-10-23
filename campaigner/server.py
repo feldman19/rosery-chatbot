@@ -204,7 +204,8 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     launch_proposal=LaunchProposal(data,key_file.read_bytes())
     campaign_operations=CampaignOperations(
         data,key_file.read_bytes(),
-        proposal_loader=lambda: operation_proposal(launch_proposal.report(work_intake.latest())))
+        # A proposal the owner finalized in the simple screen's upload tab comes first.
+        proposal_loader=lambda: operation_proposal(creative_launch.operation_report() or launch_proposal.report(work_intake.latest())))
     preparation_loop=PreparationLoop(data,key_file.read_bytes())
     strategy_desk=StrategyDesk(data,dossier=load_rosery_dossier(),
         dossier_loader=(lambda:load_rosery_dossier(include_owner_financials=True)) if workspace=='manager' else None)
@@ -630,6 +631,10 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     except (OSError,KeyError) as error:return self.reply(503,{'error':'הרשאת הביצוע במטא לא זמינה. לא בוצע שינוי.'})
                 if self.path == '/api/creative-launch/start':
                     try:return self.reply(200,creative_launch.start(body))
+                    except ValueError as error:return self.reply(400,{'error':str(error)})
+                if self.path == '/api/creative-launch/finalize':
+                    # Owner's campaign, budgets and confirmations → exact proposal; no Meta write here.
+                    try:return self.reply(200,creative_launch.finalize(body))
                     except ValueError as error:return self.reply(400,{'error':str(error)})
                 if self.path == '/api/profit/settings':
                     # Owner's own cost fields, stored locally; nothing is sent anywhere.

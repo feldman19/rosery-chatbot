@@ -24,6 +24,18 @@ def product_of(*texts):
     return next((label for label, words in CATEGORIES if any(w in joined for w in words)), None)
 
 
+def gender_of(audience):
+    """men / women from the analysis' audience hypothesis, or None when it names both or neither."""
+    text = audience if isinstance(audience, str) else ''
+    both = 'צעירים וצעירות' in text or 'בני זוג' in text or 'זוגות' in text
+    men = both or any(w in text for w in ('גבר', 'בחורים'))
+    women = both or any(w in text for w in ('נשים', 'אישה', 'נשי', 'בחורות', 'צעירות'))
+    return 'men' if men and not women else 'women' if women and not men else None
+
+
+GENDER_LABEL = {'men': 'גברים', 'women': 'נשים', None: 'לבחירתך'}
+
+
 def _param(rulebook, rule, key):
     return ((rulebook.get('rules') or {}).get(rule) or {}).get('params', {}).get(key)
 
@@ -64,17 +76,31 @@ def plan(assets, analysis_rows, report, rulebook, *, today=None, campaign_id=Non
         product = product_of(row.get('observed_product'), asset.get('name')) or row.get('observed_product') or 'לא ידוע'
         angle = (row.get('angle') or '').strip() or 'לא ידוע'
         groups.setdefault((product, angle), []).append(asset['id'])
+    # Owner's account rules: "כמה שפחות אד-סטים" and each creative a really different concept, so several
+    # angles go together into one new dated ad set (named like the account's own, e.g. "וידאו | תכנים חדשים | 05/10").
+    # Hard gender separation (owner rule): one ad set per audience gender, proposed from the analysis and
+    # confirmed by the owner; its targeting is then copied exactly from a live ad set of that gender.
+    genders = {a['id']: gender_of(rows[a['id']].get('audience_hypothesis')) for a in assets}
+    mixed = len(groups) > 1 or len(set(genders.values())) > 1
+    if mixed:
+        kinds = {a.get('media_kind', 'image') for a in assets}
+        kind = 'וידאו' if kinds == {'video'} else 'תמונות' if kinds == {'image'} else 'וידאו ותמונות'
+        groups = {}
+        for a in assets:
+            groups.setdefault((kind, 'תכנים חדשים', genders[a['id']]), []).append(a['id'])
+    else:
+        groups = {(p, ang, genders[ids[0]]): ids for (p, ang), ids in groups.items()}
     citations = ['new_creatives_new_dated_adset', 'ads_per_adset']
     questions, adsets, assignment = [], [], {}
     existing = [s for s in account_adsets(report) if campaign_id is None or s['campaign_id'] == campaign_id]
     used = set()
-    for (product, angle), ids in groups.items():
+    for (product, angle, gender), ids in groups.items():
         chunks = [ids[i:i + high] for i in range(0, len(ids), high)]
         for index, chunk in enumerate(chunks):
-            key = 'g_' + hashlib.sha256(f'{product}|{angle}|{index}'.encode()).hexdigest()[:10]
+            key = 'g_' + hashlib.sha256(f'{product}|{angle}|{gender}|{index}'.encode()).hexdigest()[:10]
             target, rationale, budget_needed = {'mode': 'new'}, [], True
             candidate = None
-            if reuse_max and len(chunk) < low:
+            if reuse_max and not mixed and len(chunk) < low:
                 candidate = next((s for s in existing if s['id'] not in used and s['product'] == product
                                   and s['active_ads'] is not None and s['active_ads'] < reuse_max
                                   and s['active_ads'] + len(chunk) <= high), None)
@@ -90,13 +116,22 @@ def plan(assets, analysis_rows, report, rulebook, *, today=None, campaign_id=Non
                                  'החוק דורש אותה זווית, ואת זה אי אפשר לבדוק מהנתונים.')
             else:
                 rationale.append('לפי החוק שלך: קריאייטיבים חדשים נכנסים לאד-סט חדש מתוארך בתוך הקמפיין הרץ.')
+                if mixed:
+                    rationale.append('כמה זוויות שונות נכנסות יחד לאד-סט אחד, כי החוק שלך הוא "כמה שפחות אד-סטים" וכל קריאייטיב הוא קונספט אחר.')
                 if len(chunk) < low:
                     rationale.append(f'יש כאן {len(chunk)} מודעות; החוק שלך הוא {low}–{high} מודעות לאד-סט.')
-            label = f'{product} | {angle[:60]} | {today.strftime("%d/%m")}'
+            label = f'{product} | {angle[:60]}' + (f' | {GENDER_LABEL[gender]}' if mixed and gender else '') + f' | {today.strftime("%d/%m")}'
+            if target['mode'] == 'new':
+                why = '; '.join(sorted({(rows[i].get('audience_hypothesis') or '')[:140] for i in chunk if rows[i].get('audience_hypothesis')}))
+                audience = {'gender': gender, 'reason': f'קהל מוצע: {GENDER_LABEL[gender]}' + (f' (לפי הניתוח: {why})' if why else '') +
+                            '. הטירגוט יועתק בדיוק מאד-סט פעיל של אותו מגדר; צריך את האישור שלך.'}
+            else:
+                audience = None
             adsets.append({'key': key, 'label': label if target['mode'] == 'new' else candidate['name'],
                            'rationale': ' '.join(rationale), 'product': product[:160], 'angle': angle[:160],
-                           'targeting_mode': TARGETING, 'target': target, 'budget_minor': None,
-                           'budget_required': budget_needed})
+                           'targeting_mode': TARGETING if target['mode'] == 'existing' else
+                           {'men': 'copy_men', 'women': 'copy_women'}.get(gender, 'choose'), 'target': target, 'budget_minor': None,
+                           'budget_required': budget_needed, 'audience': audience})
             for asset_id in chunk:
                 assignment[asset_id] = key
     return {'adsets': adsets, 'assignment': assignment, 'citations': citations, 'owner_questions': questions,

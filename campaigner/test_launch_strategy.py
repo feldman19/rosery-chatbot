@@ -51,12 +51,34 @@ class StrategyTests(unittest.TestCase):
         result = launch_strategy.plan([asset(1)], [row(1)], report(sets, ads), self.rules)
         self.assertEqual(result['adsets'][0]['target'], {'mode': 'new'})
 
-    def test_more_than_eight_is_split_and_products_are_separated(self):
-        assets = [asset(i) for i in range(10)] + [asset(20)]
-        rows = [row(i) for i in range(10)] + [row(20, product='שרשרת', angle='יומיומי')]
-        result = launch_strategy.plan(assets, rows, report([], []), self.rules)
+    def test_several_angles_go_into_one_dated_adset_and_more_than_eight_is_split(self):
+        assets = [dict(asset(i), media_kind='video') for i in range(11)]
+        rows = [row(i, angle=f'זווית {i}') for i in range(11)]
+        result = launch_strategy.plan(assets, rows, report([], []), self.rules, today=date(2026, 10, 23))
         sizes = sorted(sum(1 for v in result['assignment'].values() if v == g['key']) for g in result['adsets'])
-        self.assertEqual(sizes, [1, 2, 8])
+        self.assertEqual(sizes, [3, 8])
+        self.assertEqual(result['adsets'][0]['label'], 'וידאו | תכנים חדשים | 23/10')
+        self.assertIn('כמה שפחות אד-סטים', result['adsets'][0]['rationale'])
+
+    def test_mixed_angles_are_never_put_in_an_existing_adset(self):
+        sets = [{'id': '111', 'name': 'צמידים ישנים', 'configured_active': True, 'campaign_id': 'c'}]
+        ads = [{'id': 'a', 'adset_id': '111', 'name': 'צמיד', 'configured_active': True}]
+        result = launch_strategy.plan([asset(1), asset(2)], [row(1), row(2, angle='אחר')], report(sets, ads), self.rules)
+        self.assertEqual([g['target'] for g in result['adsets']], [{'mode': 'new'}])
+
+    def test_one_adset_per_gender_from_the_analysis(self):
+        assets = [dict(asset(i), media_kind='video') for i in range(3)]
+        rows = [dict(row(0), audience_hypothesis='גברים צעירים'), dict(row(1), audience_hypothesis='נשים צעירות'),
+                dict(row(2), audience_hypothesis='צעירים וצעירות')]
+        result = launch_strategy.plan(assets, rows, report([], []), self.rules, today=date(2026, 10, 23))
+        modes = sorted(g['targeting_mode'] for g in result['adsets'])
+        self.assertEqual(modes, ['choose', 'copy_men', 'copy_women'])
+        men = next(g for g in result['adsets'] if g['targeting_mode'] == 'copy_men')
+        self.assertEqual(men['label'], 'וידאו | תכנים חדשים | גברים | 23/10')
+        self.assertIn('יועתק בדיוק', men['audience']['reason'])
+
+    def test_gender_reading(self):
+        self.assertEqual([launch_strategy.gender_of(t) for t in ('גברים 25-40', 'נשים', 'גברים ונשים', None)], ['men', 'women', None, None])
 
     def test_unverified_rulebook_refuses(self):
         with self.assertRaises(ValueError):

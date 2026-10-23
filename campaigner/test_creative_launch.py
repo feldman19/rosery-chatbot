@@ -109,6 +109,28 @@ class CreativeLaunchTests(unittest.TestCase):
         self.assertEqual(state['state'], 'ready_for_owner', state.get('detail'))
         self.assertEqual(len(calls), 2)
 
+    def test_finalize_makes_a_valid_v2_proposal_for_the_write_path(self):
+        from launch_proposal_schema import digest, validate_proposal_v2
+        from operations_config import operation_proposal
+        asset = self.image()
+        launch = self.launch()
+        launch.start({'goal': 'צמידים', 'sources': [{'id': asset['id'], 'sha256': asset['sha256']}], 'consent': True, 'campaign_id': None})
+        key = self.wait(launch)['draft']['adsets'][0]['key']
+        with self.assertRaises(ValueError):
+            launch.finalize({'campaign_id': '999', 'budgets': {key: 10000}, 'genders': {key: 'men'}, 'confirm_same_angle': []})  # leads campaign
+        with self.assertRaises(ValueError):
+            launch.finalize({'campaign_id': '120246379886090730', 'budgets': {key: 10000}, 'genders': {}, 'confirm_same_angle': []})
+        result = launch.finalize({'campaign_id': '120246379886090730', 'budgets': {key: 10000}, 'genders': {key: 'men'}, 'confirm_same_angle': []})
+        self.assertEqual(launch.operation_report()['proposal']['adsets'][0]['targeting_mode'], 'copy_men')
+        report = launch.operation_report()
+        proposal = validate_proposal_v2(report['proposal'])
+        self.assertEqual(result['expected_source']['proposal_hash'], digest(proposal))
+        self.assertEqual((proposal['adsets'][0]['budget_minor'], proposal['strategy']['campaign_id']), (10000, '120246379886090730'))
+        features = proposal['creation_recipe']['creative_fields']['degrees_of_freedom_spec']['creative_features_spec']
+        self.assertEqual(features['inline_comment'], {'enroll_status': 'OPT_IN'})
+        self.assertTrue(all(v == {'enroll_status': 'OPT_OUT'} for k, v in features.items() if k != 'inline_comment'))
+        self.assertEqual(operation_proposal(report)['source_binding'], result['expected_source'])
+
     def test_restart_marks_running_job_interrupted(self):
         (self.dir / 'creative-launch.json').write_text('{"state": "analyzing", "id": "launch-x"}', encoding='utf-8')
         self.assertEqual(self.launch().status()['state'], 'interrupted')

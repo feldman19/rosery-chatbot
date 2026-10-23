@@ -38,6 +38,23 @@ class DispatchStopped(OperationBlocked):
 def canonical(value):return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False)
 def digest(value):return hashlib.sha256(canonical(value).encode()).hexdigest()
 
+COPIED_TARGETING=frozenset({'geo_locations','age_min','age_max','genders','excluded_custom_audiences','custom_audiences','targeting_automation',
+    'publisher_platforms','facebook_positions','instagram_positions','messenger_positions','threads_positions','audience_network_positions',
+    'device_platforms','flexible_spec','exclusions','locales','brand_safety_content_filter_levels'})
+
+def copied_targeting(raw):
+    """The template ad set's targeting, limited to known keys; audiences by id only."""
+    result={k:json.loads(canonical(v)) for k,v in raw.items() if k in COPIED_TARGETING}
+    for key in ('excluded_custom_audiences','custom_audiences'):
+        if key in result:result[key]=[{'id':a['id']} for a in result[key] if isinstance(a,dict) and isinstance(a.get('id'),str) and ID.fullmatch(a['id'])]
+    return result
+
+def copy_template(adsets,gender):
+    """Newest ACTIVE ad set targeting exactly this gender in Israel, or None."""
+    rows=[r for r in adsets if r.get('status')=='ACTIVE' and isinstance(r.get('targeting'),dict) and r['targeting'].get('genders')==[gender]
+          and (r['targeting'].get('geo_locations') or {}).get('countries')==['IL']]
+    return max(rows,key=lambda r:int(r['id'])) if rows else None
+
 class CampaignOperations:
     def __init__(self,directory,key,proposal_loader,credential_loader=None,transport=None,clock=None,monotonic=None):
         if not isinstance(key,bytes) or len(key)<32 or not callable(proposal_loader):raise OperationBlocked('Host key and verified proposal loader required')
@@ -450,13 +467,20 @@ class CampaignOperations:
                 total=len(members)
                 if any(str(context.get(k,'0'))!='0' for k in ('daily_budget','lifetime_budget')):raise OperationBlocked('Campaign budget conflicts with adset budget')
                 name=group['label']+' | '+self._stamp(proposal['prepared_at']).date().isoformat()+' | OPS '+jobid[:8]
+                template=None
+                if group['targeting_mode'] in ('copy_men','copy_women'):
+                    template=copy_template(context['launch_inventory']['adsets'],1 if group['targeting_mode']=='copy_men' else 2)
+                    if template is None:raise OperationBlocked('No active ad set of that gender in the campaign to copy targeting from')
                 setparams={'name':name,'campaign_id':campaign,'status':'PAUSED','daily_budget':group['budget_minor'],
-                           'targeting':{'geo_locations':{'countries':['IL']},'age_min':18,'publisher_platforms':['facebook','instagram'],'facebook_positions':['feed'],'instagram_positions':['stream']},
+                           # Owner 2026-10-23: feed and Reels/Story both (one flexible ad adapts per placement).
+                           'targeting':{'geo_locations':{'countries':['IL']},'age_min':18,'publisher_platforms':['facebook','instagram'],'facebook_positions':['feed','story','facebook_reels'],'instagram_positions':['stream','story','reels']},
                            'optimization_goal':'OFFSITE_CONVERSIONS','billing_event':'IMPRESSIONS','promoted_object':{'pixel_id':PIXEL,'custom_event_type':'PURCHASE'}}
+                if template:setparams['targeting']=copied_targeting(template['targeting'])
                 setparams.update(recipe['adset_fields'])
                 steps.append(self._step(setkey,'adsets',setparams,setparams));setref={'ref':setkey,'field':'id'}
             if not count_rule['min']<=total<=count_rule['max']:raise OperationBlocked('ads_per_adset: live plus proposed count outside rule')
-            manifest_groups.append({'key':group['key'],'mode':target['mode'],'params':setparams})
+            manifest_groups.append({'key':group['key'],'mode':target['mode'],'params':setparams,
+                                    **({'targeting_source':{'adset_id':template['id'],'name':template.get('name')}} if target['mode']=='new' and template else {})})
             for n,ad in enumerate(members):
                 prefix=setkey+'ad'+str(n);kind=ad['media_kind']
                 _,info=self._video_source(ad) if kind=='video' else self._source(ad)

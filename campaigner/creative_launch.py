@@ -21,7 +21,26 @@ STAGES = {'analyzing': 'מנתח את התכנים (תמונות, פריימים
           'ready_for_owner': 'ההצעה מוכנה. נשארו קמפיין, תקציב ותשובות שלך',
           'blocked': 'נעצר', 'interrupted': 'נקטע'}
 DESTINATION = 'https://roseryjewelry.com/'
-URL_TAGS = 'utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign={{campaign.id}}&utm_content={{ad.id}}&adset_id={{adset.id}}'
+# Owner rule "disable_text_improvements": every Advantage+ enhancement off; relevant comments stay on (2026-10-23).
+# Names are the ones Meta returned on the account's own creatives on 2026-10-23; a creative made without them
+# gets Meta's defaults (standard_enhancements was on in three of four).
+ENHANCEMENTS_OFF = (
+    'adapt_to_placement add_text_overlay ads_with_benefits advantage_plus_creative app_highlights audio biz_ai '
+    'carousel_to_video catalog_feed_tag creative_stickers cv_transformation description_automation dha_optimization '
+    'dynamic_partner_content enable_ncs_testimonials enhance_cta feed_caption_optimization generate_cta hide_price '
+    'ig_glados_feed ig_video_native_subtitle image_animation image_auto_crop image_background_gen '
+    'image_brightness_and_contrast image_enhancement image_templates image_text_translation image_touchups image_uncrop '
+    'local_store_extension media_liquidity_animated_image media_order media_type_automation multi_photo_to_video '
+    'pac_recomposition pac_relaxation product_browsing product_extensions product_metadata_automation profile_card '
+    'replace_media_text reveal_details_over_time show_destination_blurbs show_summary site_extensions '
+    'standard_enhancements standard_enhancements_catalog text_optimizations text_translation translate_voiceover '
+    'video_auto_crop video_filtering video_highlight video_highlights video_to_image video_uncrop video_voiceover '
+    'wa_mm_image_filtering').split()
+CREATION_RECIPE = {'adset_fields': {'destination_type': 'WEBSITE', 'bid_strategy': 'LOWEST_COST_WITHOUT_CAP'},
+                   'creative_fields': {'degrees_of_freedom_spec': {'creative_features_spec': {
+                       **{f: {'enroll_status': 'OPT_OUT'} for f in ENHANCEMENTS_OFF}, 'inline_comment': {'enroll_status': 'OPT_IN'}}}},
+                   'optimization_type': 'DEGREES_OF_FREEDOM'}
+URL_TAGS ='utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign={{campaign.id}}&utm_content={{ad.id}}&adset_id={{adset.id}}'
 
 
 class CreativeLaunch:
@@ -82,24 +101,77 @@ class CreativeLaunch:
             video = analysis.get('video_review') or {}
             self._save({**job, 'state': 'writing_copy'})
             copies = {}
-            from creative_claims import CreativeClaimReviewRequired
             for source in sources:
                 args = dict(transcript=(video.get(source['id']) or {}).get('transcript'), source_name=source.get('name'))
-                # One fresh attempt when the copy makes a claim the owner's facts do not back; a second one blocks.
+                # One fresh attempt when the copy breaks a rule (an unbacked claim, too many store-fact
+                # headlines, a wrong count); a second failure blocks.
                 try:
                     copies[source['id']] = self.copy(rows[source['id']], self.rulebook(), **args)
-                except CreativeClaimReviewRequired:
+                except ValueError:
                     copies[source['id']] = self.copy(rows[source['id']], self.rulebook(), **args)
             self._save({**job, 'state': 'planning'})
             report = self.report()
             strategy = self.plan(sources, analysis['assets'], report, self.rulebook(), campaign_id=job['campaign_id'])
             draft = self._draft(job, sources, rows, video, copies, strategy)
             self._save({**job, 'state': 'ready_for_owner', 'draft': draft,
+                        'audiences': {g['key']: g.get('audience') for g in strategy['adsets'] if g.get('audience')},
                         'campaigns': self._campaigns(report), 'analysis': [self._public_row(rows[s['id']], s, video.get(s['id']))
                                                                           for s in sources]})
         except Exception as error:
             issues = getattr(error, 'issues', None)
             self._save({**job, 'state': 'blocked', 'detail': str(error)[:400], **({'claim_issues': issues} if issues else {})})
+
+    # ---- owner completes the draft → exact proposal for the write path (Codex's campaign_operations) ----
+    def finalize(self, body):
+        """Owner's campaign, daily budget per new ad set and same-angle confirmations → fresh 15-minute v2 proposal.
+
+        Nothing is sent to Meta here. The write path previews the exact manifest from this proposal and still
+        needs the owner's approval of that manifest's digest.
+        """
+        from launch_proposal_schema import digest, validate_proposal_v2
+        if not isinstance(body, dict) or set(body) != {'campaign_id', 'budgets', 'genders', 'confirm_same_angle'}:
+            raise ValueError('נדרשים קמפיין, תקציב וקהל לכל אד-סט חדש, ואישור זווית לאד-סט קיים')
+        state = self.status()
+        draft = state.get('draft')
+        if state.get('state') != 'ready_for_owner' or not draft:
+            raise ValueError('אין הצעה מוכנה. הכן הצעה מחדש.')
+        if body['campaign_id'] not in {c['id'] for c in state.get('campaigns') or []}:
+            raise ValueError('בחר קמפיין מכירות פעיל מהרשימה')
+        proposal = json.loads(json.dumps(draft))
+        budgets, confirmed = body['budgets'], body['confirm_same_angle']
+        if not isinstance(budgets, dict) or not isinstance(confirmed, list):
+            raise ValueError('תקציבים לא תקינים')
+        for group in proposal['adsets']:
+            group['rationale'] = group['rationale'][:160]
+            if group['target']['mode'] == 'new':
+                value = budgets.get(group['key'])
+                if type(value) is not int or not 100 <= value <= 200000:
+                    raise ValueError(f'תקציב יומי בין ₪1 ל-₪2,000 נדרש ל"{group["label"]}"')
+                group['budget_minor'] = value
+                gender = (body['genders'] or {}).get(group['key']) if isinstance(body['genders'], dict) else None
+                if gender not in ('men', 'women'):
+                    raise ValueError(f'בחר קהל (גברים או נשים) ל"{group["label"]}"')
+                group['targeting_mode'] = 'copy_' + gender
+            elif group['target']['adset_id'] not in confirmed:
+                raise ValueError(f'צריך לאשר שזו אותה זווית כמו באד-סט הקיים "{group["label"]}"')
+        now = self.clock()
+        proposal['strategy']['campaign_id'] = body['campaign_id']
+        proposal.update(prepared_at=now.isoformat(), expires_at=(now + timedelta(minutes=15)).isoformat(),
+                        request_revision=int(draft.get('request_revision', 1)) + 1,
+                        creation_recipe=CREATION_RECIPE)
+        validate_proposal_v2(proposal)
+        binding = {'request_id': proposal['request_id'], 'request_revision': proposal['request_revision'], 'proposal_hash': digest(proposal)}
+        confirmations = [{'adset_id': a, 'same_angle': True} for a in confirmed]
+        self._save({**state, 'draft': {**draft, 'request_revision': proposal['request_revision']},
+                    'final': {'proposal': proposal, 'source_binding': binding, 'owner_confirmations': confirmations}})
+        return {'expected_source': binding, 'owner_confirmations': confirmations, 'expires_at': proposal['expires_at']}
+
+    def operation_report(self):
+        """The finalized proposal in the shape campaign_operations loads, or None."""
+        final = self.status().get('final')
+        if not final:
+            return None
+        return {'available': True, 'proposal': final['proposal'], 'source_binding': final['source_binding']}
 
     @staticmethod
     def _public_row(row, source, video):

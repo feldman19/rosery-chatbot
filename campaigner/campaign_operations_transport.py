@@ -176,7 +176,7 @@ class CampaignTransport:
         # Product is inferred again from names by the executor; same-angle reuse
         # requires an explicit owner confirmation bound to the manifest.
         return {'complete':True,
-                'adsets':self._pages(token,campaign_id+'/adsets','id,account_id,campaign_id,name,status,effective_status,daily_budget,lifetime_budget'),
+                'adsets':self._pages(token,campaign_id+'/adsets','id,account_id,campaign_id,name,status,effective_status,daily_budget,lifetime_budget,targeting'),
                 'ads':self._pages(token,campaign_id+'/ads','id,account_id,campaign_id,adset_id,name,status,effective_status')}
 
     def upload_video(self,token,raw,name):
