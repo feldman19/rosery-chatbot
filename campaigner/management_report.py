@@ -343,6 +343,29 @@ def _store(data,start,end,currency):
     if set(selected)!=expected:return None,None,'חסרים ימים בדוח החנות; לא הושלמו באפס'
     return _sum([x[0] for x in selected.values()]),_sum([x[1] for x in selected.values()]),None
 
+def _daily(data,store,today,valid,currency):
+    """One entry per day of the stored read (7 full days, then today so far), for the owner's day picker.
+    Ad-row totals per day; a day not fully read stays unknown (None), never zero."""
+    days=[]
+    for back in range(7,-1,-1):
+        day=today-timedelta(days=back);notes=[];metrics={key:None for key in ('spend','purchases','attributed_revenue','roas','landing_page_views')}
+        funnel={key:None for key in ('link_clicks','impressions','link_ctr','add_to_cart','initiate_checkout')};ads=[]
+        rows,reason=_meta_rows(data,day,day) if valid and _coverage(data,day,day) else (None,'הנתונים ממטא ליום הזה לא נקראו במלואם')
+        if rows is None:notes.append(reason)
+        else:
+            metrics.update({key:_public(value) for key,value in _aggregate(rows).items() if key in metrics});funnel=_funnel(rows)
+            grouped={}
+            for row in rows:grouped.setdefault(row['ad_id'],[]).append(row)
+            for identity,own in grouped.items():
+                values=_aggregate(own)
+                if (values['spend'] or 0)>0:ads.append({'id':identity,'name':_row_name(own,'ad_name',identity),'spend':_public(values['spend']),'purchases':_public(values['purchases']),'attributed_revenue':_public(values['attributed_revenue']),'roas':_public(values['roas'])})
+            ads.sort(key=lambda a:-(a['spend'] or 0))
+        orders,sales,sreason=_store(store,day,day,currency)
+        if sreason:notes.append(sreason)
+        days.append({'date':day.isoformat(),'partial':back==0,'metrics':{**metrics,'store_orders':_public(orders),'store_revenue':_public(sales)},
+                     'funnel':funnel,'ads':ads[:10],'ads_with_spend':len(ads),'notes':notes})
+    return days
+
 def build_report(live_snapshot,proposal_report=None,operations_status=None,now=None,change_history=None):
     now=now or datetime.now(timezone.utc)
     if not isinstance(now,datetime) or now.tzinfo is None:raise ValueError('Aware report clock required')
@@ -410,6 +433,7 @@ def build_report(live_snapshot,proposal_report=None,operations_status=None,now=N
     cycle=snapshot.get('last_cycle_at');cycle=cycle if _stamp(cycle) is not None else None
     report = {'account_id':ACCOUNT,'currency':currency,'checked_at':now.isoformat(),'collection':{'refreshing':snapshot.get('refreshing') is True,'active':snapshot.get('collection_active') is True,'last_cycle_at':cycle,'generation':generation},'freshness':{'state':freshness,'source_states':source_states,'meta_last_success_at':meta.get('last_success_at'),'shopify_last_success_at':shop.get('last_success_at'),'notes':notes},'windows':windows,'action_summary':{'proposal_available':proposal.get('available') is True,'pending_approval_count':sum(1 for x in operations.get('proposals',[]) if isinstance(x,dict) and x.get('approval_status')=='pending' and x.get('state')=='prepared' and _stamp(x.get('expires_at')) is not None and _stamp(x.get('expires_at'))>now and not x.get('blocked_reasons')),'jobs_requiring_attention':sum(1 for x in jobs if isinstance(x,dict) and x.get('state') in ('blocked','stale','unknown','partial')),'live_action_performed_by_report':False}}
 
+    report['daily']=_daily(data,store,today,valid,currency)
     from management_guidance import build_guidance
     from economics_observation import recorded_economics
     report['recorded_economics'] = recorded_economics(snapshot, now=now)

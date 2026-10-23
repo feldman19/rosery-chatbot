@@ -6,7 +6,7 @@
 :root{
   --bg:#f5f4ef;--surface:#ffffff;--surface-2:#faf9f6;--ink:#121a16;--muted:#66716b;--line:#e6e4dc;
   --brand:#0f3d2e;--brand-2:#1b5a44;--brand-soft:#e4ede8;--on-brand:#ffffff;--gold:#b08a4e;--gold-soft:#f4ecdf;
-  --stop:#c0392b;--stop-soft:#fbeae7;--grow:#1d7a4e;--grow-soft:#e2f3e9;--watch:#9a6700;--watch-soft:#fbf1dc;--idle:#66716b;--idle-soft:#eeede8;
+  --stop:#b3261e;--stop-soft:#fbeae7;--grow:#1a6e46;--grow-soft:#e2f3e9;--watch:#7f5500;--watch-soft:#fbf1dc;--idle:#66716b;--idle-soft:#eeede8;
   --font:-apple-system,BlinkMacSystemFont,"SF Hebrew","Segoe UI Variable Text","Segoe UI","Rubik","Heebo","Assistant","Noto Sans Hebrew",Arial,sans-serif;
   --r:20px;--r-sm:14px;
   --shadow:0 1px 1px rgb(18 26 22/.04),0 6px 24px -8px rgb(18 26 22/.12);
@@ -80,10 +80,11 @@ section[data-tab]{display:grid;gap:18px;animation:enter .35s ease both}
 .stat{padding:14px 14px;display:grid;gap:2px;min-width:0}
 .stat+.stat{border-inline-start:1px solid var(--line)}
 .stat b{font-size:21px;font-weight:750;line-height:1.2}
-.stat span{font-size:12.5px;color:var(--muted)}
-.caption{font-size:12.5px;color:var(--muted);margin:-10px 6px 0}
+.stat span{font-size:14px;color:var(--muted)}
+.caption{font-size:14px;color:var(--muted);margin:-10px 6px 0}
 
-.label{font-size:12.5px;font-weight:700;letter-spacing:.06em;color:var(--muted);padding-inline:4px;margin-top:6px}
+.label{font-size:14px;font-weight:700;letter-spacing:.02em;color:var(--muted);padding-inline:4px;margin-top:6px}
+h2.label{margin:10px 0 0;line-height:1.4}
 .cards{display:grid;gap:12px}
 .card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;display:grid;gap:10px;min-width:0;animation:enter .4s ease both}
 .cards>.card:nth-child(2){animation-delay:.05s}.cards>.card:nth-child(3){animation-delay:.1s}.cards>.card:nth-child(4){animation-delay:.15s}
@@ -184,7 +185,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 .flow li.now{color:var(--ink);font-weight:700;border-color:var(--brand-2);box-shadow:0 0 0 3px var(--brand-soft)}.flow li.now b{background:var(--brand);color:var(--on-brand)}
 .drop{display:grid;gap:6px;justify-items:center;text-align:center;padding:26px 14px;border:1.5px dashed color-mix(in srgb,var(--gold) 60%,var(--line));border-radius:var(--r);background:var(--gold-soft);cursor:pointer;transition:background .2s,border-color .2s}
 .drop strong{font-size:17px;padding:10px 20px;border-radius:999px;background:var(--ink);color:var(--bg)}
-.drop span{font-size:13px;color:var(--muted)}
+.drop span{font-size:14px;color:var(--ink)}
 .drop.over{border-color:var(--brand-2);background:var(--brand-soft)}
 .drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .drop:focus-within{outline:3px solid var(--gold);outline-offset:2px}
@@ -213,6 +214,41 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 .pv-bottom strong{font-size:15px}
 .pv-cta{flex:none;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;background:var(--idle-soft)}
 .steps .why-now{display:block;font-weight:400;color:var(--muted);font-size:14px;margin-top:2px}
+.period{gap:14px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border-radius:14px;background:var(--idle-soft)}
+.seg button{min-height:44px;border:0;border-radius:11px;background:transparent;font-weight:700;font-size:15px;color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:var(--shadow);color:var(--ink);outline:2px solid var(--brand-2);outline-offset:-2px}
+.days{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;align-items:end}
+.days button{display:grid;justify-items:center;gap:4px;padding:6px 0 4px;border:1px solid transparent;border-radius:12px;background:transparent;min-height:44px;color:var(--muted);font-size:13px}
+.days button i{display:block;width:62%;border-radius:6px 6px 2px 2px;background:color-mix(in srgb,var(--brand-2) 45%,var(--surface));min-height:4px}
+.days button i.unknown{background:repeating-linear-gradient(45deg,var(--line) 0 4px,transparent 4px 8px);border:1px dashed var(--muted)}
+.days button b{font-size:13px;color:var(--ink)}
+.days button[aria-pressed="true"]{border-color:var(--brand-2);background:var(--brand-soft);color:var(--ink)}
+.days button[aria-pressed="true"] i{background:var(--brand)}
+.sum{display:grid;gap:14px}
+.sum h3{font-size:19px}
+.big-number{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big-number b{font-size:36px;font-weight:800;line-height:1.1}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile2{display:grid;gap:2px;align-content:start;padding:12px 10px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line);min-width:0}
+.tile2 b{font-size:20px;font-weight:800}
+.tile2 span{font-size:14px;color:var(--muted);line-height:1.35}
+.tile2.good span,.tile2.mid span,.tile2.bad span{color:var(--ink)}
+.tile2.good{border-color:var(--grow);background:var(--grow-soft)}.tile2.good b{color:var(--grow)}
+.tile2.mid{border-color:var(--watch);background:var(--watch-soft)}.tile2.mid b{color:var(--watch)}
+.tile2.bad{border-color:var(--stop);background:var(--stop-soft)}.tile2.bad b{color:var(--stop)}
+.helpbtn{display:inline-grid;place-items:center;width:28px;height:28px;margin-inline-start:4px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-weight:800;font-size:14px;vertical-align:middle;cursor:pointer}
+.helpbtn[aria-expanded="true"]{background:var(--ink);color:var(--bg)}
+.helptext{margin:0;padding:10px 12px;border-radius:var(--r-sm);background:var(--gold-soft);font-size:15px;line-height:1.5}
+.funnel{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.funnel li{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:15px}
+.funnel li .track{grid-column:1/-1;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.funnel li .track i{display:block;height:100%;background:var(--brand-2);border-radius:4px}
+.topads{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.topads li{display:grid;gap:2px;padding:10px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line);font-size:15px}
+.topads li span{color:var(--muted);font-size:14px}
+.btn-help{margin:0;font-size:14px;color:var(--muted);line-height:1.5}
+.btn-help b{color:var(--ink)}
 .steps{display:grid;gap:0;font-size:15px}
 .steps p{margin:0;position:relative;padding:8px 32px 8px 0}
 .steps p::before{content:"";position:absolute;inset-inline-start:6px;top:14px;width:12px;height:12px;border-radius:50%;border:2px solid var(--line);background:var(--surface)}
@@ -247,20 +283,25 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 
 <main class="wrap">
   <section data-tab="today" aria-labelledby="hello-title">
-    <div class="hello"><h1 id="hello-title">שלום</h1><p id="hello-sub">בודק מה קורה בפרסום…</p></div>
+    <div class="hello"><h1 id="hello-title" tabindex="-1">שלום</h1><p id="hello-sub">בודק מה קורה בפרסום…</p></div>
+    <h2 class="label" id="period-label">על איזו תקופה להסתכל?</h2>
+    <div class="card period" role="group" aria-labelledby="period-label">
+      <div class="seg" id="period-presets"></div>
+      <div class="days" id="period-days" role="group" aria-label="או יום מסוים: לחץ על יום בגרף"></div>
+      <p class="btn-help">או לחץ על יום בגרף. גובה העמודה הוא המכירות בחנות באותו יום; עמודה מפוספסת היא יום שעוד לא ידוע.</p>
+    </div>
     <div id="hero" aria-live="polite"><div class="skeleton hero-skel"></div></div>
-    <div class="label" id="todo-label">מה לעשות היום</div>
+    <h2 class="label" id="todo-label">מה לעשות היום</h2>
+    <p class="caption" id="todo-help">ההמלצות מתבססות תמיד על 3 הימים המלאים האחרונים, בלי קשר לתקופה שבחרת למעלה.</p>
     <div class="cards" id="todo"><div class="skeleton"></div></div>
-    <div class="label" id="acted-label" hidden>מה עשית</div>
+    <h2 class="label" id="acted-label" hidden>מה עשית</h2>
     <div class="cards" id="acted"></div>
-    <div class="label" id="drift-label" hidden>שיפורי Advantage+ מופעלים לבדיקה</div>
+    <h2 class="label" id="drift-label" hidden>שיפורי Advantage+ מופעלים לבדיקה</h2>
+    <p class="caption" id="drift-help" hidden>Advantage+ הם שיפורים אוטומטיים של מטא לתמונה ולטקסט. לפי החוקים שלך הם אמורים להיות כבויים, אז כדאי לבדוק כל מודעה כאן.</p>
     <div class="cards" id="drift"></div>
     <!-- true profit (Claude) -->
-    <div class="label" id="profit-label" hidden>רווחיות אמיתית</div>
+    <h2 class="label" id="profit-label" hidden>רווחיות אמיתית</h2>
     <div class="cards" id="profit"></div>
-    <div class="label">לפי מטא (ייחוס)</div>
-    <div class="stats" id="stats" aria-label="אתמול לפי מטא"></div>
-    <p class="caption" id="stats-caption"></p>
 <!-- BEGIN auto-mode-shadow: independent settings card -->
 <div class="card" aria-labelledby="shadow-title">
 <details class="why">
@@ -285,16 +326,16 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
   </section>
 
   <section data-tab="ads" hidden aria-labelledby="ads-title">
-    <div class="hello"><h1 id="ads-title">המודעות שלך</h1><p id="ads-sub">3 הימים האחרונים</p></div>
+    <div class="hello"><h1 id="ads-title" tabindex="-1">המודעות שלך</h1><p id="ads-sub">3 הימים האחרונים</p></div>
     <div class="chips" id="filters" role="group" aria-label="סינון"></div>
     <div class="list" id="ads"></div>
-    <div class="label" id="learn-label" hidden>מה המערכת לומדת</div>
+    <h2 class="label" id="learn-label" hidden>מה המערכת לומדת</h2>
     <div class="cards" id="learn"></div>
   </section>
 
   <!-- creative launch (Claude): upload → analysis → proposal; nothing is published from here -->
   <section data-tab="upload" hidden aria-labelledby="upload-title">
-    <div class="hello"><h1 id="upload-title">תכנים חדשים</h1><p>ארבעה שלבים. שום דבר לא עולה למטא בלי האישור שלך, וגם אז הכל נוצר מושהה.</p></div>
+    <div class="hello"><h1 id="upload-title" tabindex="-1">תכנים חדשים</h1><p>ארבעה שלבים. שום דבר לא עולה למטא בלי האישור שלך, וגם אז הכל נוצר מושהה.</p></div>
     <ol class="flow" id="launch-flow" aria-label="שלבי ההעלאה">
       <li data-step="pick" class="now"><b>1</b><span>בוחרים קבצים ומטרה</span></li>
       <li data-step="analyze"><b>2</b><span>המערכת מנתחת וכותבת טקסטים</span></li>
@@ -317,7 +358,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
   </section>
 
   <section data-tab="ask" hidden aria-labelledby="ask-title">
-    <div class="hello"><h1 id="ask-title">שאל על הפרסום</h1><p>שאלה פשוטה, תשובה פשוטה. שום דבר לא משתנה בחשבון.</p></div>
+    <div class="hello"><h1 id="ask-title" tabindex="-1">שאל על הפרסום</h1><p>שאלה פשוטה, תשובה פשוטה. שום דבר לא משתנה בחשבון.</p></div>
     <div class="chips" id="suggest"></div>
     <div class="chat" id="chat" aria-live="polite"></div>
     <div id="chat-unavailable" class="unavailable" hidden></div>
@@ -366,6 +407,7 @@ function go(tab){
   if(tab==='ask')loadChat();
   if(tab==='upload')loadLaunch();
   window.scrollTo(0,0);
+  document.querySelector('section[data-tab="'+tab+'"] h1')?.focus({preventScroll:true});
 }
 for(const b of document.querySelectorAll('[data-go]'))b.onclick=()=>go(b.dataset.go);
 
@@ -381,36 +423,101 @@ function renderHeader(){
 }
 
 function isolate(value){return '\u2066'+value+'\u2069'}
-function renderStats(){
-  const w=report?.windows?.['1']||{},m=w.metrics||{},box=$('stats');box.replaceChildren();
-  const ret=typeof m.attributed_revenue==='number'&&m.spend?m.attributed_revenue/m.spend:m.roas;
-  for(const [value,label] of [[ils(m.spend),'הוצאה'],[typeof m.purchases==='number'?String(Math.round(m.purchases)):'—','מכירות'],[typeof ret==='number'?'₪'+x(ret):'—','החזר על ₪1']]){
-    const s=el('div','stat');s.append(el('b','num',value),el('span','',label));box.append(s)}
-  $('stats-caption').textContent=w.until?'אתמול ('+isolate(w.until.split('-').reverse().slice(0,2).join('.'))+') · לפי מטא':'';
+// --- Home: pick a period (like Meta's date picker), then one summary of it. Built from what the computer
+// already read: 7 full days and today so far. A day not read in full is shown as unknown, never as zero.
+const DAY_NAMES=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+const ddmm=iso=>iso.split('-').reverse().slice(0,2).join('.');
+const dayName=iso=>DAY_NAMES[new Date(iso+'T12:00:00').getDay()];
+const num=v=>typeof v==='number'&&isFinite(v);
+let period='1';
+try{period=localStorage.getItem('rosery-period')||'1'}catch{}
+function setPeriod(value){period=value;try{localStorage.setItem('rosery-period',value)}catch{}renderPeriod();renderHero()}
+// A "?" next to a term: opens one plain sentence under it. Keyboard and screen readers get the same.
+let helpSeq=0;
+function helpToggle(text,label){
+  const id='help-'+(++helpSeq),b=el('button','helpbtn','?'),p=el('p','helptext',text);
+  b.type='button';b.setAttribute('aria-expanded','false');b.setAttribute('aria-controls',id);b.setAttribute('aria-label','מה זה '+label+'?');p.id=id;p.hidden=true;
+  b.onclick=()=>{const open=p.hidden;p.hidden=!open;b.setAttribute('aria-expanded',String(open))};
+  return [b,p];
 }
-
-// Hero: store sales yesterday (Shopify, not Meta attribution) against the 3- and 7-day daily average.
-function countUp(node,value,format){
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches||node.dataset.shown===String(value)){node.textContent=format(value);return}
-  node.dataset.shown=String(value);const t0=performance.now();
-  const step=t=>{const k=Math.min(1,(t-t0)/700),e=1-Math.pow(1-k,3);node.textContent=format(value*e);if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step);
+function sumDays(days,pick){const values=days.map(pick);return values.every(num)?values.reduce((a,b)=>a+b,0):null}
+function periodData(){
+  const w=report?.windows||{},daily=report?.daily||[];
+  const full=daily.filter(d=>!d.partial),today=daily.find(d=>d.partial);
+  const range=(from,to)=>daily.filter(d=>!d.partial&&d.date>=from&&d.date<=to);
+  const funnelOf=days=>{const f={};for(const k of ['link_clicks','landing_page_views','add_to_cart','initiate_checkout','purchases'])
+    f[k]=sumDays(days,d=>k==='purchases'||k==='landing_page_views'?d.metrics?.[k]:d.funnel?.[k]);return days.length?f:null};
+  const adsOf=days=>{const by={};for(const d of days)for(const a of d.ads||[]){const t=by[a.id]||(by[a.id]={id:a.id,name:a.name,spend:0,purchases:0,attributed_revenue:0,known:true});
+    t.spend+=a.spend||0;if(num(a.purchases))t.purchases+=a.purchases;else t.known=false;if(num(a.attributed_revenue))t.attributed_revenue+=a.attributed_revenue;else t.known=false}
+    return Object.values(by).sort((a,b)=>b.spend-a.spend).slice(0,3)};
+  if(['1','3','7'].includes(period)&&w[period]){const win=w[period],days=range(win.since,win.until);
+    return {title:period==='1'?'אתמול, יום '+dayName(win.until)+' '+ddmm(win.until):period+' הימים המלאים האחרונים ('+ddmm(win.since)+'–'+ddmm(win.until)+')',
+      single:period==='1',date:win.until,metrics:win.metrics||{},funnel:funnelOf(days),ads:adsOf(days),partial:false,notes:[]}}
+  const d=period==='today'?today:daily.find(x=>x.date===period.slice(2));
+  if(!d)return null;
+  // Yesterday has one source of truth: the 1-day window, the same numbers the recommendations use.
+  const metrics=w['1']&&w['1'].until===d.date?w['1'].metrics:d.metrics;
+  return {title:d.partial?'היום עד עכשיו ('+ddmm(d.date)+')':'יום '+dayName(d.date)+' '+ddmm(d.date),single:!d.partial,date:d.date,metrics,funnel:funnelOf([d]),ads:adsOf([d]),partial:d.partial,notes:d.notes||[]};
+}
+function renderPeriod(){
+  const presets=$('period-presets'),days=$('period-days'),daily=report?.daily||[];presets.replaceChildren();days.replaceChildren();
+  if(!daily.length&&!report?.windows){$('period-label').hidden=true;presets.parentElement.hidden=true;return}
+  $('period-label').hidden=false;presets.parentElement.hidden=false;
+  for(const [k,l] of [['today','היום'],['1','אתמול'],['3','3 ימים'],['7','7 ימים']]){const b=el('button','',l);b.type='button';
+    b.setAttribute('aria-pressed',String(period===k||(k==='1'&&period==='d:'+report?.windows?.['1']?.until)));b.onclick=()=>setPeriod(k);presets.append(b)}
+  const max=Math.max(1,...daily.map(d=>num(d.metrics?.store_revenue)?d.metrics.store_revenue:num(d.metrics?.spend)?d.metrics.spend:0));
+  for(const d of daily){const b=el('button'),bar=el('i'),value=num(d.metrics?.store_revenue)?d.metrics.store_revenue:null;b.type='button';
+    const key=d.partial?'today':'d:'+d.date,chosen=period===key||(period==='1'&&report?.windows?.['1']?.until===d.date);
+    b.setAttribute('aria-pressed',String(chosen));
+    if(value===null)bar.className='unknown';
+    bar.style.height=Math.max(6,Math.round((value===null?max*0.35:value)/max*64))+'px';
+    b.setAttribute('aria-label',(d.partial?'היום עד עכשיו':'יום '+dayName(d.date)+' '+ddmm(d.date))+', מכירות בחנות '+(value===null?'לא ידוע':ils(value)));
+    b.append(bar,el('b','',d.partial?'היום':dayName(d.date)),el('span','',ddmm(d.date)));b.onclick=()=>setPeriod(key);days.append(b)}
 }
 function renderHero(){
-  const w=report?.windows||{},box=$('hero'),m1=w['1']?.metrics||{},m3=w['3']?.metrics||{},m7=w['7']?.metrics||{};
-  const rev=m1.store_revenue;box.replaceChildren();
-  if(typeof rev!=='number')return;
-  const per=(m,win)=>typeof m.store_revenue==='number'?m.store_revenue/((win&&win.days)||1):null;
-  const avg3=per(m3,w['3']),avg7=per(m7,w['7']),hero=el('div','hero');
-  const top=el('div','hero-top'),left=el('div'),value=el('div','hero-value num');
-  left.append(el('div','hero-label','מכירות בחנות אתמול'),value);top.append(left);
-  if(avg7){const d=rev/avg7-1;top.append(el('span','delta '+(d>=0?'up':'down'),(d>=0?'▲ ':'▼ ')+Math.abs(Math.round(d*100))+'% מהממוצע'))}
-  hero.append(top);
-  const vals=[['ממוצע 7 ימים',avg7],['ממוצע 3 ימים',avg3],['אתמול',rev]],max=Math.max(...vals.map(v=>v[1]||0))||1,bars=el('div','hero-bars');
-  vals.forEach(([l,v],i)=>{const b=el('div','bar'+(i===2?' now':'')),f=el('i');f.style.height=Math.max(6,Math.round((v||0)/max*52))+'px';f.style.animationDelay=(i*.08)+'s';b.title=l+': '+ils(v);b.append(f,el('span','',l));bars.append(b)});
-  hero.append(bars);
-  const mer=typeof m1.spend==='number'&&m1.spend>0?rev/m1.spend:null,mx=el('div','hero-metrics');
-  for(const [v,l] of [[ils(m1.spend),'הוצאה במטא'],[mer?x(mer)+'×':'—','מכירות לכל ₪1'],[typeof m1.store_orders==='number'?String(m1.store_orders):'—','הזמנות']]){const d=el('div');d.append(el('b','num',v),el('span','',l));mx.append(d)}
-  hero.append(mx);box.append(hero);countUp(value,rev,ils);
+  const box=$('hero');box.replaceChildren();const pd=report?periodData():null;
+  if(!pd)return;
+  const m=pd.metrics||{},card=el('article','card sum');card.setAttribute('aria-label','סיכום: '+pd.title);
+  card.append(el('h3','',pd.title));
+  // 1. Store sales: every sale on the site, from any source (Shopify).
+  const store=el('div'),head=el('div','big-number'),title=el('p','label','מכירות בחנות');
+  const [h1,t1]=helpToggle('כל המכירות באתר שלך באותה תקופה, מכל מקור: פרסום, חיפוש, אינסטגרם, לקוחות חוזרים. זה הכסף שנכנס בפועל, לפי שופיפיי.','מכירות בחנות');
+  title.append(h1);store.append(title,t1);
+  head.append(el('b','num',num(m.store_revenue)?ils(m.store_revenue):'לא ידוע עדיין'));
+  if(num(m.store_orders))head.append(el('span','fact',m.store_orders+(m.store_orders===1?' הזמנה':' הזמנות')));
+  store.append(head);
+  const avg7=report?.windows?.['7']?.metrics?.store_revenue;
+  if(pd.single&&num(m.store_revenue)&&num(avg7)&&avg7>0){const d=m.store_revenue/(avg7/7)-1;
+    store.append(el('p','fact '+(d>=0?'up':'down'),(d>=0?'▲ ':'▼ ')+Math.abs(Math.round(d*100))+'% '+(d>=0?'יותר':'פחות')+' מיום רגיל השבוע (ממוצע '+ils(avg7/7)+' ליום)'))}
+  if(pd.partial)store.append(el('p','fact','היום עוד לא נגמר: המספרים יגדלו במשך היום. מכירות החנות של היום נקראות מחר.'));
+  card.append(store);
+  // 2. Meta's view: spend, the sales Meta credits to the ads, and the return on each shekel, coloured by the owner's thresholds.
+  const metaTitle=el('p','label','לפי מטא');const [h2,t2]=helpToggle('מה שמטא מדווחת על המודעות שלך. "מכירות ממודעות" הן מכירות שמטא מייחסת למודעות (גם אם הלקוח רק ראה מודעה ואחר כך קנה), ולכן הן לא שוות למכירות בחנות.','לפי מטא');
+  metaTitle.append(h2);card.append(metaTitle,t2);
+  const ret=num(m.roas)?m.roas:num(m.attributed_revenue)&&num(m.spend)&&m.spend>0?m.attributed_revenue/m.spend:null;
+  const tiles=el('div','tiles');
+  const tile=(value,label)=>{const t=el('div','tile2');t.append(el('b','num',value),el('span','',label));return t};
+  tiles.append(tile(num(m.spend)?ils(m.spend):'—','הוצאת על פרסום'),tile(num(m.purchases)?String(Math.round(m.purchases)):'—','מכירות ממודעות'));
+  const cls=ret===null?'':ret>=3?'good':ret>=2.6?'mid':'bad';
+  const rt=el('div','tile2'+(cls?' '+cls:''));rt.append(el('b','num',ret===null?'—':'₪'+x(ret)),el('span','','חזרו על כל ₪1'));tiles.append(rt);
+  card.append(tiles);
+  if(ret!==null)card.append(el('p','fact',ret>=3?'מעל היעד שלך (₪3 על כל ₪1).':ret>=2.6?'בין סף העצירה (₪2.6) ליעד (₪3): לשים עין.':'מתחת לסף העצירה שלך (₪2.6): הפרסום מכניס פחות ממה שהגדרת.'));
+  // 3. The road to a purchase, like Meta's funnel: where people drop off.
+  const f=pd.funnel;
+  if(f&&num(f.link_clicks)&&f.link_clicks>0){
+    const ft=el('p','label','הדרך לקנייה');const [h3,t3]=helpToggle('כמה אנשים עברו כל שלב: לחצו על מודעה, הגיעו לאתר, הוסיפו לסל, התחילו לשלם וקנו. אם רבים נעצרים בשלב מסוים, שם כדאי לשפר.','הדרך לקנייה');
+    ft.append(h3);const list=el('ol','funnel');
+    for(const [k,l] of [['link_clicks','לחצו על מודעה'],['landing_page_views','הגיעו לאתר'],['add_to_cart','הוסיפו לסל'],['initiate_checkout','התחילו לשלם'],['purchases','קנו (לפי מטא)']]){
+      const v=f[k],li=el('li'),tr=el('span','track'),fill=el('i');li.append(el('span','',l),el('strong','num',num(v)?Math.round(v).toLocaleString('he-IL'):'לא ידוע'));
+      fill.style.width=(num(v)?Math.max(2,Math.round(v/f.link_clicks*100)):0)+'%';tr.append(fill);li.append(tr);list.append(li)}
+    card.append(ft,t3,list)}
+  // 4. Where the money went: the ads that spent the most in this period.
+  if((pd.ads||[]).length){const at=el('p','label','המודעות שהוציאו הכי הרבה');const list=el('ul','topads');
+    for(const a of pd.ads){const li=el('li'),r=a.known&&a.spend>0?a.attributed_revenue/a.spend:null;
+      li.append(el('strong','',a.name),el('span','','הוציאה '+ils(a.spend)+' · '+(a.known?Math.round(a.purchases)+' מכירות · חזרו ₪'+x(r)+' על כל ₪1':'מכירות לא ידועות')));list.append(li)}
+    const all=el('button','link','לכל המודעות ←');all.type='button';all.onclick=()=>go('ads');card.append(at,list,all)}
+  for(const n of pd.notes.filter(n=>!pd.partial||!/החנות/.test(n)))card.append(el('p','note',n));
+  box.append(card);
 }
 
 function pauseExplanation(roas,daily){return (typeof roas!=='number'?'ההחזר אינו ידוע':roas<1?'מוציאה יותר ממה שהיא מכניסה':'מכניסה ₪'+x(roas)+' על כל ₪1, מתחת לסף העצירה שלך (2.6)')+'. ההוצאה היומית שלה כ-'+ils(daily)+'.'}
@@ -436,7 +543,13 @@ function actionCard(item){
   else if(item.link){const l=el('a','btn primary','לביצוע במטא');l.href=item.link;l.target='_blank';l.rel='noopener noreferrer';a.append(l)
     if(item.kind==='approve'&&item.proposal_id){const done=el('button','btn','ביצעתי');done.type='button';done.onclick=()=>markDone(item.proposal_id,done);a.append(done)}}
   const later=el('button','btn ghost','לא עכשיו');later.type='button';later.onclick=()=>dismiss(item.headline);a.append(later);
-  card.append(a);return card;
+  const help=el('p','btn-help'),hid='btn-help-'+(++helpSeq);help.id=hid;
+  const part=(b,t)=>{help.append(el('b','',b+': '),t+' ')};
+  if(a.querySelector('.btn.primary')?.textContent==='אשר ובצע')part('אשר ובצע',item.action==='PAUSE'?'מראה לך בדיוק מה ייעצר, ורק אחרי אישור נוסף זה קורה במטא. אפשר להפעיל שוב בכל רגע.':'מראה לך את התקציב החדש, ורק אחרי אישור נוסף הוא משתנה במטא.');
+  else if(item.link){part('לביצוע במטא','פותח את מנהל המודעות.');if(item.kind==='approve'&&item.proposal_id)part('ביצעתי','רושם שעשית את זה, כדי שנבדוק אחר כך מה קרה.')}
+  part('לא עכשיו','מסתיר את ההמלצה מהמסך. שום דבר לא משתנה.');
+  for(const b of a.querySelectorAll('button,a'))b.setAttribute('aria-describedby',hid);
+  card.append(a,help);return card;
 }
 // Local record only: says the owner made the change in Meta. Nothing is sent to Meta.
 async function markDone(id,button){
@@ -463,12 +576,16 @@ function driftCard(item,rule){
   const a=el('div','actions'),l=el('button','btn primary','כבה עכשיו');l.type='button';l.onclick=()=>openAction('drift:'+item.ad_id);
   const keep=el('button','btn ghost','השאר כך');keep.type='button';
   keep.onclick=async()=>{keep.disabled=true;try{await api('/api/creative-drift/keep',{ad_id:item.ad_id});await load(false)}catch(e){keep.disabled=false;alert(e.message)}};
-  a.append(l,keep);card.append(a);return card;
+  a.append(l,keep);
+  const help=el('p','btn-help'),hid='btn-help-'+(++helpSeq);help.id=hid;
+  help.append(el('b','','כבה עכשיו: '),'מראה מה ייכבה במודעה הזו, ורק אחרי אישור נוסף זה קורה. ',el('b','','השאר כך: '),'מסמן שבדקת ושזה בסדר. ההתראה לא תחזור על אותו מצב; אם מטא תפעיל משהו נוסף, תראה שוב.');
+  l.setAttribute('aria-describedby',hid);keep.setAttribute('aria-describedby',hid);
+  card.append(a,help);return card;
 }
 let showAllDrift=false;
 function renderDrift(){
   const d=report?.creative_drift,box=$('drift');box.replaceChildren();
-  const items=d?.status==='ready'?d.items:[];$('drift-label').hidden=!items.length&&!(d?.unknown||[]).length;
+  const items=d?.status==='ready'?d.items:[];$('drift-label').hidden=!items.length&&!(d?.unknown||[]).length;$('drift-help').hidden=$('drift-label').hidden;
   for(const i of showAllDrift?items:items.slice(0,3))box.append(driftCard(i,d.rule));
   if(items.length>3){const more=el('button','link',showAllDrift?'הצג פחות':'עוד '+(items.length-3)+' מודעות עם שיפורים מופעלים');more.type='button';more.onclick=()=>{showAllDrift=!showAllDrift;renderDrift()};box.append(more)}
   if((d?.unknown||[]).length)box.append(el('p','note','לא הצלחנו לקרוא את הגדרות השיפורים ב-'+d.unknown.length+' מודעות. זה לא אומר שהן כבויות.'));
@@ -955,7 +1072,7 @@ async function load(refresh){
   await loadActed();
   await loadShadow(); // auto-mode-shadow refresh
   await loadLearning();
-  renderHeader();renderHero();renderStats();renderDrift();renderToday();renderAds();
+  renderHeader();renderPeriod();renderHero();renderDrift();renderToday();renderAds();
   loadProfit();
 }
 // BEGIN auto-mode-shadow
