@@ -53,3 +53,15 @@ without concluding from noise; the accumulated, proven per-business knowledge is
 2. Server routes + card UI (after chat threads land, to avoid conflicts in server.py/simple-web.html).
 3. Meta split-test creation through the PAUSED write path, after reading Meta's docs; live canary only with
    the owner's explicit approval.
+
+## Meta split test: what the docs say (checked 2026-10-23)
+Sources: developers.facebook.com/docs/marketing-api/guides/split-testing/ and /reference/ad-study/.
+- Created with `POST /{business_id}/ad_studies` (also `/{user_id}/ad_studies`); an `act_…/ad_studies`
+  path is not documented. Fields: `name`, `start_time`, `end_time` (Unix seconds), `type=SPLIT_TEST`,
+  `cells` [{`name`, `treatment_percentage` ≥ 10, sum ≤ 100, `adsets`: […]}]. Meta divides the audience with
+  no overlap. After start: no change to start/percentages, no removal of ad sets; `end_time` can be extended.
+- Not stated: whether both ad sets may sit in one campaign, duration limits, the exact scope, CBO/Advantage+
+  support, and the `results` shape for SPLIT_TEST. Our write token has only `ads_read` + `ads_management`;
+  a business-level endpoint probably needs `business_management` too, which the owner would have to grant.
+- So step 3 starts with a read-only probe and one live canary only with the owner's approval; until then the
+  fallback (two ad sets, overlap possible, said on screen) is the safe default.
