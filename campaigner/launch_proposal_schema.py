@@ -56,10 +56,19 @@ def validate_proposal_v2(obj):
         if not isinstance(recipe['adset_fields'],dict) or set(recipe['adset_fields'])-{'is_dynamic_creative','destination_type','bid_strategy'}:raise ValueError('creation_recipe: unsupported adset fields')
         if not isinstance(recipe['creative_fields'],dict) or set(recipe['creative_fields'])-{'degrees_of_freedom_spec'}:raise ValueError('creation_recipe: unsupported creative fields')
         if 'is_dynamic_creative' in recipe['adset_fields'] and type(recipe['adset_fields']['is_dynamic_creative']) is not bool:raise ValueError('creation_recipe: dynamic flag must be boolean')
-        for field in ('destination_type','bid_strategy'):
-            if field in recipe['adset_fields']:_text(recipe['adset_fields'][field],field,100)
-        if 'degrees_of_freedom_spec' in recipe['creative_fields'] and not isinstance(recipe['creative_fields']['degrees_of_freedom_spec'],dict):raise ValueError('creation_recipe: degrees spec must be object')
-        _text(recipe['optimization_type'],'optimization_type',100)
+        for field,allowed in (('destination_type',('WEBSITE',)),('bid_strategy',('LOWEST_COST_WITHOUT_CAP',))):
+            if field in recipe['adset_fields'] and recipe['adset_fields'][field] not in allowed:raise ValueError('creation_recipe: unsupported '+field)
+        if recipe['optimization_type'] not in ('DEGREES_OF_FREEDOM','PLACEMENT'):raise ValueError('creation_recipe: unsupported optimization_type')
+        if 'degrees_of_freedom_spec' in recipe['creative_fields']:
+            spec=recipe['creative_fields']['degrees_of_freedom_spec']
+            _closed(spec,'creative_features_spec','degrees_of_freedom_spec')
+            features=spec['creative_features_spec']
+            if not isinstance(features,dict):raise ValueError('creation_recipe: features must be object')
+            for feature,setting in features.items():
+                if not isinstance(feature,str) or not feature:raise ValueError('creation_recipe: invalid feature')
+                _closed(setting,'enroll_status','creative feature')
+                allowed=('OPT_OUT','OPT_IN') if feature=='inline_comment' else ('OPT_OUT',)
+                if setting['enroll_status'] not in allowed:raise ValueError('creation_recipe: feature must opt out')
     for key, expected in (('activation_available', False), ('state', 'draft_for_review'), ('prepared_by', 'agent_review')):
         if key in obj and (type(obj[key]) is not type(expected) or obj[key] != expected):
             raise ValueError('host envelope: invalid ' + key)

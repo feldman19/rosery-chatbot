@@ -5,7 +5,7 @@ import unittest
 import test_launch_proposal_schema as fixtures
 import test_http_creative_launch_flow as http_fixtures
 from campaign_operations import OperationBlocked
-from campaign_operations_transport import CampaignTransport
+from campaign_operations_transport import CampaignTransport, ProviderRejected
 
 
 class ReviewTests(fixtures.V2ExecutionTests):
@@ -22,7 +22,7 @@ class ReviewTests(fixtures.V2ExecutionTests):
         self.assertTrue(next(p for edge,p in self.provider.writes if edge=='adsets')['is_dynamic_creative'])
 
     def test_readback_nested_list_extra_fields_only(self):
-        self.assertTrue(self.service._match({'videos':[{'video_id':'123456','thumbnail_url':'extra','link_urls':[]}]},{'videos':[{'video_id':'123456'}]}))
+        self.assertTrue(self.service._match({'videos':[{'video_id':'123456','thumbnail_url':'extra','link_urls':[]}]},{'videos':[{'video_id':'123456'}]},2))
         self.assertFalse(self.service._match([{'text':'wrong'}],[{'text':'sent'}]))
         self.assertFalse(self.service._match([1,2],[1]))
 
@@ -62,13 +62,71 @@ class ReviewTests(fixtures.V2ExecutionTests):
             self.assertEqual(self.execute(self.preview())['state'],'verified')
         self.assertEqual(sum(edge=='video' for edge,p in self.provider.writes),1)
 
-    def test_rejected_video_allows_new_source_upload(self):
-        self.provider.video_status='rejected'
+    def test_definite_upload_post_rejection_allows_new_upload(self):
+        upload=self.provider.upload_video
+        with patch.object(self.provider,'upload_video',side_effect=ProviderRejected()):
+            self.execute(self.preview())
+        self.proposal['request_revision']+=1
+        self.assertEqual(self.execute(self.preview())['state'],'verified')
+        self.assertEqual(sum(edge=='video' for edge,p in self.provider.writes),1)
+
+    def poll_rejection(self,code):
+        import io,json
+        from urllib.error import HTTPError
+        transport=CampaignTransport()
+        error=HTTPError('https://graph.facebook.com/',400,'rate limited',{},io.BytesIO(json.dumps({'error':{'code':code}}).encode()))
+        with patch.object(self.provider,'video_info',side_effect=transport.video_info), patch('campaign_operations_transport.urllib.request.build_opener') as opener:
+            opener.return_value.open.side_effect=error
+            self.assertEqual(self.execute(self.preview())['state'],'unknown')
+        self.proposal['request_revision']+=1
         self.execute(self.preview())
+        self.assertEqual(sum(edge=='video' for edge,p in self.provider.writes),1)
+
+    def test_rate_limit_4(self):self.poll_rejection(4)
+    def test_rate_limit_17(self):self.poll_rejection(17)
+    def test_rate_limit_80004(self):self.poll_rejection(80004)
+
+    def test_processing_error_requires_explicit_abandon(self):
+        self.provider.video_status='error'
+        operation=self.preview()
+        self.assertEqual(self.execute(operation)['state'],'unknown')
+        self.proposal['request_revision']+=1
+        blocked=self.preview()
+        self.execute(blocked)
+        self.assertEqual(sum(edge=='video' for edge,p in self.provider.writes),1)
+        blocked_job=self.service._get(blocked['operation_id'])
+        blocked_step=next(s for s in blocked_job['steps'] if s['kind']=='video')
+        self.service.abandon_unknown_video(blocked_job['operation_id'],blocked_job['digest'],blocked_step['key'],True)
+        job=self.service._get(operation['operation_id'])
+        step=next(s for s in job['steps'] if s['kind']=='video')
+        self.service.abandon_unknown_video(job['operation_id'],job['digest'],step['key'],True)
         self.proposal['request_revision']+=1
         self.provider.video_status='ready'
         self.assertEqual(self.execute(self.preview())['state'],'verified')
         self.assertEqual(sum(edge=='video' for edge,p in self.provider.writes),2)
+
+    def test_v1_list_mismatch_remains_exact(self):
+        actual={'videos':[{'video_id':'123456','extra':True}]}
+        expected={'videos':[{'video_id':'123456'}]}
+        self.assertFalse(self.service._match(actual,expected))
+        self.assertTrue(self.service._match(actual,expected,2))
+
+    def test_recipe_values_fail_closed(self):
+        from copy import deepcopy
+        original=deepcopy(self.proposal['creation_recipe'])
+        cases=[('adset_fields',{'bid_strategy':'OTHER'}),('adset_fields',{'destination_type':'APP'}),('optimization_type','OTHER'),('creative_fields',{'degrees_of_freedom_spec':{'creative_features_spec':{'standard_enhancements':{'enroll_status':'OPT_IN'}}}}),('creative_fields',{'degrees_of_freedom_spec':{'extra':True}})]
+        for field,value in cases:
+            with self.subTest(field=field,value=value):
+                self.proposal['creation_recipe']=deepcopy(original)
+                self.proposal['creation_recipe'][field]=value
+                self.assertTrue(self.preview()['blocked_reasons'])
+                self.assertEqual(self.provider.writes,[])
+        self.proposal['creation_recipe']=original
+        self.proposal['creation_recipe']['creative_fields']={'degrees_of_freedom_spec':{'creative_features_spec':{'inline_comment':{'enroll_status':'OPT_IN'},'standard_enhancements':{'enroll_status':'OPT_OUT'}}}}
+        operation=self.preview(owner_confirmations=[])
+        self.assertFalse(operation['blocked_reasons'])
+        self.assertEqual(operation['manifest']['creation_recipe'],self.proposal['creation_recipe'])
+        self.assertEqual(operation['manifest']['owner_confirmations'],[])
 
     def test_unknown_video_requires_exact_owner_waiver(self):
         def fail(*args):raise TimeoutError()
@@ -118,14 +176,14 @@ class ReviewTests(fixtures.V2ExecutionTests):
             self.preview()
         self.assertEqual(history.call_args.args[3],self.provider.campaign)
 
-    def test_saved_video_cannot_be_waived(self):
+    def test_saved_video_requires_explicit_waiver(self):
         self.provider.video_status='processing'
         ticks=iter(range(10000));self.service.monotonic=lambda:next(ticks)
         operation=self.preview()
         with patch('campaign_operations.time.sleep'):self.execute(operation)
         job=self.service._get(operation['operation_id'])
         step=next(s for s in job['steps'] if s['kind']=='video')
-        with self.assertRaises(OperationBlocked):self.service.abandon_unknown_video(job['operation_id'],job['digest'],step['key'],True)
+        with self.assertRaises(OperationBlocked):self.service.abandon_unknown_video(job['operation_id'],job['digest'],step['key'],False)
 
     def test_recipe_degrees_fields_readback_requested(self):
         self.proposal['creation_recipe']['creative_fields']={'degrees_of_freedom_spec':{'creative_features_spec':{}}}

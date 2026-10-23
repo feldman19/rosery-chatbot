@@ -433,7 +433,7 @@ class CampaignOperations:
                 rule=book['rules'].get('existing_adset_reuse')
                 params=rule.get('params') if rule else None
                 # Supported declarative predicate only. Unknown policy is never guessed.
-                if not isinstance(params,dict) or set(params)!={'max_active_ads_exclusive','same_product','same_angle'} or type(params['max_active_ads_exclusive']) is not int or not 1<=params['max_active_ads_exclusive']<=15 or params['same_product'] is not True or params['same_angle'] is not True:raise OperationBlocked('existing_adset_reuse: missing or unsupported rule condition')
+                if not isinstance(params,dict) or set(params)!={'max_active_ads','same_product','same_angle'} or type(params['max_active_ads']) is not int or not 1<=params['max_active_ads']<=15 or params['same_product'] is not True or params['same_angle'] is not True:raise OperationBlocked('existing_adset_reuse: missing or unsupported rule condition')
                 matches=[r for r in context['launch_inventory']['adsets'] if r['id']==target['adset_id']]
                 if len(matches)!=1 or matches[0]['status'] not in ('ACTIVE','PAUSED'):raise OperationBlocked('Existing adset unavailable')
                 live=matches[0]
@@ -443,7 +443,7 @@ class CampaignOperations:
                 if product!=group['product']:raise OperationBlocked('Existing product unknown or mismatched')
                 if {'adset_id':live['id'],'same_angle':True} not in confirmations:raise OperationBlocked('Explicit owner same-angle confirmation required')
                 existing=[r for r in context['launch_inventory']['ads'] if r['adset_id']==live['id']]
-                if sum(r['status']=='ACTIVE' for r in existing)>=params['max_active_ads_exclusive']:raise OperationBlocked('Existing reuse active count condition failed')
+                if sum(r['status']=='ACTIVE' for r in existing)>=params['max_active_ads']:raise OperationBlocked('Existing reuse active count condition failed')
                 total=sum(r['status'] not in ('ARCHIVED','DELETED') for r in existing)+len(members)
                 setref=live['id'];setparams={'existing_adset_id':live['id']}
             else:
@@ -479,7 +479,7 @@ class CampaignOperations:
                 adparams={'name':ad['source_name']+' | OPS '+jobid[:8],'adset_id':setref,'creative':{'creative_id':{'ref':prefix+'creative','field':'id'}},'status':'PAUSED'}
                 steps.append(self._step(prefix,'ads',adparams,adparams))
                 copy_choices.append({'asset_id':ad['asset_id'],'primary_texts':ad['primary_text_options'],'headlines':ad['headline_options']})
-        return steps,files,{'schema_version':2,'adsets':manifest_groups,'selection':body,'copy_choices':copy_choices,'format_mode':'single_ad_flexible','additional_text_options_assigned':True,'old_adsets_changed':False,'live_context_digest':digest(self._execution_context(context,proposal,body)),'proposal_digest':digest(proposal)}
+        return steps,files,{'schema_version':2,'creation_recipe':recipe,'owner_confirmations':confirmations,'adsets':manifest_groups,'selection':body,'copy_choices':copy_choices,'format_mode':'single_ad_flexible','additional_text_options_assigned':True,'old_adsets_changed':False,'live_context_digest':digest(self._execution_context(context,proposal,body)),'proposal_digest':digest(proposal)}
 
     def preview(self,body):
         if not isinstance(body,dict) or set(body)-{'action','expected_source','selected_adset_keys','selected_asset_ids','copy_variant_indices','format_mode','creation_budget_minor','entity_type','entity_id','budget_minor','budget_type','scheduled_at','owner_confirmations'}:raise OperationBlocked('Unsupported preview fields')
@@ -638,7 +638,7 @@ class CampaignOperations:
         if isinstance(value,list):return [self._resolve(x,steps) for x in value]
         return value
 
-    def _match(self,actual,expected):
+    def _match(self,actual,expected,schema_version=1):
         if isinstance(expected,dict):
             if not isinstance(actual,dict):return False
             for k,v in expected.items():
@@ -647,9 +647,11 @@ class CampaignOperations:
                     try:
                         if self._stamp(actual[k])!=self._stamp(v):return False
                     except ValueError:return False
-                elif not self._match(actual[k],v):return False
+                elif not self._match(actual[k],v,schema_version):return False
             return True
-        if isinstance(expected,list):return isinstance(actual,list) and len(actual)==len(expected) and all(self._match(a,e) for a,e in zip(actual,expected))
+        if isinstance(expected,list):
+            if schema_version!=2:return actual==expected
+            return isinstance(actual,list) and len(actual)==len(expected) and all(self._match(a,e,schema_version) for a,e in zip(actual,expected))
         if type(expected) is int:return not isinstance(actual,bool) and str(actual)==str(expected)
         return actual==expected
 
@@ -692,6 +694,7 @@ class CampaignOperations:
                         prior=candidate
             if prior:
                 identity=prior.get('provider_id')
+                step['provider_id']=identity;self._put(job)
                 read=self._measured_call(job,'receipt_readback',self.transport.video_info,token,identity)
                 if read.get('id')!=identity or read.get('account_id')!=ACCOUNT or (read.get('status') or {}).get('video_status')!='ready':raise OperationBlocked('Prior video no longer verified; no re-upload')
                 step['provider_id']=identity;self._put(job)
@@ -711,7 +714,7 @@ class CampaignOperations:
                 status=(read.get('status') or {}).get('video_status')
                 if status=='ready':return {'id':identity,'source_sha256':info['sha256'],'processing_status':'ready'}
                 if status in ('error','rejected'):
-                    step['state']='rejected';self._put(job);raise ProviderRejected('Video processing rejected')
+                    raise OperationBlocked('Video processing rejected; explicit owner abandon required')
                 if status not in ('processing','uploading'):raise OperationBlocked('Video processing failed or unknown')
                 time.sleep(1)
             raise OperationBlocked('Video processing timeout; no re-upload allowed')
@@ -764,7 +767,7 @@ class CampaignOperations:
         if kind=='adcreatives' and 'asset_feed_spec' in params and job['manifest'].get('schema_version')!=2:
             from canary_plan import placement_readback_matches
             if not placement_readback_matches(read,expected):raise OperationBlocked('Placement creative readback mismatch')
-        elif not self._match(read,expected):raise OperationBlocked('Created object readback mismatch')
+        elif not self._match(read,expected,job['manifest'].get('schema_version',1)):raise OperationBlocked('Created object readback mismatch')
         return {'id':identity,'verified_fields':expected}
 
     def _creation_wave(self,token,job):
@@ -824,7 +827,7 @@ class CampaignOperations:
         return True
 
     def abandon_unknown_video(self,operation_id,digest_value,step_key,owner_confirmation=False):
-        """Explicit owner waiver of an ambiguous upload, never an automatic retry.
+        """Explicit owner waiver of an unresolved upload, never an automatic retry.
 
         A remote orphan may exist. This records that risk and permits a new
         proposal to upload the source; it never resumes this consumed job.
@@ -833,7 +836,7 @@ class CampaignOperations:
             job=self._load(db,operation_id)
             if owner_confirmation is not True or not isinstance(digest_value,str) or not hmac.compare_digest(job['digest'],digest_value) or digest(job['manifest'])!=job['digest']:raise OperationBlocked('Exact owner waiver required')
             step=next((s for s in job['steps'] if s['key']==step_key),None)
-            if job['state'] not in ('unknown','partial') or job.get('approval_status')!='consumed' or not step or step['kind']!='video' or step['state']!='unknown' or step.get('provider_id'):raise OperationBlocked('Only unknown video without provider identity can be abandoned')
+            if job['state'] not in ('unknown','partial') or job.get('approval_status')!='consumed' or not step or step['kind']!='video' or step['state']!='unknown':raise OperationBlocked('Only unknown video can be abandoned')
             step['state']='abandoned';step['owner_waiver']={'confirmed_at':self._now().isoformat(),'remote_orphan_possible':True}
             self._save(db,job)
             return self._response(job)
@@ -988,7 +991,11 @@ class CampaignOperations:
                     step['state']='inflight';self._put(job);wrote=True
                     try:step['result']=self._perform(token,step,job);step['state']='verified';self._put(job)
                     except DispatchStopped:step['state']='pending';raise
-                    except ProviderRejected:step['state']='rejected';raise
+                    except ProviderRejected:
+                        if step['kind']=='video' and step.get('provider_id'):
+                            step['state']='unknown'
+                            raise OperationBlocked('Video status unavailable; reconcile saved identity') from None
+                        step['state']='rejected';raise
                     except Exception:step['state']='unknown';raise
                 job['state']='verified';job['reason']=('All created API objects read back; creation remains PAUSED. Delivery and UI editability are not verified.' if job['action']=='prepare_launch' else 'Requested mutation fields read back. Delivery and downstream business effects are not verified.')
             except DispatchStopped:

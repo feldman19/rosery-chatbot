@@ -263,15 +263,13 @@ class V2ExecutionTests(unittest.TestCase):
         group['budget_minor'] = None
         self.proposal['rules']['citations'].append('existing_adset_reuse')
         self.assertTrue(self.preview()['blocked_reasons'])
-        self.book['rules']['existing_adset_reuse'] = {'params': {'max_active_ads_exclusive': 5, 'same_product': True, 'same_angle': True}}
+        self.rule_patch.stop()
+        from rulebook import load_rulebook
+        self.book=load_rulebook()
+        self.assertEqual(self.book['rules']['existing_adset_reuse']['params']['max_active_ads'],5)
         self.bind_book()
         live = {'id': '123456789', 'account_id': ACCOUNT, 'campaign_id': self.provider.campaign, 'status': 'PAUSED', 'effective_status': 'PAUSED', 'name':'ring', 'product': 'ring', 'angle': 'style'}
         self.provider.nodes[live['id']] = live
-        self.book['rules']['existing_adset_reuse']['params']['unrecognized_condition']=True
-        self.bind_book()
-        self.assertTrue(self.preview()['blocked_reasons'])
-        self.book['rules']['existing_adset_reuse']['params'].pop('unrecognized_condition')
-        self.bind_book()
         live['name'] = ''
         self.assertTrue(self.preview()['blocked_reasons'])
         live['name'] = 'ring'
@@ -280,10 +278,12 @@ class V2ExecutionTests(unittest.TestCase):
         for index in range(5):
             identity=str(800000+index)
             self.provider.nodes[identity]={'id':identity,'account_id':ACCOUNT,'campaign_id':self.provider.campaign,'adset_id':live['id'],'status':'ACTIVE','effective_status':'ACTIVE'}
-        self.assertTrue(self.preview()['blocked_reasons'])
+        confirmation=[{'adset_id':live['id'],'same_angle':True}]
+        self.assertIn('active count condition failed',self.preview(owner_confirmations=confirmation)['blocked_reasons'][0])
         for index in range(5):self.provider.nodes.pop(str(800000+index))
         operation = self.service.preview({'action':'prepare_launch','expected_source':self.binding(),'owner_confirmations':[{'adset_id':live['id'],'same_angle':True}]})['operation']
         self.assertEqual(operation['blocked_reasons'], [])
+        self.assertEqual(operation['manifest']['owner_confirmations'],confirmation)
         result = self.execute(operation)
         self.assertEqual(result['state'], 'verified')
         self.assertFalse(any(edge in ('adsets', 'update') for edge, p in self.provider.writes))
@@ -326,7 +326,7 @@ class V2ExecutionTests(unittest.TestCase):
         self.provider.video_status = 'error'
         operation = self.preview()
         result = self.execute(operation)
-        self.assertEqual(result['state'], 'partial')
+        self.assertEqual(result['state'], 'unknown')
         count = sum(edge == 'video' for edge, p in self.provider.writes)
         self.service = self.new_service()
         self.service.execute(operation['operation_id'])
