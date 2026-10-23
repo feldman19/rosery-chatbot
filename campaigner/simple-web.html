@@ -250,6 +250,8 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
     <div class="hello"><h1 id="ads-title">המודעות שלך</h1><p id="ads-sub">3 הימים האחרונים</p></div>
     <div class="chips" id="filters" role="group" aria-label="סינון"></div>
     <div class="list" id="ads"></div>
+    <div class="label" id="learn-label" hidden>מה המערכת לומדת</div>
+    <div class="cards" id="learn"></div>
   </section>
 
   <!-- creative launch (Claude): upload → analysis → proposal; nothing is published from here -->
@@ -519,6 +521,8 @@ function renderAds(){
     if(open===d.entity_id){
       const det=el('div','row-detail');det.append(el('p','',d.why));
       if(d.adset_name)det.append(el('p','','קבוצה: '+d.adset_name));
+      const sc=learning?.scores?.[d.entity_id];
+      if(sc)det.append(el('p','fact','ציון משוקלל (מצב צל, לא משנה החלטות): '+Math.round(sc.score)+' · '+sc.label+' · '+sc.reasons.join(' · ')));
       const l=el('a','btn','פתח במטא');l.href=d.ads_manager_url;l.target='_blank';l.rel='noopener noreferrer';det.append(l);list.append(det)}
   }
   if(quiet.length){const q=el('button','row');q.type='button';const t=el('div','row-main');
@@ -567,7 +571,7 @@ function renderLaunch(){
       for(const [v,l] of [['','בחר קהל'],['men','גברים'],['women','נשים']]){const o=document.createElement('option');o.value=v;o.textContent=l;o.selected=(au.gender||'')===v;sel.append(o)}
       q.append(el('span','label','קהל (הטירגוט יועתק מאד-סט פעיל של אותו מגדר)'),sel);card.append(q);if(au.reason)card.append(el('p','fact',au.reason))}
     for(const ad of d.ads.filter(a=>a.adset_key===g.key)){
-      const r=rows[ad.asset_id]||{},row=el('div','adrow'),img=el('img','thumb');img.alt='';mediaUrl(ad.asset_id,ad.sha256).then(u=>img.src=u);
+      const r=rows[ad.asset_id]||{},row=el('div','adrow'),img=el('img','thumb');img.alt='';(ad.video?mediaUrl(ad.video.thumbnail_asset_id,ad.video.thumbnail_sha256):mediaUrl(ad.asset_id,ad.sha256)).then(u=>img.src=u);
       const info=el('div');info.append(el('strong','',(ad.media_kind==='video'?'🎬 ':'')+(r.observed_product||ad.source_name)),
         el('span','fact','זווית: '+(r.angle||'—')),el('span','fact','קהל (השערה): '+(r.audience_hypothesis||'—')),el('span','fact','מה רואים: '+(r.visual_description||'—')));
       if(ad.media_kind==='video')info.append(el('span','fact',r.audio_status==='checked'?'מה אומרים: '+(r.transcript||'אין דיבור'):'הקול לא נבדק'));
@@ -607,15 +611,23 @@ function launchSheet(op){
   panel.append(el('h2','',op.blocked_reasons?.length?'אי אפשר להעלות כרגע':'מה ייווצר במטא'));
   for(const r of op.blocked_reasons||[])panel.append(el('p','note',r));
   if(op.blocked_reasons?.length){const c=el('button','btn','סגור');c.type='button';c.onclick=closeSheet;panel.append(c);return}
-  const diff=el('div','diff');
-  for(const g of sets){const r=el('div'),p=g.params||{};
-    r.append(el('span','',g.mode==='existing'?'הוספה לאד-סט קיים':'אד-סט חדש: '+(p.name||'')),el('s','',''),el('i','',''),el('b','num',p.daily_budget?ils(p.daily_budget/100)+' ליום':'תקציב לא משתנה'));diff.append(r)}
-  const r=el('div');r.append(el('span','','מודעות חדשות'),el('s','',''),el('i','',''),el('b','num',String(ads)));diff.append(r);
-  panel.append(diff);
-  for(const g of sets){const t=(g.params||{}).targeting;if(!t)continue;
-    const who=t.genders?.[0]===1?'גברים':t.genders?.[0]===2?'נשים':'כל המגדרים',age=t.age_min+(t.age_max?'–'+t.age_max:'+');
-    panel.append(el('p','fact','קהל: '+who+' '+age+' בישראל'+(t.excluded_custom_audiences?.length?' · בלי רוכשים אחרונים':'')+
-      (g.targeting_source?' · מועתק בדיוק מ"'+(g.targeting_source.name||g.targeting_source.adset_id)+'"':'')))}
+  const campaign=(launchState?.campaigns||[]).find(c=>c.id===m.campaign_id);
+  panel.append(el('p','fact','קמפיין: '+(campaign?campaign.name:m.campaign_id)));
+  const copyBy=Object.fromEntries((m.copy_choices||[]).map(c=>[c.asset_id,c])),names=Object.fromEntries((launchState?.analysis||[]).map(r=>[r.asset_id,r.name]));
+  for(const g of sets){const p=g.params||{},card=el('div','adrow'),info=el('div');
+    info.append(el('strong','',g.mode==='existing'?'הוספה לאד-סט קיים: '+((g.existing_adset||{}).name||'')+' ('+((g.existing_adset||{}).id||'')+')':'אד-סט חדש: '+(p.name||'')));
+    info.append(el('span','fact',p.daily_budget?'תקציב: '+ils(p.daily_budget/100)+' ליום':'התקציב של האד-סט הקיים לא משתנה'));
+    const t=p.targeting;
+    if(t){const who=t.genders?.[0]===1?'גברים':t.genders?.[0]===2?'נשים':'כל המגדרים',age=t.age_min+(t.age_max?'–'+t.age_max:'+'),src=g.targeting_source||{};
+      info.append(el('span','fact','קהל: '+who+' '+age+' בישראל'+(src.name?' · מועתק בדיוק מ"'+src.name+'"':'')));
+      // Audience names as Meta returned them on the source ad set; meaning is not inferred.
+      if((src.excluded_audiences||[]).length)info.append(el('span','fact','לא מוצג ל: '+src.excluded_audiences.map(a=>a.name||a.id).join(', ')));
+      if((src.included_audiences||[]).length)info.append(el('span','fact','רק ל: '+src.included_audiences.map(a=>a.name||a.id).join(', ')))}
+    card.append(info);panel.append(card)}
+  panel.append(el('p','fact','מודעות חדשות: '+ads+(sets.length>1?' בכל האד-סטים':'')));
+  for(const c of m.copy_choices||[]){const det=el('details','why');det.append(el('summary','',(names[c.asset_id]||c.asset_id)+': 5 טקסטים ו-5 כותרות'));
+    const inner=el('div');c.primary_texts.forEach((t,i)=>inner.append(el('p','','טקסט '+(i+1)+': '+t)));c.headlines.forEach((t,i)=>inner.append(el('p','','כותרת '+(i+1)+': '+t)));
+    det.append(inner);panel.append(det)}
   panel.append(el('p','fact','כל מודעה: 5 טקסטים ו-5 כותרות · כל שיפורי Advantage+ כבויים (חוץ מתגובות רלוונטיות) · הכל מושהה'));
   panel.append(el('p','fact','קוד אישור: '+op.digest.slice(0,12)+' · תקף עד '+new Date(op.expires_at).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})));
   const a=el('div','actions'),go=el('button','btn primary','אשר והעלה במצב מושהה'),no=el('button','btn ghost','ביטול');go.type=no.type='button';no.onclick=closeSheet;
@@ -721,12 +733,34 @@ function renderActed(){
       yes.onclick=()=>answerDetected(o.id,'yes');no.onclick=()=>answerDetected(o.id,'no');a.append(yes,no);card.append(a)}
     box.append(card)}
 }
+// --- learning (Claude): hypotheses with their evidence; shadow only ---
+let learning=null;
+async function loadLearning(){try{learning=await api('/api/learning')}catch{learning=null}renderLearning()}
+const H_STATE={testing:'watch',supported:'grow',not_supported:'stop'};
+function renderLearning(){
+  const box=$('learn'),items=learning?.hypotheses||[];box.replaceChildren();$('learn-label').hidden=!items.length;
+  for(const h of items){const card=el('article','card'),ev=h.evidence||{},sh=learning.shadow||{};
+    card.append(el('span','pill '+(H_STATE[h.status]||'idle'),h.status_label),el('h3','',h.statement),el('p','fact','איך בודקים: '+h.test));
+    const judged=(ev.for||0)+(ev.against||0);
+    card.append(el('p','',judged?('עד עכשיו: הציון צדק ב-'+ev.for+', החוקים צדקו ב-'+ev.against+(ev.not_judgeable?' · '+ev.not_judgeable+' לא ניתן לבדוק (המודעה נעצרה)':'')+'. צריך לפחות '+ev.needed+' מקרים ותוצאה שמקרה לא מסביר.')
+      :'נאספים נתונים: '+(sh.days||0)+' ימים, '+(sh.today_disagreements||0)+' מחלוקות היום. תוצאה ראשונה אחרי 11 ימים מכל מחלוקת.'));
+    if(h.backtest)card.append(el('p','fact','בדיקה על העבר ('+h.backtest.ads+' מודעות): '+h.backtest.note));
+    const out=h.outside||{},REL={supports:'תומך',contradicts:'סותר',context:'הקשר'};
+    if(out.summary)card.append(el('p','','מה ידוע בחוץ (הקשר, לא הוכחה לחשבון שלך): '+out.summary));
+    for(const src of h.sources||[]){const a=el('a','link',REL[src.relation]+': '+src.claim+' · '+src.source);a.href=src.url;a.target='_blank';a.rel='noopener noreferrer';card.append(a)}
+    if(out.state==='failed')card.append(el('p','note','הבדיקה מול מקורות נכשלה: '+(out.detail||'')));
+    const chk=el('button','btn',out.state==='running'?'בודק מול מקורות…':'בדוק מול מקורות חיצוניים');chk.type='button';chk.disabled=out.state==='running';
+    chk.onclick=async()=>{chk.disabled=true;try{await api('/api/learning/outside-check',{hypothesis_id:h.id});toast('הבדיקה התחילה. זה לוקח כמה דקות.');setTimeout(loadLearning,60000)}catch(e){toast(e.message);chk.disabled=false}};
+    const a=el('div','actions');a.append(chk);card.append(a);
+    box.append(card)}
+}
 async function load(refresh){
   if(refresh){$('fresh-text').textContent='מרענן…';try{await api('/api/live/refresh',{})}catch{}}
   try{report=await api('/api/management-report')}catch(e){$('hello-sub').textContent=e.message;$('todo').replaceChildren();return}
   await loadOutcomes();
   await loadActed();
   await loadShadow(); // auto-mode-shadow refresh
+  await loadLearning();
   renderHeader();renderHero();renderStats();renderDrift();renderToday();renderAds();
   loadProfit();
 }

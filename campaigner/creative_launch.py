@@ -40,7 +40,8 @@ CREATION_RECIPE = {'adset_fields': {'destination_type': 'WEBSITE', 'bid_strategy
                    'creative_fields': {'degrees_of_freedom_spec': {'creative_features_spec': {
                        **{f: {'enroll_status': 'OPT_OUT'} for f in ENHANCEMENTS_OFF}, 'inline_comment': {'enroll_status': 'OPT_IN'}}}},
                    'optimization_type': 'DEGREES_OF_FREEDOM'}
-URL_TAGS ='utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign={{campaign.id}}&utm_content={{ad.id}}&adset_id={{adset.id}}'
+COPY_RULES = ['full_copy_set', 'cta_shop_now', 'no_carousel', 'offer_in_headline']
+URL_TAGS = 'utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign={{campaign.id}}&utm_content={{ad.id}}&adset_id={{adset.id}}'
 
 
 class CreativeLaunch:
@@ -156,6 +157,9 @@ class CreativeLaunch:
                 raise ValueError(f'צריך לאשר שזו אותה זווית כמו באד-סט הקיים "{group["label"]}"')
         now = self.clock()
         proposal['strategy']['campaign_id'] = body['campaign_id']
+        # Bound to the rulebook as it is now, with the same digest the write path checks.
+        proposal['rules'] = {'rulebook_sha256': digest(self.rulebook()),
+                             'citations': sorted(set(proposal['rules']['citations']) | set(COPY_RULES))}
         proposal.update(prepared_at=now.isoformat(), expires_at=(now + timedelta(minutes=15)).isoformat(),
                         request_revision=int(draft.get('request_revision', 1)) + 1,
                         creation_recipe=CREATION_RECIPE)
@@ -167,9 +171,9 @@ class CreativeLaunch:
         return {'expected_source': binding, 'owner_confirmations': confirmations, 'expires_at': proposal['expires_at']}
 
     def operation_report(self):
-        """The finalized proposal in the shape campaign_operations loads, or None."""
+        """The finalized proposal in the shape campaign_operations loads, or None once it has expired."""
         final = self.status().get('final')
-        if not final:
+        if not final or datetime.fromisoformat(final['proposal']['expires_at']) <= self.clock():
             return None
         return {'available': True, 'proposal': final['proposal'], 'source_binding': final['source_binding']}
 
@@ -222,11 +226,13 @@ class CreativeLaunch:
             ads.append(entry)
         adsets = [{k: g[k] for k in ('key', 'label', 'rationale', 'product', 'angle', 'targeting_mode', 'target', 'budget_minor')}
                   for g in strategy['adsets']]
-        rulebook_sha = hashlib.sha256(json.dumps(book, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+        from launch_proposal_schema import digest as canonical_digest
+        rulebook_sha = canonical_digest(book)  # the same digest the write path checks
         return {'schema_version': 2, 'id': job['id'], 'request_id': job['id'], 'request_revision': 1,
                 'prepared_at': now.isoformat(), 'expires_at': (now + timedelta(minutes=15)).isoformat(),
                 'summary': 'הצעה מהתכנים שהעלית: ניתוח, 5+5 קופי ושיוך לפי החוקים. קהל הוא השערה, לא עובדה.',
                 'strategy': {'campaign_id': job['campaign_id'], 'source': 'model_advisory'},
-                'rules': {'rulebook_sha256': rulebook_sha, 'citations': sorted(set(strategy['citations'] + ['full_copy_set']))},
+                # Rules this draft is built to: 5+5 copy, SHOP_NOW, one flexible ad (no carousel), offers in headlines.
+                'rules': {'rulebook_sha256': rulebook_sha, 'citations': sorted(set(strategy['citations'] + COPY_RULES))},
                 'adsets': adsets, 'ads': ads, 'required_format': 'single_ad_flexible', 'creation_status': 'PAUSED',
                 'owner_questions': strategy['owner_questions'], 'blockers': []}

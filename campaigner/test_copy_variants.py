@@ -47,10 +47,13 @@ class CopyVariantTests(unittest.TestCase):
         self.assertEqual(copy_variants.variants(ROW, self.rules, runner=runner)['headline_options'], heads)
         self.assertIn('משלוח חינם מעל ₪350', seen['text'])
 
-    def test_more_than_one_store_fact_headline_is_refused(self):
-        heads = ['משלוח חינם מעל ₪350', 'החזרות חינם עד 14 יום', 'כותרת 2', 'כותרת 3', 'כותרת 4']
+    def test_store_facts_only_in_up_to_two_headlines(self):
+        heads = ['משלוח חינם מעל ₪350', 'החזרות חינם עד 14 יום', 'משלוח עד 3 ימי עסקים', 'כותרת 3', 'כותרת 4']
         with self.assertRaises(ValueError):
             copy_variants.variants(ROW, self.rules, runner=lambda _: answer(heads=heads))
+        texts = ['משלוח חינם מעל ₪350 וגם צמיד'] + [f'טקסט {i}' for i in range(4)]
+        with self.assertRaises(ValueError):
+            copy_variants.variants(ROW, self.rules, runner=lambda _: answer(texts=texts))
 
     def test_schema_is_exactly_five_each(self):
         s = copy_variants.schema()['properties']

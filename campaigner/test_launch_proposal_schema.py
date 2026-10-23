@@ -174,6 +174,27 @@ class V2ExecutionTests(unittest.TestCase):
         self.service.approve(operation['operation_id'], operation['digest'])
         return self.service.execute(operation['operation_id'])['operation']
 
+    def test_copy_men_targeting_from_the_live_adset_and_paused_readback(self):
+        men = {'genders': [1], 'age_min': 18, 'age_max': 65, 'geo_locations': {'countries': ['IL'], 'location_types': ['home']},
+               'excluded_custom_audiences': [{'id': '120252833157650730', 'name': 'ROSERY | רוכשים 30 יום'}],
+               'targeting_automation': {'advantage_audience': 1}}
+        self.provider.nodes['555555555'] = {'id': '555555555', 'account_id': ACCOUNT, 'campaign_id': self.provider.campaign,
+                                            'name': 'וידאו | גברים | 05/10', 'status': 'ACTIVE', 'effective_status': 'ACTIVE', 'targeting': men}
+        self.proposal['adsets'][0]['targeting_mode'] = 'copy_men'
+        operation = self.preview()
+        self.assertEqual(operation['blocked_reasons'], [])
+        group = operation['manifest']['adsets'][0]
+        self.assertEqual(group['params']['targeting']['genders'], [1])
+        self.assertEqual(group['params']['targeting']['excluded_custom_audiences'], [{'id': '120252833157650730'}])
+        self.assertEqual(group['targeting_source']['excluded_audiences'][0]['name'], 'ROSERY | רוכשים 30 יום')
+        self.assertEqual(self.execute(operation)['state'], 'verified')
+        created = [n for n in self.provider.nodes.values() if n.get('name', '').startswith(self.proposal['adsets'][0]['label'])]
+        self.assertEqual(created[0]['status'], 'PAUSED')
+
+    def test_copy_women_without_a_live_women_adset_is_blocked(self):
+        self.proposal['adsets'][0]['targeting_mode'] = 'copy_women'
+        self.assertIn('No active ad set of that gender', ' '.join(self.preview()['blocked_reasons']))
+
     def test_mixed_media_exact_manifest_paused_and_readback(self):
         operation = self.preview()
         self.assertEqual(operation['blocked_reasons'], [])

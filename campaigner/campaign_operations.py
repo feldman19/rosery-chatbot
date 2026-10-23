@@ -480,7 +480,10 @@ class CampaignOperations:
                 steps.append(self._step(setkey,'adsets',setparams,setparams));setref={'ref':setkey,'field':'id'}
             if not count_rule['min']<=total<=count_rule['max']:raise OperationBlocked('ads_per_adset: live plus proposed count outside rule')
             manifest_groups.append({'key':group['key'],'mode':target['mode'],'params':setparams,
-                                    **({'targeting_source':{'adset_id':template['id'],'name':template.get('name')}} if target['mode']=='new' and template else {})})
+                                    **({'targeting_source':{'adset_id':template['id'],'name':template.get('name'),
+                                        'excluded_audiences':[{'id':a.get('id'),'name':a.get('name')} for a in template['targeting'].get('excluded_custom_audiences') or [] if isinstance(a,dict)],
+                                        'included_audiences':[{'id':a.get('id'),'name':a.get('name')} for a in template['targeting'].get('custom_audiences') or [] if isinstance(a,dict)]}}
+                                       if target['mode']=='new' and template else {'existing_adset':{'id':live['id'],'name':live.get('name')}} if target['mode']=='existing' else {})})
             for n,ad in enumerate(members):
                 prefix=setkey+'ad'+str(n);kind=ad['media_kind']
                 _,info=self._video_source(ad) if kind=='video' else self._source(ad)

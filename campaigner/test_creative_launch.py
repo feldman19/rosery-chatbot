@@ -130,6 +130,10 @@ class CreativeLaunchTests(unittest.TestCase):
         self.assertEqual(features['inline_comment'], {'enroll_status': 'OPT_IN'})
         self.assertTrue(all(v == {'enroll_status': 'OPT_OUT'} for k, v in features.items() if k != 'inline_comment'))
         self.assertEqual(operation_proposal(report)['source_binding'], result['expected_source'])
+        # The write path's own checks: same rulebook digest and every rule it requires is cited.
+        self.assertEqual(proposal['rules']['rulebook_sha256'], digest(load_rulebook()))
+        self.assertTrue({'full_copy_set', 'ads_per_adset', 'new_creatives_new_dated_adset', 'cta_shop_now', 'no_carousel',
+                         'offer_in_headline'} <= set(proposal['rules']['citations']) <= set(load_rulebook()['rules']))
 
     def test_restart_marks_running_job_interrupted(self):
         (self.dir / 'creative-launch.json').write_text('{"state": "analyzing", "id": "launch-x"}', encoding='utf-8')

@@ -8,7 +8,7 @@ from pathlib import Path
 import secrets
 import socket
 import threading
-from datetime import date
+from datetime import date, datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from analysis import summarize
@@ -159,6 +159,15 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         except Exception:report['creative_drift']={'status':'unavailable','items':[]}
         return report
     owner_actions=OwnerActions(data,report=owner_action_report)
+    # --- learning (Claude): Ad Score in shadow beside the rules + hypothesis journal with an evidence gate ---
+    from score_shadow import ScoreShadow
+    from hypotheses import Hypotheses
+    score_shadow=ScoreShadow(data/'score-shadow.sqlite3');hypotheses=Hypotheses(data/'hypotheses.json')
+    def learn(report):
+        score_shadow.record(report)
+        result=score_shadow.summary(datetime.now(timezone.utc).date())
+        hypotheses.update_evidence('ad_score_beats_3day_roas',result['score_right'],result['rules_right'],result['not_judgeable'],result['judged'][-20:])
+        return result
     launch_media_cache={}
     def launch_media(key):
         if not re.fullmatch(r'local_[a-f0-9]{32}~[a-f0-9]{64}',key):raise ValueError('Invalid media key')
@@ -372,7 +381,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except (ValueError,KeyError,OSError):return self.reply(404,{'error':'Not found'})
                 self.send_response(200);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(raw)))
                 self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw);return
-            if self.path not in ('/api/daily-brief', '/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
+            if self.path not in ('/api/learning', '/api/daily-brief', '/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
                 return self.reply(404, {'error': 'Not found'})
             if not hmac.compare_digest(self.headers.get('X-Local-Session', ''), session):
                 return self.reply(403, {'error': 'Invalid local session'})
@@ -445,6 +454,16 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         except Exception:report['creative_drift']={'status':'unavailable','items':[],'unknown':[],'provider_writes':0,'live_action_allowed':False}
                     return self.reply(200,report)
                 except (ValueError,KeyError,TypeError,OSError):return self.reply(503,{'error':'דוח הניהול אינו זמין כרגע. לא בוצע שינוי בקמפיינים.'})
+            if self.path == '/api/learning':
+                # What the system is testing, with evidence; shadow only, nothing is changed in Meta.
+                if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
+                try:
+                    import sqlite3 as _sq
+                    with _sq.connect(score_shadow.path) as db:
+                        last=db.execute('SELECT ad_id,payload FROM calls WHERE day=(SELECT MAX(day) FROM calls)').fetchall()
+                    scores={ad:json.loads(raw)['score'] for ad,raw in last}
+                    return self.reply(200,{'hypotheses':hypotheses.list(),'shadow':score_shadow.summary(datetime.now(timezone.utc).date()),'scores':scores,'provider_writes':0})
+                except Exception:return self.reply(503,{'error':'הלמידה אינה זמינה כרגע.'})
             if self.path == '/api/daily-brief':
                 # Morning summary text, read-only; delivery to the phone is separate.
                 if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
@@ -629,6 +648,19 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         return self.reply(200,receipt)
                     except ActionBlocked as error:return self.reply(409,{'error':str(error)})
                     except (OSError,KeyError) as error:return self.reply(503,{'error':'הרשאת הביצוע במטא לא זמינה. לא בוצע שינוי.'})
+                if self.path == '/api/learning/outside-check':
+                    # Web research with links, in a process that has only WebSearch/WebFetch; context, never proof.
+                    if set(body)!={'hypothesis_id'} or not isinstance(body['hypothesis_id'],str):return self.reply(400,{'error':'מזהה השערה נדרש'})
+                    hypothesis=hypotheses.get(body['hypothesis_id'])
+                    if not hypothesis:return self.reply(404,{'error':'השערה לא נמצאה'})
+                    if (hypothesis.get('outside') or {}).get('state')=='running':return self.reply(409,{'error':'הבדיקה כבר רצה'})
+                    def run_outside(h=hypothesis):
+                        from outside_check import research
+                        try:hypotheses.set_outside(h['id'],'done',research(h))
+                        except Exception as error:hypotheses.set_outside(h['id'],'failed',detail=str(error)[:300])
+                    hypotheses.set_outside(hypothesis['id'],'running')
+                    threading.Thread(target=run_outside,daemon=True,name='outside-check').start()
+                    return self.reply(200,{'state':'running'})
                 if self.path == '/api/creative-launch/start':
                     try:return self.reply(200,creative_launch.start(body))
                     except ValueError as error:return self.reply(400,{'error':str(error)})
@@ -865,7 +897,10 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 from daily_brief import build as build_brief
                 while not live.stop_event.wait(60):
                     try:
-                        text=build_brief(owner_action_report(),owner_actions.status()['receipts'])
+                        report=owner_action_report()
+                        try:learn(report)
+                        except Exception:pass
+                        text=build_brief(report,owner_actions.status()['receipts'])
                         pending=data/'daily-brief.pending';pending.write_text(text,encoding='utf-8');pending.replace(data/'daily-brief.txt')
                     except Exception:pass
                     live.stop_event.wait(1800)
