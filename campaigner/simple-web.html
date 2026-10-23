@@ -332,6 +332,10 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 <script>
 const token='__SESSION__';
 const $=id=>document.getElementById(id);
+// The phone reaches this page over plain http on Tailscale, which Safari does not count as a secure page:
+// crypto.randomUUID is missing there, getRandomValues is not. A version-4 UUID from it works everywhere.
+function newId(){const b=crypto.getRandomValues(new Uint8Array(16));b[6]=b[6]&15|64;b[8]=b[8]&63|128;
+  const h=[...b].map(v=>v.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20)}
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n};
 const ils=v=>typeof v==='number'?'₪'+Math.round(v).toLocaleString('he-IL'):'—';
 const x=v=>typeof v==='number'?v.toFixed(2):'—';
@@ -595,7 +599,7 @@ const MAX_IMAGE=20*1024*1024,MAX_VIDEO=300*1024*1024,IMAGE_TYPES=['image/jpeg','
 let picked=[];
 const mb=n=>(n/1048576).toFixed(n<10*1048576?1:0)+'MB';
 const clock=sec=>{const t=Math.round(sec);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
-function showLaunchError(text){const err=$('launch-error');err.hidden=!text;err.textContent=text||''}
+function showLaunchError(text){const err=$('launch-error');err.hidden=!text;err.textContent=text||'';if(text)err.scrollIntoView({block:'center',behavior:'smooth'})}
 function addFiles(list){
   const problems=[];
   for(const f of list){const video=VIDEO_TYPES.includes(f.type);
@@ -605,6 +609,7 @@ function addFiles(list){
     if(picked.length>=30){problems.push('אפשר עד 30 קבצים בפעם אחת');break}
     picked.push({file:f,url:URL.createObjectURL(f),video})}
   renderPicked();showLaunchError(problems.join(' · '));
+  if(!problems.length&&picked.length)$('launch-count').scrollIntoView({block:'nearest',behavior:'smooth'});
 }
 function renderPicked(){
   const box=$('launch-picked');box.replaceChildren();
@@ -628,14 +633,14 @@ $('launch-files').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
 function uploadOne(f,onProgress){return new Promise((resolve,reject)=>{
   const x=new XMLHttpRequest();x.open('POST','/api/local-uploads');
   x.setRequestHeader('X-Local-Session',token);x.setRequestHeader('Content-Type',f.type);x.setRequestHeader('X-File-Name',encodeURIComponent(f.name));
-  x.setRequestHeader('X-Upload-Id',crypto.randomUUID().replace(/-/g,''));
+  x.setRequestHeader('X-Upload-Id',newId().replace(/-/g,''));
   x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded)};
   x.onload=()=>{let v={};try{v=JSON.parse(x.responseText)}catch{}x.status>=200&&x.status<300&&v.asset?resolve(v):reject(Error(f.name+': '+(v.error||'ההעלאה נכשלה')))};
   x.onerror=()=>reject(Error(f.name+': החיבור נקטע. נסה שוב.'));x.send(f)})}
 // A proposal's image or video; a video loads only when tapped, then plays here.
 function mediaBox(ad){
   const box=el('div','media'),img=el('img');img.alt='';box.append(img);
-  (ad.video?mediaUrl(ad.video.thumbnail_asset_id,ad.video.thumbnail_sha256):mediaUrl(ad.asset_id,ad.sha256)).then(u=>img.src=u);
+  (ad.video?mediaUrl(ad.video.thumbnail_asset_id,ad.video.thumbnail_sha256):mediaUrl(ad.asset_id,ad.sha256)).then(u=>img.src=u).catch(()=>{});
   if(ad.media_kind==='video'){const play=el('button','play','▶');play.type='button';play.setAttribute('aria-label','נגן את הסרטון');
     play.onclick=async()=>{play.disabled=true;play.textContent='…';
       try{const r=await fetch('/api/creative-launch/video/'+ad.asset_id+'~'+ad.sha256,{headers:{'X-Local-Session':token},cache:'no-store'});
@@ -808,7 +813,7 @@ $('launch-form').onsubmit=async e=>{
   if(!$('launch-consent').checked){showLaunchError('צריך לסמן את האישור לשליחה לניתוח.');return}
   const go=$('launch-go'),bar=$('launch-bar'),text=$('launch-progress-text'),files=picked.map(p=>p.file),sources=[];
   const total=files.reduce((n,f)=>n+f.size,0)||1;let done=0;
-  go.disabled=true;$('launch-progress').hidden=false;
+  go.disabled=true;$('launch-progress').hidden=false;$('launch-progress').scrollIntoView({block:'center',behavior:'smooth'});
   const show=(i,loaded)=>{const pct=Math.min(100,Math.round((done+loaded)/total*100));bar.style.width=pct+'%';
     text.textContent='מעלה למחשב '+(i+1)+' מתוך '+files.length+' ('+files[i].name+') · '+pct+'%'};
   try{
@@ -817,7 +822,7 @@ $('launch-form').onsubmit=async e=>{
     launchState=await api('/api/creative-launch/start',{goal:$('launch-goal').value.trim(),sources,consent:true,campaign_id:$('launch-campaign').value||null});
     for(const p of picked)URL.revokeObjectURL(p.url);picked=[];renderPicked();$('launch-progress').hidden=true;
     loadLaunch();
-  }catch(ex){showLaunchError(ex.message);go.disabled=false;$('launch-progress').hidden=true}
+  }catch(ex){$('launch-progress').hidden=true;showLaunchError(ex.message);toast(ex.message);go.disabled=false}
 };
 let chatTimer=null;
 async function loadChat(){
@@ -837,11 +842,10 @@ function renderChat(st){
   const waiting=(st?.turns||[]).some(t=>t.state==='running');clearTimeout(chatTimer);
   if(waiting)chatTimer=setTimeout(loadChat,2500);
 }
-$('launch-files').onchange=()=>{$('launch-filenames').textContent=[...$('launch-files').files].map(f=>f.name).join(' · ')};
 $('composer').onsubmit=async e=>{
   e.preventDefault();const q=$('question').value.trim();if(q.length<3)return;
   $('send').disabled=true;
-  try{await api('/api/claude-chat',{question:q,request_id:crypto.randomUUID(),ad_id:null});$('question').value='';await loadChat()}
+  try{await api('/api/claude-chat',{question:q,request_id:newId(),ad_id:null});$('question').value='';await loadChat()}
   catch(err){showUnavailable(err.message)}finally{$('send').disabled=false}
 };
 
