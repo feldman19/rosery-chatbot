@@ -622,7 +622,10 @@ function driftCard(item,rule){
   if((item.unclear||[]).length)card.append(el('p','note','מצב לא ידוע (מטא לא החזירה כבוי או מופעל): '+item.unclear.map(f=>f.label).join(', ')));
   if(item.creative_replaced)card.append(el('p','note','הקריאייטיב של המודעה הוחלף'+when(item.creative_replaced.detected_at)+'.'));
   if(rule)card.append(el('p','fact','החוק שלך: "'+rule.quote+'"'));
-  const a=el('div','actions'),l=el('button','btn primary','כבה שיפורים');l.type='button';l.onclick=()=>openAction('drift:'+item.ad_id);
+  const a=el('div','actions');let l;
+  // Catalog and multi-media creatives cannot be copied here: say so on the card and link to Ads Manager.
+  if(item.in_app===false){l=el('a','btn primary','לכיבוי במטא');l.href=item.link;l.target='_blank';l.rel='noopener noreferrer';card.append(el('p','note','במודעת קטלוג או מודעה עם כמה תמונות/סרטונים הכיבוי נעשה במטא. הכפתור פותח את המודעה שם.'))}
+  else{l=el('button','btn primary','כבה שיפורים');l.type='button';l.onclick=()=>openAction('drift:'+item.ad_id)}
   const keep=el('button','btn ghost','השאר כך');keep.type='button';
   keep.onclick=async()=>{keep.disabled=true;try{await api('/api/creative-drift/keep',{ad_id:item.ad_id});await load(false)}catch(e){keep.disabled=false;alert(e.message)}};
   const remove=el('button','btn ghost','הסר מהרשימה');remove.onclick=()=>dismiss(item);a.append(l,keep,remove);

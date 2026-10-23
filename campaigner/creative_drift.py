@@ -64,6 +64,13 @@ def _features(creative):
     return result
 
 
+def _copyable(creative):
+    from owner_actions import _text_feed
+    story = creative.get('object_story_spec')
+    return (isinstance(story, dict) and not story.get('template_data') and not creative.get('product_set_id')
+            and _text_feed(creative.get('asset_feed_spec')) is not False)
+
+
 def ads_manager_url(ad_id):
     return f'https://adsmanager.facebook.com/adsmanager/manage/ads?act={ACCOUNT}&selected_ad_ids={ad_id}'
 
@@ -190,6 +197,8 @@ class CreativeDrift:
                               'kind_label': KINDS[(first.get(f) or {}).get('kind', 'on_at_first_read')],
                               'since': (first.get(f) or {}).get('detected_at')} for f in on],
                 'creative_replaced': replaced[-1] if replaced else None,
+                # Whether "כבה עכשיו" can copy this creative (owner_actions); catalog and multi-media ones go to Ads Manager.
+                'in_app': _copyable(creative),
                 'unclear': [{'feature': f, 'label': label(f)} for f in unclear]})
         base['items'].sort(key=lambda i: (-len(i['features']), i['name']))
         # Without a verified rulebook the finding is technical: "on", not "against your rule".
