@@ -29,8 +29,9 @@ class FakeChild:
 
 
 class FakeGit:
-    def __init__(self, current='a' * 40, available='b' * 40, dirty='', ancestor=True, fetch_error=False):
-        self.current, self.available, self.dirty, self.ancestor, self.fetch_error = current, available, dirty, ancestor, fetch_error
+    def __init__(self, current='a' * 40, available='b' * 40, local=(), incoming=('campaigner/server.py',), ancestor=True, fetch_error=False):
+        self.current, self.available, self.ancestor, self.fetch_error = current, available, ancestor, fetch_error
+        self.local, self.incoming = local, incoming
         self.calls = []
 
     def __call__(self, *args, timeout=120):
@@ -39,8 +40,8 @@ class FakeGit:
             return self.current if args[1] == 'HEAD' else self.available
         if args[0] == 'fetch' and self.fetch_error:
             raise RuntimeError('network')
-        if args[0] == 'status':
-            return self.dirty
+        if args[0] == 'diff':
+            return '\n'.join(self.local if args[2] == 'HEAD' else self.incoming)
         if args[0] == 'merge-base' and not self.ancestor:
             raise RuntimeError('not ancestor')
         if args[0] == 'merge':
@@ -99,10 +100,15 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual((self.status()['state'], self.status()['running']), ('updated', 'bbbbbbb'))
 
     def test_local_edits_are_never_overwritten(self):
-        git = FakeGit(dirty=' M server.py')
+        git = FakeGit(local=('campaigner/server.py',))
         self.assertFalse(self.runner(git).check())
         self.assertEqual(self.status()['state'], 'blocked')
+        self.assertIn('campaigner/server.py', self.status()['message'])
         self.assertFalse(any(c[0] in ('merge', 'reset') for c in git.calls))
+
+    def test_a_file_other_tools_keep_writing_does_not_stop_updates(self):
+        git = FakeGit(local=('.agents/events.jsonl',))
+        self.assertTrue(self.runner(git).check())
 
     def test_rewritten_history_is_not_taken(self):
         git = FakeGit(ancestor=False)
@@ -124,7 +130,7 @@ class RunnerTests(unittest.TestCase):
         git = FakeGit()
         runner = self.runner(git, smoke_error='ImportError: boom')
         self.assertFalse(runner.check())
-        self.assertIn(('reset', '--hard', 'a' * 40), git.calls)
+        self.assertIn(('reset', '--keep', 'a' * 40), git.calls)
         self.assertEqual((self.status()['state'], git.current, len(self.spawned)), ('error', 'a' * 40, 2))
 
     def test_github_unreachable_keeps_running(self):
@@ -206,6 +212,21 @@ class RealGitTests(unittest.TestCase):
         self.push('v3-broken')
         self.assertFalse(self.runner(smoke_error='boom').check())
         self.assertEqual((self.git('rev-parse', 'HEAD'), (self.work / 'app.txt').read_text(encoding='utf-8')), (before, 'v2'))
+
+    def test_an_unrelated_local_edit_survives_update_and_rollback(self):
+        (self.other / 'events.jsonl').write_text('x', encoding='utf-8')
+        self.run('git', 'add', '.', cwd=self.other)
+        self.run('git', 'commit', '-q', '-m', 'events', cwd=self.other)
+        self.run('git', 'push', '-q', 'origin', 'HEAD:main', cwd=self.other)
+        self.run('git', 'pull', '-q', 'origin', 'main', cwd=self.work)
+        (self.work / 'events.jsonl').write_text('written by another tool', encoding='utf-8')
+        self.push('v2')
+        self.assertTrue(self.runner().check())
+        self.assertEqual((self.work / 'app.txt').read_text(encoding='utf-8'), 'v2')
+        self.push('v3-broken')
+        self.assertFalse(self.runner(smoke_error='boom').check())
+        self.assertEqual((self.work / 'app.txt').read_text(encoding='utf-8'), 'v2')
+        self.assertEqual((self.work / 'events.jsonl').read_text(encoding='utf-8'), 'written by another tool')
 
     def test_owner_edits_stay(self):
         self.push('v2')

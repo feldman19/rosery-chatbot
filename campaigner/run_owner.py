@@ -2,7 +2,8 @@
 
 Starts the local server and, when configured, the phone gateway. Every few minutes, and when the owner taps
 "בדוק עדכון עכשיו" on the screen, it fetches the branch from GitHub. A new version is taken only when:
-- the working copy has no local edits to tracked files (it never overwrites the owner's files);
+- no file changed on this computer is also changed by the update (it never overwrites local edits; files that
+  other tools keep writing, like .agents/events.jsonl, do not stop it as long as the update leaves them alone);
 - the new version continues the one running now (fast-forward only, no rewritten history);
 - a smoke check of the new code passes: it imports, a server starts on a spare port with an empty temporary
   folder, and the simple screen loads; otherwise the previous version is restored;
@@ -160,9 +161,11 @@ class Runner:
         if available == current:
             self.write_status('up_to_date', 'המערכת מעודכנת.', running=short(current))
             return False
-        if self.git('status', '--porcelain', '--untracked-files=no'):
-            self.write_status('blocked', 'יש במחשב שינויים מקומיים בקבצי המערכת, ולכן לא עדכנתי כדי לא לדרוס אותם.',
-                              running=short(current), available=short(available))
+        local = set(self.git('diff', '--name-only', 'HEAD').splitlines())
+        both = sorted(local & set(self.git('diff', '--name-only', current, available).splitlines()))
+        if both:
+            self.write_status('blocked', 'יש במחשב שינויים מקומיים בקבצים שהעדכון משנה (' + ', '.join(both[:5]) +
+                              '), ולכן לא עדכנתי כדי לא לדרוס אותם.', running=short(current), available=short(available))
             return False
         try:
             self.git('merge-base', '--is-ancestor', current, available)
@@ -182,7 +185,7 @@ class Runner:
             self.smoke()
         except Exception as error:
             try:
-                self.git('reset', '--hard', current)  # the tree was clean: this is exactly the version that ran
+                self.git('reset', '--keep', current)  # back to the version that ran; local edits elsewhere stay
             except Exception:
                 pass
             self.write_status('error', 'הגרסה החדשה לא עברה בדיקה, ולכן נשארתי בגרסה הקודמת.', running=short(current),
