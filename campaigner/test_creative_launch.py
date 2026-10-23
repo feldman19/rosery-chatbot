@@ -23,7 +23,7 @@ def analysis(assets, owner_brief):
     return {'assets': rows, **({'video_review': video} if video else {})}
 
 
-def copy(row, rulebook, transcript=None, source_name=None):
+def copy(row, rulebook, transcript=None, source_name=None, goal=None):
     return {'primary_text_options': [f'טקסט {i}' for i in range(5)], 'headline_options': [f'כותרת {i}' for i in range(5)]}
 
 
@@ -108,6 +108,19 @@ class CreativeLaunchTests(unittest.TestCase):
         state = self.wait(launch)
         self.assertEqual(state['state'], 'ready_for_owner', state.get('detail'))
         self.assertEqual(len(calls), 2)
+
+    def test_copy_gets_the_goal_and_its_brief_is_kept_beside_the_draft(self):
+        asset = self.image()
+        seen = {}
+        def briefed(row, rulebook, **kw):
+            seen.update(kw)
+            return {**copy(row, rulebook), 'brief': {'avatar': 'גבר שקונה לעצמו'}, 'customer_read': {'done': True, 'rewrites': 1, 'still_flagged': []}}
+        launch = self.launch(copy=briefed)
+        launch.start({'goal': 'צמידים לגברים', 'sources': [{'id': asset['id'], 'sha256': asset['sha256']}], 'consent': True, 'campaign_id': None})
+        state = self.wait(launch)
+        self.assertEqual(seen['goal'], 'צמידים לגברים')
+        self.assertEqual(state['copy_briefs'][asset['id']]['brief']['avatar'], 'גבר שקונה לעצמו')
+        self.assertNotIn('brief', state['draft']['ads'][0])  # the proposal for Meta stays exactly as before
 
     def test_finalize_makes_a_valid_v2_proposal_for_the_write_path(self):
         from launch_proposal_schema import digest, validate_proposal_v2

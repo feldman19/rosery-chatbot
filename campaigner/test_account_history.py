@@ -149,6 +149,16 @@ class AccountHistoryTests(unittest.TestCase):
         self.assertEqual(history.summary()['windows']['all']['top'][0]['name'], 'Ad 1')
         self.assertEqual(len(calls), 1)
 
+    def test_voice_examples_are_texts_of_ranked_ads_only(self):
+        rows = [live_row('1', 400, 6, 2400), live_row('2', 300, 4, 900), live_row('3', 150, 5, 3000), live_row('4', 500, 1, 900)]
+        creatives = {'1': {'body': 'הצמיד שלא מורידים', 'title': 'לוק נקי'}, '2': {'body': 'עוד צמיד'},
+                     '3': {'body': 'מעט הוצאה'}, '4': {'body': 'רכישה אחת'}}
+        (self.dir / 'account-history.json').write_text(json.dumps(history_file(rows, creatives)), encoding='utf-8')
+        examples = AccountHistory(self.dir).voice_examples()
+        self.assertEqual([e['text'] for e in examples], ['הצמיד שלא מורידים\nלוק נקי', 'עוד צמיד'])  # ₪200+ and 3+ purchases, by ROAS
+        self.assertEqual((examples[0]['roas'], examples[0]['purchases']), (6.0, 6))
+        self.assertEqual(AccountHistory(self.dir / 'none').voice_examples(), [])
+
     def test_chat_context_fits_budget(self):
         rows = [live_row(str(i), 300 + i, 5, 2000 + i * 10, name='מודעה עם שם ארוך מאוד ' * 3 + str(i)) for i in range(60)]
         creatives = {str(i): {'video_id': 'v', 'body': 'טקסט פתיחה ארוך מאוד של המודעה ' * 4} for i in range(60)}

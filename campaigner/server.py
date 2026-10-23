@@ -156,7 +156,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     import copy_variants, launch_strategy
     creative_launch=CreativeLaunch(data,uploads=local_uploads,
         analyze=lambda assets,owner_brief:CreativeVision(data).analyze(assets,owner_brief=owner_brief,local_image_review_consent=True),
-        copy=copy_variants.variants,plan=launch_strategy.plan,report=lambda:management_report(live.snapshot()),rulebook=load_rulebook)
+        copy=lambda row,rules,**kw:copy_variants.variants(row,rules,voice_examples=history.voice_examples(),**kw),plan=launch_strategy.plan,report=lambda:management_report(live.snapshot()),rulebook=load_rulebook)
     # --- "אשר ובצע" (Claude): owner-approved pause / +20% budget / Advantage+ off; preview → confirm → readback ---
     from owner_actions import OwnerActions,ActionBlocked
     def owner_action_report():
@@ -188,12 +188,19 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
             from video_validation import frames
             launch_media_cache[key]=frames(path,asset['duration_ms'],count=1)[0][1]
         return launch_media_cache[key],'image/jpeg'
+    launch_video_checked={}
     def launch_video(key):
         # The uploaded video itself, to watch before approving; checked against its signed upload receipt.
+        # A player asks for many byte ranges: the full check (hash of up to 300 MiB) runs again only when
+        # the file on disk changed since it last passed.
         if not re.fullmatch(r'local_[a-f0-9]{32}~[a-f0-9]{64}',key):raise ValueError('Invalid media key')
-        identity,sha=key.split('~');asset=local_uploads.resolve([{'id':identity,'sha256':sha}])[0]
-        if asset.get('media_kind')!='video':raise ValueError('Not a video')
-        return data/'drive-assets'/(identity+'-'+sha+'.bin'),asset['mime_type']
+        identity,sha=key.split('~');path=data/'drive-assets'/(identity+'-'+sha+'.bin')
+        stat=path.stat();seen=(stat.st_size,stat.st_mtime_ns)
+        if launch_video_checked.get(key,(None,))[0]!=seen:
+            asset=local_uploads.resolve([{'id':identity,'sha256':sha}])[0]
+            if asset.get('media_kind')!='video':raise ValueError('Not a video')
+            launch_video_checked[key]=(seen,asset['mime_type'])
+        return path,launch_video_checked[key][1],stat.st_size
     engine.bind_account(TENANT, ACCOUNT)
     try:
         engine.get_entity(TENANT, ACCOUNT, ENTITY)
@@ -330,6 +337,8 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
             if content_type.startswith('text/html') and workspace=='manager' and self.path.split('?',1)[0]=='/':
                 self.send_header('Set-Cookie','campaigner_media='+session+'; HttpOnly; SameSite=Strict; Path=/api/launch/proposal/media/')
                 self.send_header('Set-Cookie','campaigner_preparation_media='+session+'; HttpOnly; SameSite=Strict; Path=/api/preparation-task/media/')
+                # A <video> element cannot send the session header; this cookie is valid on the video path only.
+                self.send_header('Set-Cookie','campaigner_video='+session+'; HttpOnly; SameSite=Strict; Path=/api/creative-launch/video/')
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'no-referrer')
             self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: https://*.fbcdn.net https://*.cdninstagram.com; media-src 'self' blob:; frame-ancestors 'none'; connect-src 'self'")
@@ -391,14 +400,39 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 page = page.replace('</html>', '<script>' + (ROOT / 'pilot-format.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'registration-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'review-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'connection-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'operator-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'strategy-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-proposal-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'owner-instructions.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'preparation-loop-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'task-overview.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'work-home.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'live-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'decision-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'meta-execution-panel.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'pilot-ui.js').read_text(encoding='utf-8') + '</script></html>')
                 return self.reply(200, page, 'text/html; charset=utf-8')
             if self.path.startswith('/api/creative-launch/video/'):
-                if workspace!='manager' or not hmac.compare_digest(self.headers.get('X-Local-Session',''),session):
+                from http.cookies import SimpleCookie
+                cookie=SimpleCookie()
+                try:cookie.load(self.headers.get('Cookie',''))
+                except Exception:cookie=SimpleCookie()
+                supplied=cookie.get('campaigner_video')
+                by_header=hmac.compare_digest(self.headers.get('X-Local-Session',''),session)
+                by_cookie=bool(supplied) and hmac.compare_digest(supplied.value,session) and self.headers.get('Sec-Fetch-Site','same-origin') in ('same-origin','none')
+                if workspace!='manager' or not (by_header or by_cookie):
                     return self.reply(403,{'error':'Invalid local session'})
-                try:path,mime=launch_video(self.path.rsplit('/',1)[-1]);size=path.stat().st_size
+                try:path,mime,size=launch_video(self.path.rsplit('/',1)[-1])
                 except (ValueError,KeyError,OSError):return self.reply(404,{'error':'Not found'})
-                self.send_response(200);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(size))
-                self.send_header('Cache-Control','no-store');self.end_headers()
+                # Byte ranges: an iPhone plays a video only from a server that answers them.
+                first,last,status=0,size-1,200
+                wanted=self.headers.get('Range')
+                if wanted:
+                    match=re.fullmatch(r'bytes=(\d*)-(\d*)',wanted.strip())
+                    if not match or match.groups()==('',''):
+                        first=None
+                    elif match.group(1)=='':
+                        first,last=max(0,size-int(match.group(2))),size-1
+                    else:
+                        first=int(match.group(1));last=min(size-1,int(match.group(2))) if match.group(2) else size-1
+                    if first is None or first>last or first>=size:
+                        self.send_response(416);self.send_header('Content-Range',f'bytes */{size}');self.send_header('Content-Length','0');self.end_headers();return
+                    status=206
+                self.send_response(status);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(last-first+1))
+                self.send_header('Accept-Ranges','bytes');self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff')
+                if status==206:self.send_header('Content-Range',f'bytes {first}-{last}/{size}')
+                self.end_headers()
                 with path.open('rb') as f:
-                    while chunk:=f.read(1024*1024):self.wfile.write(chunk)
+                    f.seek(first);left=last-first+1
+                    while left>0 and (chunk:=f.read(min(1024*1024,left))):
+                        self.wfile.write(chunk);left-=len(chunk)
                 return
             if self.path.startswith('/api/creative-launch/media/'):
                 if workspace!='manager' or not hmac.compare_digest(self.headers.get('X-Local-Session',''),session):

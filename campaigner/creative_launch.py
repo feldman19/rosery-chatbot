@@ -16,7 +16,7 @@ import uuid
 from pathlib import Path
 
 STAGES = {'analyzing': 'מנתח את התכנים (תמונות, פריימים מהסרטונים ותמלול)',
-          'writing_copy': 'כותב 5 טקסטים ו-5 כותרות לכל מודעה',
+          'writing_copy': 'מגדיר למי כותבים ובאיזו שפה, כותב 5 טקסטים ו-5 כותרות, ובודק שכל שורה ברורה',
           'planning': 'מחליט לפי החוקים שלך: אד-סט חדש או קיים',
           'ready_for_owner': 'ההצעה מוכנה. נשארו קמפיין, תקציב ותשובות שלך',
           'blocked': 'נעצר', 'interrupted': 'נקטע'}
@@ -103,7 +103,7 @@ class CreativeLaunch:
             self._save({**job, 'state': 'writing_copy'})
             copies = {}
             for source in sources:
-                args = dict(transcript=(video.get(source['id']) or {}).get('transcript'), source_name=source.get('name'))
+                args = dict(transcript=(video.get(source['id']) or {}).get('transcript'), source_name=source.get('name'), goal=job['goal'])
                 # One fresh attempt when the copy breaks a rule (an unbacked claim, too many store-fact
                 # headlines, a wrong count); a second failure blocks.
                 try:
@@ -116,6 +116,8 @@ class CreativeLaunch:
             draft = self._draft(job, sources, rows, video, copies, strategy)
             self._save({**job, 'state': 'ready_for_owner', 'draft': draft,
                         'audiences': {g['key']: g.get('audience') for g in strategy['adsets'] if g.get('audience')},
+                        # Who the copy was written for, and what the customer-read flagged; beside the draft, not in it.
+                        'copy_briefs': {k: {'brief': c.get('brief'), 'customer_read': c.get('customer_read')} for k, c in copies.items()},
                         'campaigns': self._campaigns(report), 'analysis': [self._public_row(rows[s['id']], s, video.get(s['id']))
                                                                           for s in sources]})
         except Exception as error:

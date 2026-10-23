@@ -135,10 +135,12 @@ def make_gateway(bind_ip, phone_ip, access, port=8768, backend_port=8767):
                 return self.send_bytes(502, b'{"error":"Unknown video size"}')
             if not 0 <= size <= MAX_UPLOAD:
                 return self.send_bytes(502, b'{"error":"Response too large"}')
-            self.send_response(200)
+            self.send_response(response.code)
             for name, value in (('Content-Type', response.headers.get('Content-Type', 'application/octet-stream')), ('Content-Length', str(size)),
-                                ('Cache-Control', 'no-store'), ('X-Content-Type-Options', 'nosniff'), ('Referrer-Policy', 'no-referrer')):
-                self.send_header(name, value)
+                                ('Cache-Control', 'no-store'), ('X-Content-Type-Options', 'nosniff'), ('Referrer-Policy', 'no-referrer'),
+                                ('Accept-Ranges', 'bytes'), ('Content-Range', response.headers.get('Content-Range'))):
+                if value:
+                    self.send_header(name, value)
             self.end_headers()
             while size > 0:
                 chunk = response.read(min(1024 * 1024, size))
@@ -190,7 +192,7 @@ def make_gateway(bind_ip, phone_ip, access, port=8768, backend_port=8767):
                 body = self.rfile.read(size)
             # The phone cookie stays here; only the local server's own headers go through.
             cookies = '; '.join(p.strip() for p in (self.headers.get('Cookie') or '').split(';') if p.strip() and not p.strip().startswith(COOKIE + '='))
-            headers = {k: self.headers[k] for k in ('X-Local-Session', 'Content-Type', 'X-File-Name', 'X-Upload-Id') if k in self.headers}
+            headers = {k: self.headers[k] for k in ('X-Local-Session', 'Content-Type', 'X-File-Name', 'X-Upload-Id', 'Range') if k in self.headers}
             if cookies:
                 headers['Cookie'] = cookies
             if body is not None:
@@ -203,7 +205,7 @@ def make_gateway(bind_ip, phone_ip, access, port=8768, backend_port=8767):
                 except urllib.error.HTTPError as error:
                     response = error
                 with response:
-                    if self.path.startswith('/api/creative-launch/video/') and response.code == 200:
+                    if self.path.startswith('/api/creative-launch/video/') and response.code in (200, 206):
                         return self._stream(response)
                     content = response.read(64 * 1024 * 1024 + 1)
                     if len(content) > 64 * 1024 * 1024:

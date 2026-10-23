@@ -219,6 +219,25 @@ class AccountHistory:
         return {'source': 'decision_memory_snapshot', 'checked_at': found[0], 'windows': {'all': rows}, 'creatives': {},
                 'limits': payload.get('limits') or []}
 
+    def voice_examples(self, limit=4):
+        """Texts of this account's best-ranked ads (₪200+ and 3+ purchases, by attributed ROAS), as examples of how
+        the brand sounds when it sells. Meta attribution, not proof that the words caused the sales; [] without history."""
+        stored = self._stored()
+        if not stored:
+            return []
+        creatives = stored.get('creatives') or {}
+        best, seen = [], set()
+        for key in sorted(stored['windows'], key=lambda k: (k != 'all', -int(k) if str(k).isdigit() else 0)):
+            for row in rank(_live_rows(stored['windows'][key]))[1]:
+                texts = _texts(creatives.get(row['ad_id']) or {})
+                text = '\n'.join(dict.fromkeys(texts))[:600]
+                if text and text not in seen:
+                    seen.add(text)
+                    best.append({'text': text, 'roas': round(row['roas'], 2), 'purchases': round(row['purchases'])})
+            if best:
+                break
+        return best[:limit]
+
     def summary(self, rulebook=None):
         stored = self._stored()
         if stored:

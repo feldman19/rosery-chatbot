@@ -126,6 +126,23 @@ class PhoneGatewayEndToEndTests(unittest.TestCase):
         finally:
             conn.close()
         self.assertEqual(self.call('GET', path, headers=phone)[0], 403)  # the local session is still required
+        # As the iPhone player asks: a byte range, with the video cookie the page set (no session header).
+        page = http.client.HTTPConnection(PC, self.gateway.server_port, timeout=30, source_address=(PHONE, 0))
+        try:
+            page.request('GET', '/', headers=phone)
+            response = page.getresponse()
+            response.read()
+            video_cookie = next(c.split(';', 1)[0] for c in response.headers.get_all('Set-Cookie') if c.startswith('campaigner_video='))
+        finally:
+            page.close()
+        conn = http.client.HTTPConnection(PC, self.gateway.server_port, timeout=30, source_address=(PHONE, 0))
+        try:
+            conn.request('GET', path, headers={'Cookie': phone['Cookie'] + '; ' + video_cookie, 'Range': 'bytes=0-99'})
+            response = conn.getresponse()
+            self.assertEqual((response.status, response.getheader('Content-Range')), (206, f'bytes 0-99/{len(video)}'))
+            self.assertEqual(response.read(), video[:100])
+        finally:
+            conn.close()
 
     def test_five_wrong_codes_lock_sign_in(self):
         wrong = '000000' if self.code != '000000' else '111111'

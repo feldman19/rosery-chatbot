@@ -49,8 +49,8 @@ class LaunchVideoPreviewTests(unittest.TestCase):
             asset = json.load(response)['asset']
         return asset['id'] + '~' + asset['sha256']
 
-    def get(self, path, token=True):
-        req = urllib.request.Request(self.base + path, headers={'X-Local-Session': self.token if token else 'bad'})
+    def get(self, path, token=True, headers=None):
+        req = urllib.request.Request(self.base + path, headers={'X-Local-Session': self.token if token else 'bad', **(headers or {})})
         try:
             with urllib.request.urlopen(req) as response:
                 return response.status, response.headers.get('Content-Type'), response.read()
@@ -65,6 +65,43 @@ class LaunchVideoPreviewTests(unittest.TestCase):
         # The still-frame route still returns a JPEG frame, not the video.
         status, kind, _ = self.get('/api/creative-launch/media/' + key)
         self.assertEqual((status, kind), (200, 'image/jpeg'))
+
+    def test_byte_ranges_for_the_iphone_player(self):
+        key = self.upload(self.video, 'video/mp4', 'clip.mp4')
+        path, size = '/api/creative-launch/video/' + key, len(self.video)
+        req = urllib.request.Request(self.base + path, headers={'X-Local-Session': self.token, 'Range': 'bytes=0-1'})
+        with urllib.request.urlopen(req) as response:  # Safari's first probe
+            self.assertEqual((response.status, response.headers['Content-Range'], response.read()), (206, f'bytes 0-1/{size}', self.video[:2]))
+            self.assertEqual(response.headers['Accept-Ranges'], 'bytes')
+        for wanted, part in ((f'bytes=100-', self.video[100:]), ('bytes=-50', self.video[-50:]), (f'bytes=10-{size + 999}', self.video[10:])):
+            status, _, raw = self.get(path, headers={'Range': wanted})
+            self.assertEqual((status, raw), (206, part), wanted)
+        for wanted in (f'bytes={size}-', 'bytes=5-2', 'bytes=x', 'bytes=-'):
+            self.assertEqual(self.get(path, headers={'Range': wanted})[0], 416, wanted)
+
+    def test_video_cookie_from_the_page_works_without_the_header(self):
+        key = self.upload(self.video, 'video/mp4', 'clip.mp4')
+        page = urllib.request.urlopen(self.base)
+        cookies = [c.split(';', 1)[0] for c in page.headers.get_all('Set-Cookie')]
+        video_cookie = next(c for c in cookies if c.startswith('campaigner_video='))
+        self.assertIn('Path=/api/creative-launch/video/', next(c for c in page.headers.get_all('Set-Cookie') if c.startswith('campaigner_video=')))
+        path = '/api/creative-launch/video/' + key
+        req = urllib.request.Request(self.base + path, headers={'Cookie': video_cookie, 'Range': 'bytes=0-9'})
+        with urllib.request.urlopen(req) as response:
+            self.assertEqual((response.status, response.read()), (206, self.video[:10]))
+        for headers in ({'Cookie': 'campaigner_video=wrong'}, {'Cookie': video_cookie, 'Sec-Fetch-Site': 'cross-site'}, {}):
+            req = urllib.request.Request(self.base + path, headers=headers)
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                urllib.request.urlopen(req)
+            self.assertEqual(caught.exception.code, 403, headers)
+
+    def test_a_file_changed_after_it_played_is_refused(self):
+        key = self.upload(self.video, 'video/mp4', 'clip.mp4')
+        path = '/api/creative-launch/video/' + key
+        self.assertEqual(self.get(path)[0], 200)
+        identity, sha = key.split('~')
+        (Path(self.temp.name) / 'drive-assets' / (identity + '-' + sha + '.bin')).write_bytes(b'0' * len(self.video))
+        self.assertEqual(self.get(path)[0], 404)
 
     def test_page_policy_lets_its_own_previews_show(self):
         # Previews are blob: URLs the page makes from files on this computer; other sources stay blocked.
