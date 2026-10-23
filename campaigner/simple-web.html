@@ -337,6 +337,14 @@ select,input,textarea{background:var(--surface);color:var(--ink)}
     <div class="hello"><h1 id="ads-title" tabindex="-1">המודעות שלך</h1><p id="ads-sub">3 הימים האחרונים</p></div>
     <div class="chips" id="filters" role="group" aria-label="סינון"></div>
     <div class="list" id="ads"></div>
+    <!-- BEGIN experiments-ui -->
+    <h2 class="label">ניסויים</h2>
+    <div class="cards" id="experiments"></div>
+    <label for="experiment-idea">יש לך רעיון לבדיקה?</label>
+    <textarea id="experiment-idea" maxlength="2000" placeholder="כתוב כאן במילים שלך"></textarea>
+    <button id="experiment-add" type="button">הוסף רעיון</button>
+    <p id="experiment-message" role="status"></p>
+    <!-- END experiments-ui -->
     <h2 class="label" id="learn-label" hidden>מה המערכת לומדת</h2>
     <div class="cards" id="learn"></div>
   </section>
@@ -1122,6 +1130,46 @@ function renderActed(){
       yes.onclick=()=>answerDetected(o.id,'yes');no.onclick=()=>answerDetected(o.id,'no');a.append(yes,no);card.append(a)}
     box.append(card)}
 }
+// BEGIN experiments-ui: textContent via el keeps owner ideas inert.
+const experimentMoney=v=>v==null?'לא ידוע':'₪'+(v/100).toLocaleString('he-IL');
+function experimentCard(item, proposed=false){
+  const c=el('div','card'),p=item.plan||item;
+  c.append(el('h3','',proposed?'ניסוי מוצע':p.state==='running'?'ניסוי פועל':item.verdict||'ניסוי בתכנון'));
+  c.append(el('p','',p.question));
+  if(proposed){
+    c.append(el('p','',item.why));
+    c.append(el('p','','זרוע א: '+(p.a_kind||'טרם הוגדרה')+' · זרוע ב: '+(p.b_kind||'טרם הוגדרה')));
+    c.append(el('p','','ליום לכל זרוע: '+experimentMoney(p.daily_budget_minor)+' · סך הכול: '+experimentMoney(p.estimated_cost_minor)+' · עד '+p.max_days+' ימים'));
+    c.append(el('p','',p.cost_note));
+    if(p.refusal_reason)c.append(el('p','',p.refusal_reason));
+    const prepare=el('button','','אשר והכן במצב מושהה');prepare.disabled=true;c.append(prepare,el('p','',p.meta_note));
+    const dismiss=el('button','','הסר הצעה');dismiss.onclick=()=>experimentAction('/api/experiments/dismiss',{id:item.id});c.append(dismiss);
+  }else{
+    c.append(el('p','','זרוע א: '+p.a.label+' · זרוע ב: '+p.b.label));
+    c.append(el('p','','ליום לכל זרוע: '+experimentMoney(p.daily_budget_minor)+' · סך הכול: '+experimentMoney(2*p.daily_budget_minor*p.max_days)+' · עד '+p.max_days+' ימים'));
+    for(const [key,label] of [['A','א'],['B','ב']]){const t=item.totals[key];c.append(el('p','','זרוע '+label+': הוצאה '+experimentMoney(t.spend_minor)+' · רכישות '+(t.purchases??'לא ידוע')))}
+    c.append(el('p','','המספרים הם סכום הדיווחים המקומיים השמורים; ייתכן שחסרים ימים. אין רענון ממטא בשלב זה.'));
+    c.append(el('p','',item.probability_words));
+    if(p.state==='running'){
+      c.append(el('p','','ימים שנותרו: '+item.days_left));
+      const stop=el('button','','עצור ניסוי');stop.onclick=()=>experimentAction('/api/experiments/stop',{id:item.id});c.append(stop,el('p','','העצירה משנה את הרישום המקומי בלבד.'));
+    }else if(item.verdict){
+      const range=item.result?.lift_interval_90;
+      c.append(el('p','','טווח שינוי סביר (90%): '+(range?range.map(v=>(v*100).toFixed(1)+'%').join(' עד '):'לא ידוע')),el('p','',item.next_step));
+    }
+  }
+  c.append(el('p','','מה הניסוי לא יוכיח: '+p.what_it_will_not_prove));return c;
+}
+async function loadExperiments(){
+  try{const [state,proposals]=await Promise.all([api('/api/experiments'),api('/api/experiments/candidates')]);
+    $('experiments').replaceChildren(...state.experiments.map(x=>experimentCard(x)),...proposals.candidates.map(x=>experimentCard(x,true)));
+    if(!state.experiments.length&&!proposals.candidates.length)$('experiments').append(el('p','','עדיין אין ניסויים או הצעות. אפשר להוסיף רעיון.'));
+  }catch(e){$('experiment-message').textContent='לא ניתן לטעון ניסויים: '+e.message}
+}
+async function experimentAction(path,body){try{await api(path,body);$('experiment-message').textContent='נשמר';await loadExperiments();return true}catch(e){$('experiment-message').textContent=e.message;return false}}
+$('experiment-add').onclick=async()=>{const b=$('experiment-add');b.disabled=true;try{if(await experimentAction('/api/experiments/idea',{question:$('experiment-idea').value}))$('experiment-idea').value=''}finally{b.disabled=false}};
+// END experiments-ui
+
 // --- learning (Claude): hypotheses with their evidence; shadow only ---
 let learning=null;
 async function loadLearning(){try{learning=await api('/api/learning')}catch{learning=null}renderLearning()}
@@ -1166,6 +1214,7 @@ async function load(refresh){
   await loadActed();
   await loadShadow(); // auto-mode-shadow refresh
   await loadLearning();
+  await loadExperiments();
   renderHeader();renderPeriod();renderHero();renderDrift();renderToday();renderAds();
   loadUpdate();
   loadProfit();

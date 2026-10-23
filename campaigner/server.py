@@ -51,6 +51,7 @@ from exact_approval_bridge import ExactApprovalBridge
 from automation_policy import AutomationPolicy
 from automation_shadow import AutomationShadow
 # END auto-mode-shadow
+from experiment_ui import ExperimentStore
 from campaign_operations import CampaignOperations
 from operations_config import operation_proposal
 from management_report import build_report as management_report
@@ -137,6 +138,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         raise ValueError('Invalid local workspace')
     data = Path(data_dir or ROOT / '.local')
     data.mkdir(parents=True, exist_ok=True)
+    experiment_store=ExperimentStore(data)  # experiments-ui: local state only
     live=LiveReports(data)
     claude_chat=ClaudeChat(data)
     decision_memory=DecisionMemory(data / "decision-memory.sqlite3")
@@ -490,10 +492,17 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except (ValueError,KeyError,OSError):return self.reply(404,{'error':'Not found'})
                 self.send_response(200);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(raw)))
                 self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw);return
-            if self.path not in ('/api/learning', '/api/daily-brief', '/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
+            if self.path not in ('/api/experiments', '/api/experiments/candidates', '/api/learning', '/api/daily-brief', '/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
                 return self.reply(404, {'error': 'Not found'})
             if not hmac.compare_digest(self.headers.get('X-Local-Session', ''), session):
                 return self.reply(403, {'error': 'Invalid local session'})
+            # BEGIN experiments-ui
+            if self.path in ('/api/experiments', '/api/experiments/candidates'):
+                if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
+                if self.path.endswith('/candidates'):
+                    return self.reply(200,{'candidates':experiment_store.candidates(hypotheses.list())})
+                return self.reply(200,{'experiments':experiment_store.list(),'live_action_allowed':False})
+            # END experiments-ui
             # BEGIN auto-mode-shadow
             if self.path == '/api/automation-shadow':
                 if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
@@ -681,6 +690,16 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 body = json.loads(self.rfile.read(size))
                 if not isinstance(body, dict):
                     raise ValueError('Object required')
+                # BEGIN experiments-ui: behind the existing session/origin gate
+                if self.path.startswith('/api/experiments/'):
+                    if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
+                    if self.path=='/api/experiments/idea' and set(body)=={'question'}:
+                        return self.reply(200,experiment_store.idea(body['question']))
+                    if self.path in ('/api/experiments/dismiss','/api/experiments/stop') and set(body)=={'id'} and isinstance(body['id'],str):
+                        result=experiment_store.dismiss(body['id'],hypotheses.list()) if self.path.endswith('/dismiss') else experiment_store.stop(body['id'])
+                        return self.reply(200,result)
+                    raise ValueError('בקשת ניסוי אינה תקינה; הכנה למטא עדיין אינה זמינה')
+                # END experiments-ui
                 # BEGIN auto-mode-shadow
                 if self.path in ('/api/automation-shadow/policy','/api/automation-shadow/stop'):
                     if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
