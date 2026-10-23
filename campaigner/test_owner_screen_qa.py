@@ -64,9 +64,9 @@ assert.ok(pauseExplanation(1.59,90).includes('מתחת לסף העצירה'));
 assert.ok(!pauseExplanation(1.59,90).includes('מוציאה יותר'));
 assert.ok(pauseExplanation(0.5,90).includes('מוציאה יותר'));
 assert.equal(isolate('20.10–22.10'),'\u206620.10–22.10\u2069');
-assert.equal(lastLaunchBudget(),100);
-localStorage.getItem=()=> '150';assert.equal(lastLaunchBudget(),150);
-localStorage.getItem=()=> 'NaN';assert.equal(lastLaunchBudget(),100);
+assert.equal(lastLaunchBudget(),'');
+localStorage.getItem=()=> '150';assert.equal(lastLaunchBudget(),'');
+localStorage.getItem=()=> 'NaN';assert.equal(lastLaunchBudget(),'');
 assert.equal(launchBudgetMinor(''),null);assert.equal(launchBudgetMinor(' '),null);
 assert.equal(launchBudgetMinor('0'),null);assert.equal(launchBudgetMinor('2001'),null);
 assert.equal(launchBudgetMinor('NaN'),null);assert.equal(launchBudgetMinor('100'),10000);
@@ -78,8 +78,8 @@ assert.ok(launchBlockReason('No active ad set of that gender in the campaign to 
 renderToday();assert.equal($('badge').textContent,'2');assert.ok(text($('hello-sub')).includes('2 דברים'));
 renderLearning();const card=$('learn').children[0];
 assert.ok(text(card).includes('יום אחד'));assert.ok(!text(card).includes('1 ימים'));
-assert.ok(card.children.some(c=>c.tag==='details'&&text(c).includes('More internal jargon.')));
-assert.ok(!card.children.filter(c=>c.tag==='p').some(c=>text(c).includes('More internal jargon.')));
+assert.ok(card.children.some(c=>c.tag==='p'&&text(c).includes('משפט ראשון.')));
+assert.ok(card.children.filter(c=>c.tag==='p').some(c=>text(c).includes('More internal jargon.')));
 """
         result = subprocess.run(['node', '-e', '\n'.join(functions)+'\n'+harness],
                                 encoding='utf-8', capture_output=True)

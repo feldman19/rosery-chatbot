@@ -8,6 +8,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from connections import SHOP,QUERY,NoRedirect
 
 CLIENT_ID='2c94dca57695507f715c151b553e70ba'
@@ -86,11 +87,11 @@ def status(data_dir):
 
 def read_reports(data_dir):
     token=get_token(data_dir)
-    identity=graph(token,QUERY)
+    identity=graph(token,QUERY.replace('currencyCode', 'currencyCode ianaTimezone'))
     if identity['shop']['myshopifyDomain']!=SHOP:raise ValueError('Shop identity mismatch')
     # Fixed aggregate-only query; no customer records or user-supplied query accepted.
     # Relative dates are evaluated by Shopify in the store timezone, not Windows.
-    q='FROM sales SHOW orders, net_sales, shipping_charges, sales_reversals, total_sales TIMESERIES day SINCE -7d UNTIL yesterday'
+    q='FROM sales SHOW orders, net_sales, shipping_charges, sales_reversals, total_sales TIMESERIES day SINCE -7d UNTIL today'
     data=graph(token,'query($q:String!){ shopifyqlQuery(query:$q){ tableData{ columns{name dataType} rows } parseErrors } }',{'q':q})['shopifyqlQuery']
     if data.get('parseErrors') or not data.get('tableData'):raise ValueError('Report unavailable')
     days=[str(r['day']) for r in data['tableData']['rows'] if isinstance(r,dict) and r.get('day')]
@@ -103,7 +104,8 @@ def read_reports(data_dir):
     try:profit=read_profit_tables(token)
     except Exception:profit=None  # optional; never blocks the main report
     return {'verified':True,'shop':SHOP,'currency':identity['shop']['currencyCode'],'since':min(days) if days else None,'until':max(days) if days else None,
-            'window':'Last 7 full days in Shopify store timezone; dates are row coverage',
+            'window':'Last 7 full days plus today so far in Shopify store timezone; dates are row coverage',
+            'timezone':identity['shop'].get('ianaTimezone'),'partial':True,'partial_date':datetime.now(ZoneInfo(identity['shop']['ianaTimezone'])).date().isoformat() if identity['shop'].get('ianaTimezone') else None,
             'table':data['tableData'],'economics_28d':economics,'profit':profit,'source':'direct_shopify_api','live_action_allowed':False}
 
 

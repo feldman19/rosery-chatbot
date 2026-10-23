@@ -54,7 +54,7 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 @keyframes ping{0%{box-shadow:0 0 0 0 rgb(29 122 78/.45)}70%{box-shadow:0 0 0 7px rgb(29 122 78/0)}100%{box-shadow:0 0 0 0 rgb(29 122 78/0)}}
 
 main{padding-block:22px calc(112px + env(safe-area-inset-bottom,0px))}
-section[data-tab]{display:grid;gap:18px;animation:enter .35s ease both}
+section[data-tab]{display:grid;gap:18px}
 .hello{display:grid;gap:2px;padding-inline:2px}
 .hello h1{font-size:30px;font-weight:700;line-height:1.2;letter-spacing:-.01em}
 .hello p{margin:0;color:var(--muted);font-size:16px}
@@ -88,7 +88,7 @@ section[data-tab]{display:grid;gap:18px;animation:enter .35s ease both}
 .label{font-size:14px;font-weight:700;letter-spacing:.02em;color:var(--muted);padding-inline:4px;margin-top:6px}
 h2.label{margin:10px 0 0;line-height:1.4}
 .cards{display:grid;gap:12px}
-.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;display:grid;gap:10px;min-width:0;animation:enter .4s ease both}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;display:grid;gap:10px;min-width:0}
 .cards>.card:nth-child(2){animation-delay:.05s}.cards>.card:nth-child(3){animation-delay:.1s}.cards>.card:nth-child(4){animation-delay:.15s}
 @keyframes enter{from{opacity:0;transform:translateY(8px)}}
 /* a thin colored edge says what kind of card it is */
@@ -143,7 +143,7 @@ details.why>div,details.why>form,details.why>p{margin-top:10px;display:grid;gap:
 .row-detail p{margin:0;color:var(--muted);font-size:15px}
 
 .chat{display:grid;gap:10px}
-.bubble{max-width:86%;padding:12px 15px;border-radius:20px;white-space:pre-wrap;overflow-wrap:anywhere;animation:enter .3s ease both;line-height:1.55}
+.bubble{max-width:86%;padding:12px 15px;border-radius:20px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
 .bubble.me{justify-self:start;background:linear-gradient(180deg,var(--brand-2),var(--brand));color:var(--on-brand);border-end-start-radius:6px}
 .bubble.bot{justify-self:end;background:var(--surface);border:1px solid var(--line);border-end-end-radius:6px;box-shadow:var(--shadow)}
 .bubble.wait{color:var(--muted)}
@@ -154,8 +154,8 @@ details.why>div,details.why>form,details.why>p{margin-top:10px;display:grid;gap:
 .unavailable{background:var(--watch-soft);color:var(--watch);padding:12px 14px;border-radius:var(--r-sm);font-size:15px}
 
 /* floating tab bar */
-nav.tabs{position:fixed;inset:auto 0 0;z-index:6;padding:0 12px calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
-nav.tabs .wrap{pointer-events:auto;display:grid;grid-template-columns:repeat(4,1fr);max-width:460px;background:var(--glass);backdrop-filter:saturate(1.6) blur(20px);-webkit-backdrop-filter:saturate(1.6) blur(20px);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-lift);padding:6px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:0 12px calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
+nav.tabs .wrap{pointer-events:auto;display:grid;grid-template-columns:repeat(4,1fr);max-width:460px;background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-lift);padding:6px}
 nav.tabs button{position:relative;background:none;border:0;min-height:56px;border-radius:18px;display:grid;justify-items:center;align-content:center;gap:2px;font-size:12px;font-weight:700;color:var(--muted);transition:color .2s,background .2s}
 nav.tabs button[aria-selected="true"]{color:var(--brand);background:var(--brand-soft)}
 @media (prefers-color-scheme:dark){:root[data-theme="auto"] nav.tabs button[aria-selected="true"]{color:var(--grow)}}
@@ -214,7 +214,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 .pv-text{margin:0;white-space:pre-line;font-size:15px;line-height:1.5}
 .pv-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid var(--line)}
 .pv-bottom strong{font-size:15px}
-.pv-cta{flex:none;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;background:var(--idle-soft)}
+.pv-cta{flex:none;font-size:13px;font-weight:400;color:var(--muted);pointer-events:none}
 .steps .why-now{display:block;font-weight:600;color:var(--muted);font-size:14px;margin-top:2px}
 .period{gap:14px}
 .seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border-radius:14px;background:var(--idle-soft)}
@@ -259,7 +259,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 .steps .on::before{background:var(--grow);border-color:var(--grow)}
 .steps .on.now::before{background:var(--surface);border-color:var(--grow);border-top-color:transparent;animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.newver{position:sticky;top:0;z-index:7;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--gold-soft);border-bottom:1px solid var(--line);font-weight:700}
+.newver{position:relative;z-index:7;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--gold-soft);border-bottom:1px solid var(--line);font-weight:700}
 .newver .btn{flex:none;min-height:44px}
 .update{display:grid;gap:4px;justify-items:center}.update p{margin:0}.update .link{justify-self:center}
 .foot{text-align:center;font-size:13px;color:var(--muted);margin-top:8px}
@@ -269,7 +269,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 @keyframes shimmer{from{background-position:100% 0}to{background-position:0 0}}
 /* "אשר ובצע": bottom sheet with the exact change, then a receipt */
 .sheet{position:fixed;inset:0;z-index:20;display:grid;align-items:end;background:rgb(0 0 0/.45);animation:fade .2s ease both}
-.sheet-panel{background:var(--surface);border-radius:26px 26px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom,0px));display:grid;gap:14px;max-width:560px;width:100%;margin:0 auto;box-shadow:var(--shadow-lift);animation:rise .28s cubic-bezier(.2,.8,.2,1) both;max-height:88vh;overflow:auto}
+.sheet-panel{background:var(--surface);border-radius:26px 26px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom,0px));display:grid;gap:14px;max-width:560px;width:100%;margin:0 auto;box-shadow:var(--shadow-lift);animation:rise .28s cubic-bezier(.2,.8,.2,1) both;max-height:88dvh;overflow:auto}
 .sheet-panel::before{content:"";width:40px;height:5px;border-radius:3px;background:var(--line);justify-self:center}
 .sheet-panel h2{font-size:21px;font-weight:700}
 .diff{display:grid;gap:0;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
@@ -289,7 +289,7 @@ select,input,textarea{background:var(--surface);color:var(--ink)}
 :root{--space:8px;--muted:#59665f;--gold:#85652f}
 :root[data-theme="dark"]{--muted:#a8b4ae;--gold:#d8b77f}
 @media(prefers-color-scheme:dark){:root[data-theme="auto"]{--muted:#a8b4ae;--gold:#d8b77f}}
-html,body{overflow-x:clip}button,a,input,select,textarea{touch-action:manipulation}
+main{overflow-x:clip}button,a,input,select,textarea{touch-action:manipulation}
 .header-nowrap{flex-wrap:nowrap;white-space:nowrap}header .wrap{gap:8px;padding-block:8px}
 .logo{font-weight:700;letter-spacing:.16em;gap:8px}.logo::before{width:24px;height:24px}
 .fresh{margin-inline-start:auto;min-height:44px;white-space:nowrap;padding:0 8px;background:transparent;border:0;font-size:14px;flex-shrink:0}.dot{flex:none;animation:none}
@@ -297,15 +297,20 @@ html,body{overflow-x:clip}button,a,input,select,textarea{touch-action:manipulati
 #menu-sheet{width:min(343px,calc(100% - 32px));max-height:85dvh;overflow:auto;margin:auto;padding:24px;border:1px solid var(--line);border-radius:24px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow-lift)}
 #menu-sheet::backdrop{background:rgb(0 0 0/.4)}#menu-sheet .field{margin-block:16px}#menu-sheet>a{width:100%}.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.sheet-head h2{font-size:22px}.menu-version{font-size:14px;color:var(--muted);margin-bottom:0}
 main{padding-top:16px;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}section[data-tab]{gap:16px}
-.hello h1{font-size:24px;font-weight:700;line-height:1.5}.hello p{font-size:14px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.label{font-size:13px}.card{padding:16px;gap:8px}.card h3{font-weight:700}.card p{overflow-wrap:anywhere}
+.hello h1{font-size:24px;font-weight:700;line-height:1.5}.hello p{font-size:14px;line-height:1.5;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.label{font-size:13px}.card{padding:16px;gap:8px}.card h3{font-weight:700}.card p{overflow-wrap:anywhere}
 .btn,.chip,.link,details.why summary,.archive-chip{min-height:44px}.btn{background:transparent;border-color:var(--brand);color:var(--ink)}.btn.secondary{background:transparent;border-color:var(--brand)}.btn.tertiary,.btn.ghost{border-color:transparent;background:transparent;color:var(--ink)}.btn:disabled{opacity:.55}.actions{gap:8px}.actions>.primary{flex-basis:100%;width:100%}.actions>.ghost{padding-inline:8px}.key-metric{font-weight:700}.badge{background:var(--ink);color:var(--bg)}.flow li.done b{color:var(--bg)}.fact-chip{display:inline-flex;width:auto;max-width:100%;justify-self:start;align-items:center;gap:6px;background:transparent;border:0;border-radius:999px;padding:0;font-size:14px;color:var(--muted)}.fact{font-size:14px}.card-details{min-width:0}.card-details summary{display:flex!important}.card-details>div{gap:8px}.chips{flex-wrap:wrap;overflow:visible}.chip{font-size:14px;max-width:100%;white-space:normal}.hello p:empty{display:none}
-#thread-list{gap:0;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}.thread-row{display:flex;align-items:center;gap:8px;width:100%;min-width:0;text-align:start;padding:16px;border:0;background:transparent}.thread-row+.thread-row{border-top:1px solid var(--line)}.thread-avatar{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--ink);font-size:22px}.thread-text{display:grid;min-width:0;flex:1;gap:0}.thread-name{font-weight:700}.thread-name,.thread-preview{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.thread-preview,.thread-category,.thread-time{font-size:14px;color:var(--muted)}.thread-category{font-size:13px}.thread-time{align-self:flex-start;white-space:nowrap;font-size:13px}.search-field{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding-inline:12px;margin-top:8px}#thread-search{margin:0!important;border:0;background:transparent;min-height:48px;font-size:16px;width:100%;outline-offset:0}#thread-list-screen .archive-chip{font-size:14px;cursor:pointer}#thread-screen #thread-kind{border:0;background:transparent;padding:8px 0;color:var(--muted);font-size:14px}#thread-screen{min-width:0}#thread-screen>button{margin-bottom:8px}#thread-title{font-size:22px;margin-block:8px 16px}.chat{padding-block:16px;gap:16px}.chat-dock{position:sticky;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:3;background:var(--bg);padding-top:8px;display:grid;gap:8px}.composer{gap:8px;padding:16px}.composer textarea{min-height:56px;max-height:25dvh}.composer .label{margin:0}.bubble{padding:16px;font-size:16px;line-height:1.5}.link{display:inline-flex;align-items:center}.seg button{min-height:44px}.days{grid-template-columns:repeat(4,minmax(0,1fr))}.days button{min-height:44px}.tile .x{width:44px;height:44px}label.fact:has(input[type=checkbox]){min-height:44px;align-items:center}
+#thread-list{gap:0;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}.thread-row{display:flex;align-items:center;gap:8px;width:100%;min-width:0;text-align:start;padding:16px;border:0;background:transparent}.thread-row+.thread-row{border-top:1px solid var(--line)}.thread-avatar{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--ink);font-size:22px}.thread-text{display:grid;min-width:0;flex:1;gap:0}.thread-name{font-weight:700}.thread-name,.thread-preview{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.thread-preview,.thread-category,.thread-time{font-size:14px;color:var(--muted)}.thread-category{font-size:13px}.thread-time{align-self:flex-start;white-space:nowrap;font-size:13px}.search-field{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding-inline:12px;margin-top:8px}#thread-search{margin:0!important;border:0;background:transparent;min-height:48px;font-size:16px;width:100%;outline-offset:0}#thread-list-screen .archive-chip{font-size:14px;cursor:pointer}#thread-screen #thread-kind{border:0;background:transparent;padding:8px 0;color:var(--muted);font-size:14px}#thread-screen{min-width:0}#thread-screen>button{margin-bottom:8px}#thread-title{font-size:22px;margin-block:8px 16px}.chat{padding-block:16px;gap:16px}.chat-dock{position:sticky;bottom:var(--tabs-height,88px);z-index:3;background:var(--bg);padding-top:8px;display:grid;gap:8px}.composer{gap:8px;padding:16px}.composer textarea{min-height:56px;max-height:25dvh}.composer .label{margin:0}.bubble{padding:16px;font-size:16px;line-height:1.5}.link{display:inline-flex;align-items:center}.seg button{min-height:44px}.days{grid-template-columns:repeat(4,minmax(0,1fr))}.days button{min-height:44px}.tile .x{width:44px;height:44px}label.fact:has(input[type=checkbox]){min-height:44px;align-items:center}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+/* Round 2: stable mobile surfaces and readable evidence. */
+.helpbtn{min-width:44px;min-height:44px}.outside-summary{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;unicode-bidi:plaintext}
+.sources a{color:var(--muted);font-weight:400;unicode-bidi:plaintext}.sources>div{display:grid;gap:8px}
+#experiment-idea{width:100%;min-height:88px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--surface)}#experiment-add{min-height:44px;border:1px solid var(--brand);border-radius:14px;padding:8px 16px;background:var(--surface)}
+#new-thread-options{padding-bottom:40px}#thread-back{justify-self:start;min-height:44px}input[type=checkbox]{width:44px;height:44px;flex:none;margin:0;accent-color:var(--brand)}
 /* END owner mobile UX pass */
 </style>
 
 <header><div class="wrap header-nowrap"><span class="logo">ROSERY</span><button class="fresh" id="fresh" type="button" aria-label="רענן נתונים"><span class="dot" id="fresh-dot"></span><span id="fresh-text">טוען…</span></button><button class="menu-button" id="owner-menu" type="button" aria-label="הגדרות" aria-haspopup="dialog">&#9881;</button></div></header>
-<dialog id="menu-sheet" aria-labelledby="menu-title"><div class="sheet-head"><h2 id="menu-title">הגדרות</h2><button class="btn tertiary" id="menu-close" type="button">סגור</button></div><label class="field" for="theme">תצוגה<select id="theme"><option value="light">בהיר</option><option value="dark">כהה</option><option value="auto">אוטומטי</option></select></label><a class="btn secondary" href="/advanced">למסך המלא</a><p class="menu-version">גרסה __VERSION__</p></dialog>
+<dialog role="dialog" aria-modal="true" id="menu-sheet" aria-labelledby="menu-title"><div class="sheet-head"><h2 id="menu-title">הגדרות</h2><button class="btn tertiary" id="menu-close" type="button">סגור</button></div><label class="field" for="theme">תצוגה<select id="theme"><option value="light">בהיר</option><option value="dark">כהה</option><option value="auto">אוטומטי</option></select></label><a class="btn secondary" href="/advanced">למסך המלא</a><p class="menu-version">גרסה לא ידועה</p></dialog>
 
 <div class="newver" id="newver" role="alert" hidden><span>יש גרסה חדשה של המסך.</span><button class="btn primary" type="button" id="newver-go">רענן עכשיו</button></div>
 <main class="wrap">
@@ -337,7 +342,7 @@ main{padding-top:16px;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px
 <form id="shadow-form">
 <label class="label">מצב <select id="shadow-mode"><option value="manual">ידני</option><option value="shadow">צל</option><option disabled>אוטומטי — בקרוב</option></select></label>
 <p>אוטומטי דורש הרחבת מסלול הביצוע לרמת מודעה.</p>
-<label class="label">סף ROAS <input id="shadow-roas" type="number" min="0.01" max="100" step="0.01" required></label>
+<label class="label">סף החזר על הפרסום <input id="shadow-roas" type="number" min="0.01" max="100" step="0.01" required></label>
 <label class="label">מרווח הרצה בשעות <input id="shadow-hours" type="number" min="0.01" max="720" step="0.01" required></label>
 <label class="label">ימי צל <input id="shadow-days" type="number" min="1" max="365" step="1" required></label>
 <div class="chips">
@@ -383,7 +388,7 @@ main{padding-top:16px;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px
       <p class="fact" id="launch-count" hidden></p>
       <div class="picked" id="launch-picked"></div>
       <label class="field"><span class="label">מה המטרה?</span><textarea id="launch-goal" rows="3" maxlength="2000" placeholder="למשל: קולקציית צמידים חדשה לחגים, גברים 25–40"></textarea></label>
-      <label class="field"><span class="label">לאיזה קמפיין?</span><select id="launch-campaign"><option value="">אבחר אחרי הניתוח</option></select></label>
+
       <label class="fact"><input id="launch-consent" type="checkbox"> אני מאשר לשלוח לניתוח ב-Claude את התמונות, פריימים מהסרטונים ותמלול הדיבור. הקבצים עצמם נשארים במחשב.</label>
       <button class="btn primary" id="launch-go" type="submit">נתח והכן הצעה</button>
       <div class="progress" id="launch-progress" hidden><div class="bar"><i id="launch-bar"></i></div><p class="fact" id="launch-progress-text"></p></div>
@@ -426,7 +431,7 @@ main{padding-top:16px;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px
 
   <p class="foot"><a href="/advanced">למסך המלא</a></p>
   <div class="foot update" id="update">
-    <p id="version">__VERSION__</p>
+    <p id="version" data-build="__VERSION__">גרסה לא ידועה</p>
     <p id="update-state" role="status"></p>
     <button class="link" type="button" id="update-check" hidden>בדוק עדכון עכשיו</button>
   </div>
@@ -447,7 +452,8 @@ const $=id=>document.getElementById(id);
 // crypto.randomUUID is missing there, getRandomValues is not. A version-4 UUID from it works everywhere.
 function newId(){const b=crypto.getRandomValues(new Uint8Array(16));b[6]=b[6]&15|64;b[8]=b[8]&63|128;
   const h=[...b].map(v=>v.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20)}
-const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n};
+function ownerText(value){return String(value).replace(/(^|\s)1 מכירות/g,'$1מכירה אחת').replace(/(^|\s)1 מודע(?:ה|ות)/g,'$1מודעה אחת').replace(/SHOP_NOW/g,'קנה עכשיו').replace(/CTR/g,'שיעור הקלקות').replace(/ROAS/g,'החזר על הפרסום').replace(/₪[\d,.]+/g,m=>'\u2066'+m+'\u2069')}
+const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=ownerText(text);return n};
 const ils=v=>typeof v==='number'?'₪'+Math.round(v).toLocaleString('he-IL'):'—';
 const x=v=>typeof v==='number'?v.toFixed(2):'—';
 // Plain-language mapping of the owner's rulebook verdicts.
@@ -475,18 +481,23 @@ function actionTitle(item){
 }
 function waiting(card,item){
  const n=item.waiting_days;
- if(n!==null&&n!==undefined)card.append(el('p','fact','מחכה לאישור שלך '+(n===0?'מהיום':n===1?'מאתמול':n+' ימים')));
+ if(n!==null&&n!==undefined)card.append(el('p','fact','מחכה לאישורך '+(n===0?'מהיום':n===1?'מאתמול':n+' ימים')));
  if(item.untouched)card.append(el('p','note','לא נגעת בזה '+n+' ימים'));
  if(item.returned_changed)card.append(el('p','note','חזרה כי הנתונים השתנו'));
 }
-$('owner-menu').onclick=()=>$('menu-sheet').showModal();
+$('owner-menu').onclick=()=>{$('menu-sheet').showModal();document.body.style.overflow='hidden';$('menu-title').tabIndex=-1;$('menu-title').focus()};
+$('menu-sheet').addEventListener('close',()=>document.body.style.overflow='');
 $('menu-close').onclick=()=>$('menu-sheet').close();
 $('menu-sheet').onclick=e=>{if(e.target===$('menu-sheet')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close()}};
 const themeSelect=document.getElementById('theme');themeSelect.value=document.documentElement.dataset.theme;
 themeSelect.onchange=()=>{document.documentElement.dataset.theme=themeSelect.value;try{localStorage.setItem('rosery-theme',themeSelect.value)}catch{}};
 
 
+let activeTab='today';
+const tabsObserver=new ResizeObserver(([entry])=>document.documentElement.style.setProperty('--tabs-height',entry.target.getBoundingClientRect().height+'px'));
+tabsObserver.observe(document.querySelector('nav.tabs'));
 function go(tab){
+  if(tab!==activeTab){document.querySelector('section[data-tab="'+tab+'"]')?.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:250});activeTab=tab}
   for(const s of document.querySelectorAll('section[data-tab]'))s.hidden=s.dataset.tab!==tab;
   for(const b of document.querySelectorAll('[data-go]'))b.setAttribute('aria-selected',String(b.dataset.go===tab));
   if(tab==='ask')loadChat();
@@ -542,7 +553,7 @@ function periodData(){
   if(!d)return null;
   // Yesterday has one source of truth: the 1-day window, the same numbers the recommendations use.
   const metrics=w['1']&&w['1'].until===d.date?w['1'].metrics:d.metrics;
-  return {title:d.partial?'היום עד עכשיו ('+ddmm(d.date)+')':'יום '+dayName(d.date)+' '+ddmm(d.date),single:!d.partial,date:d.date,metrics,funnel:funnelOf([d]),ads:adsOf([d]),partial:d.partial,notes:d.notes||[]};
+  return {title:d.partial?'היום עד עכשיו · מתעדכן כל כמה דקות':'יום '+dayName(d.date)+' '+ddmm(d.date),single:!d.partial,date:d.date,metrics,funnel:funnelOf([d]),ads:adsOf([d]),partial:d.partial,notes:d.notes||[]};
 }
 function renderPeriod(){
   const presets=$('period-presets'),days=$('period-days'),daily=report?.daily||[];presets.replaceChildren();days.replaceChildren();
@@ -574,7 +585,7 @@ function renderHero(){
   const avg7=report?.windows?.['7']?.metrics?.store_revenue;
   if(pd.single&&num(m.store_revenue)&&num(avg7)&&avg7>0){const d=m.store_revenue/(avg7/7)-1;
     store.append(el('p','fact '+(d>=0?'up':'down'),(d>=0?'▲ ':'▼ ')+Math.abs(Math.round(d*100))+'% '+(d>=0?'יותר':'פחות')+' מיום רגיל השבוע (ממוצע '+ils(avg7/7)+' ליום)'))}
-  if(pd.partial)store.append(el('p','fact','היום עוד לא נגמר: המספרים יגדלו במשך היום. מכירות החנות של היום נקראות מחר.'));
+  if(pd.partial)store.append(el('p','fact','נתונים חלקיים להיום · עדכון אחרון: '+(report.freshness?.meta_last_success_at?new Date(report.freshness.meta_last_success_at).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}):'לא ידוע')+''));
   card.append(store);
   // 2. Meta's view: spend, the sales Meta credits to the ads, and the return on each shekel, coloured by the owner's thresholds.
   const metaTitle=el('p','label','לפי מטא');const [h2,t2]=helpToggle('מה שמטא מדווחת על המודעות שלך. "מכירות ממודעות" הן מכירות שמטא מייחסת למודעות (גם אם הלקוח רק ראה מודעה ואחר כך קנה), ולכן הן לא שוות למכירות בחנות.','לפי מטא');
@@ -582,7 +593,7 @@ function renderHero(){
   const ret=num(m.roas)?m.roas:num(m.attributed_revenue)&&num(m.spend)&&m.spend>0?m.attributed_revenue/m.spend:null;
   const tiles=el('div','tiles');
   const tile=(value,label)=>{const t=el('div','tile2');t.append(el('b','num',value),el('span','',label));return t};
-  tiles.append(tile(num(m.spend)?ils(m.spend):'—','הוצאת על פרסום'),tile(num(m.purchases)?String(Math.round(m.purchases)):'—','מכירות ממודעות'));
+  tiles.append(tile(num(m.spend)?ils(m.spend):num(m.spend_lower_bound)?'לפחות '+ils(m.spend_lower_bound):'—','הוצאת על פרסום'),tile(num(m.purchases)?String(Math.round(m.purchases)):'—','מכירות ממודעות'));
   const cls=ret===null?'':ret>=3?'good':ret>=2.6?'mid':'bad';
   const rt=el('div','tile2'+(cls?' '+cls:''));rt.append(el('b','num',ret===null?'—':'₪'+x(ret)),el('span','','חזרו על כל ₪1'));tiles.append(rt);
   card.append(tiles);
@@ -599,9 +610,9 @@ function renderHero(){
   // 4. Where the money went: the ads that spent the most in this period.
   if((pd.ads||[]).length){const at=el('p','label','המודעות שהוציאו הכי הרבה');const list=el('ul','topads');
     for(const a of pd.ads){const li=el('li'),r=a.known&&a.spend>0?a.attributed_revenue/a.spend:null;
-      li.append(el('strong','',a.name),el('span','','הוציאה '+ils(a.spend)+' · '+(a.known?Math.round(a.purchases)+' מכירות · חזרו ₪'+x(r)+' על כל ₪1':'מכירות לא ידועות')));list.append(li)}
+      li.append(el('strong','',a.name),el('span','','הוציאה '+ils(a.spend)+' · '+(a.known?(a.purchases===1?'מכירה אחת':Math.round(a.purchases)+' מכירות')+' · חזרו ₪'+x(r)+' על כל ₪1':'מכירות לא ידועות')));list.append(li)}
     const all=el('button','link','לכל המודעות ←');all.type='button';all.onclick=()=>go('ads');card.append(at,list,all)}
-  for(const n of pd.notes.filter(n=>!pd.partial||!/החנות/.test(n)))card.append(el('p','note',n));
+  for(const n of pd.notes)card.append(el('p','note',n));
   box.append(card);
 }
 
@@ -880,16 +891,11 @@ function mediaBox(ad){
     box.append(play)}
   return box;
 }
-function fillCampaigns(){
-  const sel=$('launch-campaign');if(sel.options.length>1)return;
-  for(const c of (report?.windows?.['7']?.campaigns||[]).filter(c=>c.configured_active===true&&/SALES/.test(c.objective||''))){const o=document.createElement('option');o.value=c.id;o.textContent=c.name;sel.append(o)}
-}
 async function mediaUrl(id,sha){
   const r=await fetch('/api/creative-launch/media/'+id+'~'+sha,{headers:{'X-Local-Session':token},cache:'no-store'});
   return r.ok?URL.createObjectURL(await r.blob()):'';
 }
 async function loadLaunch(){
-  fillCampaigns();
   try{launchState=await api('/api/creative-launch')}catch(e){launchState={state:'idle'}}
   renderLaunch();clearTimeout(launchTimer);
   if(['analyzing','writing_copy','planning'].includes(launchState.state))launchTimer=setTimeout(loadLaunch,3000);
@@ -911,7 +917,11 @@ function renderLaunch(){
   if(s.state==='blocked'||s.state==='interrupted'){const c=el('article','card');c.append(el('span','pill stop','נעצר'),el('p','',s.detail||'ההכנה נעצרה'));
     for(const i of s.claim_issues||[])c.append(el('p','note','"'+i.claim+'" ב'+i.field+': צריך אימות לפני שמשתמשים בזה'));box.append(c)}
   if(s.state!=='ready_for_owner'||!s.draft)return;
-  if(Date.parse(s.draft.expires_at)<=Date.now())box.append(el('p','note','ההצעה פגה, הכן מחדש. המשך לאישור יחדש את התוקף.'));
+  if(Date.parse(s.draft.expires_at)<=Date.now()){
+    $('launch-form').hidden=true;const c=el('article','card'),b=el('button','btn primary','הכן מחדש');
+    b.type='button';b.onclick=async()=>{b.disabled=true;try{launchState=await api('/api/creative-launch/start',{goal:s.goal,sources:s.sources,consent:true,campaign_id:s.campaign_id||null});$('launch-form').hidden=false;await loadLaunch()}catch(e){toast(e.message);b.disabled=false}};c.append(el('h3','','ההצעה פגה'),b);box.append(c);return;
+  }
+  $('launch-form').hidden=false;
   const d=s.draft,rows=Object.fromEntries((s.analysis||[]).map(r=>[r.asset_id,r]));
   // How it will go up, in one look: campaign → ad sets → ads, and what is still needed from the owner.
   {const plan=el('article','card'),list=el('ol','plan'),need=el('ul','todo-owner'),total=d.ads.length;
@@ -932,7 +942,7 @@ function renderLaunch(){
   for(const g of d.adsets){
     const card=el('article','card'),existing=g.target.mode==='existing';
     card.append(el('span','pill '+(existing?'watch':'grow'),existing?'הוספה לאד-סט קיים':'אד-סט חדש'),el('h3','',g.label),el('p','fact',g.rationale));
-    if(!existing){const f=el('label','field');f.append(el('span','label','תקציב יומי (₪) לאד-סט הזה'));const i=document.createElement('input');i.type='number';i.min='1';i.step='1';i.dataset.adset=g.key;i.className='launch-budget';i.value=lastLaunchBudget();f.append(i);card.append(f)
+    if(!existing){const f=el('label','field');f.append(el('span','label','תקציב יומי (₪) לאד-סט הזה'));const i=document.createElement('input');i.type='number';i.min='1';i.step='1';i.dataset.adset=g.key;i.className='launch-budget';i.value=lastLaunchBudget();i.placeholder='₪ ליום';f.append(i);card.append(f)
       // Audience: proposed from the analysis, the owner confirms; targeting is then copied from a live ad set of that gender.
       const au=(s.audiences||{})[g.key]||{},q=el('label','field'),sel=document.createElement('select');sel.className='launch-gender';sel.dataset.adset=g.key;
       for(const [v,l] of [['','בחר קהל'],['men','גברים'],['women','נשים']]){const o=document.createElement('option');o.value=v;o.textContent=l;o.selected=(au.gender||'')===v;sel.append(o)}
@@ -942,7 +952,7 @@ function renderLaunch(){
       const flagged=new Set((read.still_flagged||[]).map(f=>f.field+':'+f.number));
       const info=el('div');info.append(el('strong','',r.observed_product||ad.source_name));
       if(brief.message||r.angle)info.append(el('span','fact',brief.message||r.angle));
-      if(ad.video)info.append(el('span','fact','סרטון · '+clock(ad.video.duration_ms/1000)+' · ▶ לצפייה'));
+      if(ad.video)info.append(el('span','fact','סרטון · '+clock(ad.video.duration_ms/1000)+' · לצפייה'));
       row.append(mediaBox(ad),info);card.append(row);
       // How it reads in the feed: text above, headline and button below. Meta rotates the 5+5.
       const pv=el('div','preview');pv.append(el('p','pv-text',ad.primary_text_options[0]));
@@ -969,7 +979,8 @@ function renderLaunch(){
   }
   const next=el('article','card'),pick=el('label','field'),sel=document.createElement('select');
   pick.append(el('span','label','לאיזה קמפיין להעלות?'));
-  for(const c of s.campaigns||[]){const o=document.createElement('option');o.value=c.id;o.textContent=c.name;o.selected=c.id===s.campaign_id;sel.append(o)}
+  const empty=el('option','','בחר קמפיין');empty.value='';empty.selected=!(s.campaign_id||(d.strategy||{}).campaign_id);sel.append(empty);
+  for(const c of s.campaigns||[]){const o=document.createElement('option');o.value=c.id;o.textContent=c.name;o.selected=c.id===(s.campaign_id||(d.strategy||{}).campaign_id);sel.append(o)}
   pick.append(sel);next.append(pick);
   const confirms=[];
   for(const g of d.adsets.filter(g=>g.target.mode==='existing')){const l=el('label','fact'),c=document.createElement('input');c.type='checkbox';c.dataset.adset=g.target.adset_id;confirms.push(c);l.append(c,' זו אותה זווית כמו במודעות שכבר רצות ב"'+g.label+'"');next.append(l)}
@@ -977,6 +988,7 @@ function renderLaunch(){
   next.append(el('p','fact','אד-סטים חדשים עם אותו קהל יאוחדו לאד-סט אחד, והתקציבים היומיים שבחרת יחוברו.'));
   const go=el('button','btn primary','המשך לאישור');go.type='button';
   go.onclick=async()=>{
+    if(!sel.value){toast('בחר קמפיין להעלאה');sel.focus();return}
     const budgets={},genders={};for(const i of document.querySelectorAll('.launch-budget')){const amount=launchBudgetMinor(i.value);if(amount===null){toast('יש להזין תקציב יומי בין ₪1 ל-₪2,000');i.focus();return}budgets[i.dataset.adset]=amount}
     for(const i of document.querySelectorAll('.launch-gender'))if(i.value)genders[i.dataset.adset]=i.value;
     go.disabled=true;go.textContent='מכין תצוגה מדויקת מול מטא…';
@@ -991,7 +1003,7 @@ function renderLaunch(){
   next.append(go);box.append(next);
 }
 // Exact manifest from the write path (Codex's campaign_operations); only "אשר והעלה" writes, everything PAUSED.
-function lastLaunchBudget(){try{const n=Number(localStorage.getItem('rosery-launch-budget'));return n>=1&&n<=2000?n:100}catch{return 100}}
+function lastLaunchBudget(){return ''}
 function launchBudgetMinor(value){const n=Number(value);return value.trim()&&Number.isFinite(n)&&n>=1&&n<=2000?Math.round(n*100):null}
 function launchBlockReason(reason){
   if(reason.includes('ads_per_adset:'))return 'בכל אד-סט צריך 5–8 מודעות לפי החוק שלך; כאן יש '+launchCounts()+'. אפשר לבחור לכל המודעות את אותו קהל כדי לאחד אותן לאד-סט אחד';
@@ -1069,7 +1081,7 @@ $('launch-form').onsubmit=async e=>{
   try{
     for(const [i,f] of files.entries()){show(i,0);const v=await uploadOne(f,loaded=>show(i,loaded));done+=f.size;sources.push({id:v.asset.id,sha256:v.asset.sha256})}
     bar.style.width='100%';text.textContent='הקבצים במחשב. מתחיל ניתוח…';
-    launchState=await api('/api/creative-launch/start',{goal:$('launch-goal').value.trim(),sources,consent:true,campaign_id:$('launch-campaign').value||null});
+    launchState=await api('/api/creative-launch/start',{goal:$('launch-goal').value.trim(),sources,consent:true,campaign_id:null});
     for(const p of picked)URL.revokeObjectURL(p.url);picked=[];renderPicked();$('launch-progress').hidden=true;
     loadLaunch();
   }catch(ex){$('launch-progress').hidden=true;showLaunchError(ex.message);toast(ex.message);go.disabled=false}
@@ -1077,7 +1089,7 @@ $('launch-form').onsubmit=async e=>{
 let chatTimer=null, currentThread=null, chatLoad=0;
 function previewText(text){return String(text||'').replace(/!?\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/[*_`~]/g,'').replace(/^\s{0,3}#{1,6}\s+/gm,'').replace(/\s+/g,' ').trim().slice(0,120)}
 async function threadList(){
-  const result=await api('/api/claude-chat/threads',{search:$('thread-search').value,archived:$('thread-archive-filter').checked});
+  let result;try{result=await api('/api/claude-chat/threads',{search:$('thread-search').value,archived:$('thread-archive-filter').checked})}catch{const b=el('button','btn','נסה שוב');b.onclick=threadList;$('thread-list').replaceChildren(el('p','empty','לא הצלחנו לטעון את השיחות'),b);return}
   const list=$('thread-list');list.replaceChildren();
   for(const t of result.threads){const row=el('button','thread-row');row.type='button';
     const avatar=el('span','thread-avatar',({'\u05de\u05d5\u05d3\u05e2\u05d4 \u05de\u05e1\u05d5\u05d9\u05de\u05ea':'\u25c8','\u05ea\u05db\u05e0\u05d5\u05df \u05e7\u05de\u05e4\u05d9\u05d9\u05df':'\u2726','\u05de\u05d4 \u05e2\u05d5\u05d1\u05d3 \u05dc\u05d9':'\u2197'})[t.kind]||'\u25cc');avatar.setAttribute('aria-hidden','true');
@@ -1085,7 +1097,7 @@ async function threadList(){
     const time=el('time','thread-time',t.last_answer_at?new Date(t.last_answer_at).toLocaleDateString('he-IL',{day:'numeric',month:'numeric'}):'');
     if(t.last_answer_at)time.dateTime=t.last_answer_at;row.append(avatar,text,time);
     row.onclick=()=>{currentThread=t;threadScreen();loadChat()};list.append(row)}
-  if(!result.threads.length)list.append(el('p','','לא נמצאו שיחות'));
+  if(!result.threads.length)list.append(el('p','empty','עוד אין שיחות. שאל משהו כדי להתחיל'));
 }
 function threadScreen(){
   $('thread-list-screen').hidden=true;$('thread-screen').hidden=false;
@@ -1098,6 +1110,8 @@ function threadScreen(){
 $('new-thread').onclick=()=>{clearTimeout(chatTimer);chatLoad++;currentThread=null;threadScreen()};
 $('thread-back').onclick=()=>{clearTimeout(chatTimer);chatLoad++;currentThread=null;$('thread-screen').hidden=true;$('thread-list-screen').hidden=false;threadList().catch(e=>showUnavailable(e.message))};
 $('thread-search').oninput=$('thread-archive-filter').onchange=()=>threadList().catch(e=>showUnavailable(e.message));
+const kindSelect=$('thread-kind-select'),kindChips=el('div','chips');kindSelect.hidden=true;
+for(const option of kindSelect.options){const b=el('button','chip',option.textContent);b.type='button';b.setAttribute('aria-pressed',String(option.selected));b.onclick=()=>{kindSelect.value=option.value;kindSelect.onchange();for(const c of kindChips.children)c.setAttribute('aria-pressed',String(c===b))};kindChips.append(b)}kindSelect.parentElement.append(kindChips);
 $('thread-kind-select').onchange=()=>{$('thread-ad-label').hidden=$('thread-kind-select').value!=='מודעה מסוימת'};
 $('thread-rename').onclick=async()=>{const title=prompt('שם השיחה',currentThread.title);if(!title)return;try{currentThread=await api('/api/claude-chat/update',{thread_id:currentThread.id,title});threadScreen();await loadChat()}catch(e){showUnavailable(e.message)}};
 $('thread-archive').onclick=async()=>{try{await api('/api/claude-chat/update',{thread_id:currentThread.id,archived:!currentThread.archived});$('thread-back').click()}catch(e){showUnavailable(e.message)}};
@@ -1132,7 +1146,10 @@ $('composer').onsubmit=async e=>{
 // --- "אשר ובצע" (Claude): preview shows the exact change read from Meta now; only the confirm button writes ---
 let acted=null;
 function toast(text){const t=el('div','toast',text);t.setAttribute('role','status');document.body.append(t);setTimeout(()=>t.remove(),4200)}
-function closeSheet(){document.querySelector('.sheet')?.remove()}
+let sheetFocus=null;
+new MutationObserver(()=>{const panel=document.querySelector('.sheet-panel');if(panel&&!panel.hasAttribute('role')){sheetFocus=document.activeElement;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');document.body.style.overflow='hidden';const title=panel.querySelector('h2,h3');if(title){title.tabIndex=-1;title.id='active-sheet-title';panel.setAttribute('aria-labelledby',title.id);title.focus()}}}).observe(document.body,{childList:true,subtree:true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('.sheet'))closeSheet()});
+function closeSheet(){document.querySelector('.sheet')?.remove();document.body.style.overflow='';sheetFocus?.focus()}
 async function openAction(target){
   closeSheet();const sheet=el('div','sheet'),panel=el('div','sheet-panel');sheet.append(panel);document.body.append(sheet);
   sheet.onclick=e=>{if(e.target===sheet)closeSheet()};
@@ -1253,19 +1270,23 @@ function renderLearning(){
     if(h.origin)card.append(el('p','fact','מאיפה ההשערה: '+h.origin));
     if(h.backtest)card.append(el('p','fact','בדיקה על העבר ('+h.backtest.ads+' מודעות): '+h.backtest.note));
     const out=h.outside||{},REL={supports:'תומך',contradicts:'סותר',context:'הקשר'};
-    if(out.summary){const parts=String(out.summary).match(/^([\s\S]*?[.!?](?=\s|$)|[^\n]+)([\s\S]*)$/);card.append(el('p','','מה ידוע בחוץ (הקשר, לא הוכחה לחשבון שלך): '+parts[1]));if(parts[2].trim()){const det=el('details','why');det.append(el('summary','','פירוט'),el('p','',parts[2].trim()));card.append(det)}}
-    for(const src of h.sources||[]){const a=el('a','link',REL[src.relation]+': '+src.claim+' · '+src.source);a.href=src.url;a.target='_blank';a.rel='noopener noreferrer';card.append(a)}
-    if(out.state==='failed')card.append(el('p','note','הבדיקה מול מקורות נכשלה: '+(out.detail||'')));
-    const chk=el('button','btn',out.state==='running'?'בודק מול מקורות…':'בדוק מול מקורות חיצוניים');chk.type='button';chk.disabled=out.state==='running';
+    if(out.summary)card.append(el('p','outside-summary',out.summary));
+    const sources=h.sources||[];
+    if(sources.length){const det=el('details','why sources');det.append(el('summary','','מקורות ('+sources.length+')'));const links=el('div');
+      for(const src of sources){const a=el('a','',src.source);a.href=src.url;a.target='_blank';a.rel='noopener noreferrer';a.dir='auto';links.append(a)}det.append(links);card.append(det)}
+    if(out.state==='failed')card.append(el('p','fact','הבדיקה האחרונה מול מקורות חיצוניים נכשלה.'));
+    const chk=el('button','btn',out.state==='running'?'בודק מול מקורות…':out.state==='failed'?'נסה שוב':'בדוק מול מקורות חיצוניים');chk.type='button';chk.disabled=out.state==='running';
     chk.onclick=async()=>{chk.disabled=true;try{await api('/api/learning/outside-check',{hypothesis_id:h.id});toast('הבדיקה התחילה. זה לוקח כמה דקות.');setTimeout(loadLearning,60000)}catch(e){toast(e.message);chk.disabled=false}};
     const a=el('div','actions');a.append(chk);card.append(a);
     box.append(card)}
 }
 // --- updates (Claude): the runner on the computer pulls new versions; the screen says so and offers a refresh ---
-const pageVersion=$('version').textContent;
+const commitId=value=>{const match=String(value||'').trim().match(/^(?:גרסה )?([0-9a-f]{7,40})(?:$| · )/i);return match?match[1].toLowerCase():null};
+const pageVersion=commitId($('version').dataset.build);
+for(const node of [$('version'),document.querySelector('.menu-version')])node.textContent=pageVersion?'גרסה '+pageVersion:'גרסה לא ידועה';
 async function loadUpdate(){
-  let st;try{st=await api('/api/update-status')}catch{return}
-  if(st.version&&st.version!==pageVersion)$('newver').hidden=false;
+  let st;try{st=await api('/api/update-status'+(pageVersion?'?page_commit='+encodeURIComponent(pageVersion):''))}catch{return}
+  const remote=commitId(st.version);$('newver').hidden=!(st.newer_than_page===true&&pageVersion&&remote&&!remote.startsWith(pageVersion)&&!pageVersion.startsWith(remote));
   const words={up_to_date:'המערכת מעודכנת.',no_runner:''};
   $('update-state').textContent=st.state==='no_runner'?'':st.message||words[st.state]||'';
   $('update-check').hidden=st.state==='no_runner';

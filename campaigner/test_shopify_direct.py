@@ -22,9 +22,9 @@ class DirectTests(unittest.TestCase):
             self.assertEqual(list(Path(temp).iterdir()),[])
 
     def test_report_uses_provider_days_and_fixed_aggregate_query(self):
-        responses=[{'shop':{'myshopifyDomain':SHOP,'currencyCode':'ILS'}},
+        responses=[{'shop':{'myshopifyDomain':SHOP,'currencyCode':'ILS','ianaTimezone':'Asia/Jerusalem'}},
                    {'shopifyqlQuery':{'parseErrors':[],'tableData':{'columns':[],'rows':[{'day':'2026-10-16'}]}}},OSError()]
         with patch('shopify_direct.get_token',return_value='fake'),patch('shopify_direct.graph',side_effect=responses) as graph:
             r=read_reports('unused')
-            self.assertTrue(r['verified']);self.assertEqual(r['until'],'2026-10-16')
-            self.assertIn('UNTIL yesterday',graph.call_args_list[1].args[2]['q'])
+            self.assertEqual(r['timezone'],'Asia/Jerusalem');self.assertIsNotNone(r['partial_date']);self.assertTrue(r['partial']);self.assertTrue(r['verified']);self.assertEqual(r['until'],'2026-10-16')
+            self.assertIn('UNTIL today',graph.call_args_list[1].args[2]['q'])

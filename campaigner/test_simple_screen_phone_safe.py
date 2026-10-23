@@ -54,7 +54,7 @@ assert.equal(previewText('**'+'a'.repeat(140)+'**').length,120);
         self.assertLess(PAGE.index('id="chat"'), PAGE.index('id="suggest"'))
         self.assertLess(PAGE.index('id="suggest"'), PAGE.index('id="composer"'))
         self.assertIn("$('suggest').hidden=!!(st?.turns||[]).length", SCRIPT)
-        self.assertIn('position:sticky;bottom:calc(88px', PAGE)
+        self.assertIn('position:sticky;bottom:var(--tabs-height', PAGE)
 
     def test_today_order_and_hebrew_integrity(self):
         self.assertLess(PAGE.index('id="todo"'), PAGE.index('id="drift"'))
