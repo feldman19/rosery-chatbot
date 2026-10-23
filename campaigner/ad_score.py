@@ -14,6 +14,9 @@ import math
 from statistics import median
 
 WEIGHTS = {'roas': 45, 'ic': 20, 'atc': 15, 'lpv': 10, 'ctr': 10}
+# Shadow-only variant (hypothesis ctr_weight_not_needed): outside research (Eric Carlson, 11 brands) found
+# CTR/hook do not predict ROAS while post-click conversion does. Recorded beside the main score, never decides.
+VARIANT_NO_CTR = {'roas': 45, 'ic': 25, 'atc': 20, 'lpv': 10, 'ctr': 0}
 ROAS_TARGET = 3.0
 FAIL_BELOW = 2.6          # Meta default attribution includes view-through (owner rule)
 LABELS = {'unknown': 'חסרים נתונים', 'untested': 'לא נבדקה', 'continue': 'ממשיכה עד ₪300', 'kill': 'לכבות', 'hold': 'להחזיק',

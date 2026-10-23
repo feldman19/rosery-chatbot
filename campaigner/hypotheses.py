@@ -40,6 +40,13 @@ SEED = [{
     'test': 'מצב צל: בכל מחלוקת על עצירה או הגדלה, מי צדק לפי ROAS אחרי ₪600 הוצאה נוספת (לפחות 7 ימים, עד 21 יום).',
     'backtest': {'date': '2026-10-23', 'ads': 64, 'spearman_score': 0.25, 'spearman_raw_roas': 0.0,
                  'out_of_sample_tuned': 0.15, 'note': 'מדרג טוב יותר, אבל חלש; 37 מודעות נעצרו לפני היום הרביעי ולא נבדקו.'},
+    'for_label': 'הציון צדק', 'against_label': 'החוקים צדקו',
+}, {
+    'id': 'ctr_weight_not_needed',
+    'statement': 'גרסת הציון בלי CTR (ROAS 45, קופה 25, סל 20, צפייה בדף 10) מנבאת לפחות כמו הציון הראשי.',
+    'test': 'מצב צל: שתי הגרסאות נרשמות זו לצד זו. בכל מחלוקת ביניהן על עצירה או הגדלה, מי צדק לפי ROAS אחרי ₪600 הוצאה נוספת (לפחות 7 ימים, עד 21 יום). משקלות הציון הראשי לא משתנים.',
+    'origin': 'מחקר חיצוני (Eric Carlson, 11 מותגים): CTR ו-hook לא ניבאו ROAS; המרה אחרי הקליק וסל ממוצע כן. זה הקשר, לא הוכחה לחשבון הזה.',
+    'for_label': 'הגרסה בלי CTR צדקה', 'against_label': 'הציון הראשי צדק',
 }]
 
 
@@ -48,8 +55,13 @@ class Hypotheses:
         self.path = Path(path)
         self.clock = clock or (lambda: datetime.now(timezone.utc))
         self.lock = threading.Lock()
-        if not self.path.exists():
-            self._write([{**h, 'status': 'testing', 'evidence': None, 'sources': [], 'created_at': self.clock().isoformat()} for h in SEED])
+        with self.lock:
+            items = self._read() if self.path.exists() else []
+            known = {h['id'] for h in items}
+            missing = [h for h in SEED if h['id'] not in known]
+            if missing or not self.path.exists():  # a journal from before a new hypothesis gets it, history kept
+                self._write(items + [{**h, 'status': 'testing', 'evidence': None, 'sources': [], 'created_at': self.clock().isoformat()}
+                                     for h in missing])
 
     def _read(self):
         try:

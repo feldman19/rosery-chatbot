@@ -7,6 +7,10 @@ never on fewer than 7 days, so each case holds a whole week with its weak Friday
 2026-10-23). Later ROAS below 2.6 means "stop" was right, 3 or more means "scale" was right. An ad that
 does not reach ₪600 within 21 days (often because it was paused) cannot be judged and is counted apart:
 that is the survivor bias the backtest had too.
+
+Beside the main score, a variant without CTR (ad_score.VARIANT_NO_CTR) is recorded the same way, and its
+disagreements with the main score are judged with the same follow-up and gate (hypothesis
+ctr_weight_not_needed). The main score's weights and every decision stay as they are.
 """
 from contextlib import contextmanager
 from datetime import date, timedelta
@@ -18,8 +22,8 @@ import ad_score
 FOLLOW_SPEND = 600
 MIN_FOLLOW_DAYS, MAX_FOLLOW_DAYS = 7, 21
 STOP_RIGHT_BELOW, SCALE_RIGHT_FROM = 2.6, 3.0
-STOP_SIDE = {'rules': {'PAUSE'}, 'score': {'kill'}}
-SCALE_SIDE = {'rules': {'SCALE'}, 'score': {'winner'}}
+STOP_SIDE = {'rules': {'PAUSE'}, 'score': {'kill'}, 'main': {'kill'}, 'variant': {'kill'}}
+SCALE_SIDE = {'rules': {'SCALE'}, 'score': {'winner'}, 'main': {'winner'}, 'variant': {'winner'}}
 
 
 class ScoreShadow:
@@ -57,7 +61,8 @@ class ScoreShadow:
                 s = ad_score.score(m, base)
                 payload = {'name': row.get('name'), 'adset': row.get('adset_name'), 'rules': decision['action'],
                            'score': s, 'spend': m['spend'], 'roas': m['revenue'] / m['spend'] if m['spend'] and m['revenue'] is not None else None,
-                           'agree': ad_score.agrees(s['verdict'], decision['action'])}
+                           'agree': ad_score.agrees(s['verdict'], decision['action']),
+                           'variant': ad_score.score(m, base, ad_score.VARIANT_NO_CTR)}
                 db.execute('INSERT OR REPLACE INTO calls VALUES (?,?,?)', (row['id'], w3['until'], json.dumps(payload, ensure_ascii=False)))
                 count += 1
             if w1.get('until') and w1.get('since') == w1.get('until') and isinstance(w1.get('ads'), list):
@@ -93,20 +98,24 @@ class ScoreShadow:
                 return 'judged', spend, revenue, n + 1
         return 'not_judgeable', spend, revenue, MAX_FOLLOW_DAYS
 
-    def judge(self, today):
-        """Every disagreement about stopping or scaling whose follow-up has ended (judged or not judgeable)."""
+    def _judge(self, today, sides):
+        """Every disagreement about stopping or scaling whose follow-up has ended (judged or not judgeable).
+        sides(call) → (first, second, first_label, second_label) or None; outcome '<label>_right'."""
         cutoff = (today - timedelta(days=MIN_FOLLOW_DAYS + 1)).isoformat()
         judged = []
         with self._db() as db:
             for ad, day, raw in db.execute('SELECT ad_id, day, payload FROM calls WHERE day <= ? ORDER BY day', (cutoff,)).fetchall():
                 call = json.loads(raw)
-                rules, verdict = call['rules'], call['score']['verdict']
+                pair = sides(call)
+                if not pair:
+                    continue
+                a, b, a_name, b_name = pair
                 for topic, side, right in (('stop', STOP_SIDE, lambda r: r < STOP_RIGHT_BELOW), ('scale', SCALE_SIDE, lambda r: r >= SCALE_RIGHT_FROM)):
-                    says_rules, says_score = rules in side['rules'], verdict in side['score']
-                    if says_rules == says_score:
+                    says_a, says_b = a in side[a_name], b in side[b_name]
+                    if says_a == says_b:
                         continue
                     state, spend, revenue, days = self._follow(db, ad, day, today)
-                    item = {'ad_id': ad, 'name': call['name'], 'day': day, 'topic': topic, 'rules': rules, 'score_verdict': verdict,
+                    item = {'ad_id': ad, 'name': call['name'], 'day': day, 'topic': topic, a_name: a, b_name + '_verdict': b,
                             'follow_spend': round(spend, 2), 'follow_days': days}
                     if state in ('pending', 'incomplete'):
                         item['outcome'] = 'incomplete_follow_up'
@@ -115,7 +124,7 @@ class ScoreShadow:
                     else:
                         item['follow_roas'] = round(revenue / spend, 3)
                         happened = right(revenue / spend)
-                        item['outcome'] = 'score_right' if happened == says_score else 'rules_right'
+                        item['outcome'] = (b_name if happened == says_b else a_name) + '_right'
                     judged.append(item)
         # One piece of evidence per ad: its first disagreement (later days and the other topic reuse the same
         # follow-up, so counting them again would treat dependent results as independent).
@@ -126,13 +135,27 @@ class ScoreShadow:
             first.setdefault(item['ad_id'], item)
         return list(first.values())
 
+    def judge(self, today):
+        """The rulebook against the main score."""
+        return self._judge(today, lambda call: (call['rules'], call['score']['verdict'], 'rules', 'score'))
+
+    def judge_variant(self, today):
+        """The main score against the variant without CTR; days recorded before the variant existed are skipped."""
+        return self._judge(today, lambda call: (call['score']['verdict'], call['variant']['verdict'], 'main', 'variant')
+                           if call.get('variant') else None)
+
     def summary(self, today):
         with self._db() as db:
             calls = db.execute('SELECT COUNT(*), COUNT(DISTINCT day) FROM calls').fetchone()
             open_ = [json.loads(r[0]) for r in db.execute('SELECT payload FROM calls WHERE day = (SELECT MAX(day) FROM calls)').fetchall()]
-        judged = self.judge(today)
+        judged, variant = self.judge(today), self.judge_variant(today)
         resolved = [j for j in judged if j['outcome'] != 'not_judgeable']
         return {'calls': calls[0], 'days': calls[1], 'today_disagreements': sum(not c['agree'] for c in open_),
                 'judged': judged, 'score_right': sum(j['outcome'] == 'score_right' for j in resolved),
                 'rules_right': sum(j['outcome'] == 'rules_right' for j in resolved),
-                'not_judgeable': sum(j['outcome'] == 'not_judgeable' for j in judged), 'provider_writes': 0}
+                'not_judgeable': sum(j['outcome'] == 'not_judgeable' for j in judged),
+                'variant': {'today_disagreements': sum(bool(c.get('variant')) and c['variant']['verdict'] != c['score']['verdict'] for c in open_),
+                            'judged': variant, 'variant_right': sum(j['outcome'] == 'variant_right' for j in variant),
+                            'main_right': sum(j['outcome'] == 'main_right' for j in variant),
+                            'not_judgeable': sum(j['outcome'] == 'not_judgeable' for j in variant)},
+                'provider_writes': 0}

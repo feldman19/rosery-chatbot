@@ -167,6 +167,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         score_shadow.record(report)
         result=score_shadow.summary(datetime.now(timezone.utc).date())
         hypotheses.update_evidence('ad_score_beats_3day_roas',result['score_right'],result['rules_right'],result['not_judgeable'],result['judged'][-20:])
+        v=result['variant'];hypotheses.update_evidence('ctr_weight_not_needed',v['variant_right'],v['main_right'],v['not_judgeable'],v['judged'][-20:])
         return result
     launch_media_cache={}
     def launch_media(key):

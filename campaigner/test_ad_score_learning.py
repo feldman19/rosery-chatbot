@@ -1,4 +1,5 @@
 from datetime import date, datetime, timezone
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -89,6 +90,73 @@ class ShadowTests(unittest.TestCase):
             self.shadow.record(report(f'2026-10-{n:02d}', [], {}, [ad(10, 100, 1, 400, 3, 2)]))
         judged = self.shadow.summary(date(2026, 10, 20))['judged']
         self.assertEqual(len([j for j in judged if j['ad_id'] == '1010']), 1)
+
+
+class VariantNoCtrTests(unittest.TestCase):
+    """Hypothesis ctr_weight_not_needed: the variant without CTR is recorded and judged beside the main score."""
+    LOW_CTR_HOT = (450, 6, 2700, 40, 25, 30, 30000)  # strong sales and funnel, CTR 0.1%: main says success, variant winner
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.shadow = ScoreShadow(Path(self.temp.name) / 's.sqlite3')
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_main_weights_unchanged_and_variant_ignores_ctr(self):
+        self.assertEqual(ad_score.WEIGHTS, {'roas': 45, 'ic': 20, 'atc': 15, 'lpv': 10, 'ctr': 10})
+        self.assertEqual(ad_score.VARIANT_NO_CTR, {'roas': 45, 'ic': 25, 'atc': 20, 'lpv': 10, 'ctr': 0})
+        base = ad_score.baseline(BASE_ADS)
+        low, high = (ad_score.score(ad_score.metrics(ad(1, 300, 2, 600, 15, 8, impressions=n)), base, ad_score.VARIANT_NO_CTR) for n in (2000, 90000))
+        self.assertEqual(low['score'], high['score'])
+
+    def follow(self, i, days, spend, revenue):
+        for n in range(2, 2 + days):
+            self.shadow.record(report(f'2026-10-{n:02d}', [], {}, [ad(i, spend, 1, revenue, 3, 2)]))
+
+    def test_variant_recorded_beside_the_main_score_and_decision_kept(self):
+        self.shadow.record(report('2026-10-01', [ad(20, *self.LOW_CTR_HOT[:5], clicks=30, impressions=30000)], {'1020': 'HOLD'}))
+        import sqlite3, json
+        with sqlite3.connect(self.shadow.path) as db:
+            call = json.loads(db.execute('SELECT payload FROM calls').fetchone()[0])
+        self.assertEqual((call['rules'], call['score']['verdict'], call['variant']['verdict']), ('HOLD', 'success', 'winner'))
+        self.assertEqual(self.shadow.summary(date(2026, 10, 2))['variant']['today_disagreements'], 1)
+
+    def test_disagreement_judged_after_600_spend_and_7_days(self):
+        self.shadow.record(report('2026-10-01', [ad(21, *self.LOW_CTR_HOT[:5], clicks=30, impressions=30000)], {'1021': 'HOLD'}))
+        self.follow(21, 10, 100, 400)  # ROAS 4 later: "scale" was right → the variant was right
+        self.assertEqual(self.shadow.summary(date(2026, 10, 6))['variant']['judged'], [])
+        v = self.shadow.summary(date(2026, 10, 20))['variant']
+        self.assertEqual((v['variant_right'], v['main_right']), (1, 0))
+        self.assertEqual((v['judged'][0]['follow_days'], v['judged'][0]['follow_spend']), (7, 700))
+        # The rulebook-vs-score hypothesis does not count this ad: rules HOLD and main "success" are not stop/scale.
+        self.assertEqual(self.shadow.summary(date(2026, 10, 20))['judged'], [])
+
+    def test_unread_days_stay_unknown_and_unjudged(self):
+        self.shadow.record(report('2026-10-01', [ad(22, *self.LOW_CTR_HOT[:5], clicks=30, impressions=30000)], {'1022': 'HOLD'}))
+        self.follow(22, 2, 400, 1600)
+        v = self.shadow.summary(date(2026, 10, 25))['variant']
+        self.assertEqual((v['variant_right'], v['main_right'], v['not_judgeable']), (0, 0, 0))
+
+    def test_calls_from_before_the_variant_are_skipped(self):
+        import sqlite3, json
+        with sqlite3.connect(self.shadow.path) as db:
+            db.execute('INSERT INTO calls VALUES (?,?,?)', ('1', '2026-10-01', json.dumps(
+                {'name': 'old', 'rules': 'PAUSE', 'score': {'verdict': 'hold'}, 'agree': False})))
+        self.assertEqual(self.shadow.judge_variant(date(2026, 10, 30)), [])
+
+    def test_hypothesis_seeded_into_an_existing_journal_and_gated(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / 'h.json'
+            path.write_text(json.dumps([{'id': 'ad_score_beats_3day_roas', 'status': 'supported', 'evidence': {'for': 13}}]), encoding='utf-8')
+            h = Hypotheses(path)
+            self.assertEqual(h.get('ad_score_beats_3day_roas')['status'], 'supported')  # history kept
+            self.assertEqual(h.get('ctr_weight_not_needed')['status'], 'testing')
+            self.assertEqual(h.update_evidence('ctr_weight_not_needed', 7, 2, 0, []), 'testing')   # too few
+            self.assertEqual(h.update_evidence('ctr_weight_not_needed', 9, 6, 0, []), 'testing')   # chance explains it
+            self.assertEqual(h.update_evidence('ctr_weight_not_needed', 13, 2, 3, []), 'supported')
+            self.assertEqual(h.update_evidence('ctr_weight_not_needed', 2, 13, 3, []), 'not_supported')
+            self.assertEqual(len(h.list()), 2)
 
 
 class MissingFunnelTests(unittest.TestCase):
