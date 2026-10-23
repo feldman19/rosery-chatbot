@@ -16,6 +16,7 @@ from local_uploads import LocalUploads
 from action_recommendations import build_recommendations
 from owner_action_proposals import build_owner_action_proposals
 from owner_action_results import execute_local
+from outcome_tracking import OutcomeTracker, OutcomeDenied
 from change_history_evidence import load_saved_change_evidence
 from core import Campaigner, Denied
 from evidence import SnapshotStore
@@ -104,6 +105,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     claude_chat=ClaudeChat(data)
     decision_memory=DecisionMemory(data / "decision-memory.sqlite3")
     decision_memory.bind("rosery", "393059510164294")
+    outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3')
     key_file = data / 'signing.key'
     try:
         with key_file.open('xb') as key:
@@ -300,7 +302,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 page = (ROOT / template).read_text(encoding='utf-8').replace('__SESSION__', session)
                 page = page.replace('</html>', '<script>' + (ROOT / 'pilot-format.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'registration-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'review-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'connection-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'operator-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'strategy-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-proposal-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'owner-instructions.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'preparation-loop-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'task-overview.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'work-home.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'live-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'decision-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'meta-execution-panel.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'pilot-ui.js').read_text(encoding='utf-8') + '</script></html>')
                 return self.reply(200, page, 'text/html; charset=utf-8')
-            if self.path not in ('/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
+            if self.path not in ('/api/outcomes', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
                 return self.reply(404, {'error': 'Not found'})
             if not hmac.compare_digest(self.headers.get('X-Local-Session', ''), session):
                 return self.reply(403, {'error': 'Invalid local session'})
@@ -356,8 +358,23 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         report['business_economics']=dossier.get('economics_evidence')
                     recommendations.pop('historical_financial_context',None)
                     report['recommendations']=recommendations
+                    if workspace=='manager':
+                        # Tracking is local bookkeeping; its failure must not hide today's plan.
+                        try:
+                            outcomes.record_offers(recommendations.get('today'),report)
+                            outcomes.refresh(((snapshot.get('sources') or {}).get('meta') or {}).get('data'),report)
+                            report['outcomes_status']='available'
+                        except Exception:
+                            report['outcomes_status']='unavailable'
                     return self.reply(200,report)
                 except (ValueError,KeyError,TypeError,OSError):return self.reply(503,{'error':'דוח הניהול אינו זמין כרגע. לא בוצע שינוי בקמפיינים.'})
+            if self.path == '/api/outcomes':
+                if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
+                try:
+                    snapshot=live.snapshot();report=management_report(snapshot)
+                    outcomes.refresh(((snapshot.get('sources') or {}).get('meta') or {}).get('data'),report)
+                    return self.reply(200,outcomes.list(report))
+                except Exception:return self.reply(503,{'error':'מעקב התוצאות אינו זמין כרגע. לא בוצע שינוי בקמפיינים.'})
             if self.path == '/api/launch':
                 return self.reply(200,launch_report())
             if self.path == '/api/preparation-task':
@@ -479,6 +496,19 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     return self.reply(200, result)
                 if workspace != 'manager':
                     return self.reply(403, {'error': 'אישור ושינוי תקציב זמינים למנהל בלבד'})
+                if self.path in ('/api/outcomes/mark','/api/outcomes/answer'):
+                    # Local record of what the owner did in Meta; nothing is sent to Meta.
+                    try:
+                        if self.path=='/api/outcomes/mark':
+                            if set(body)!={'proposal_id'} or not isinstance(body['proposal_id'],str) or len(body['proposal_id'])>120:
+                                raise ValueError('Exact proposal ID required')
+                            result=outcomes.mark(body['proposal_id'],management_report(live.snapshot()))
+                        else:
+                            if set(body)!={'action_id','answer'} or not all(isinstance(body[k],str) for k in body):
+                                raise ValueError('Exact action ID and answer required')
+                            result=outcomes.answer(body['action_id'],body['answer'])
+                    except OutcomeDenied as error:return self.reply(409,{'error':str(error)})
+                    return self.reply(200,{'action':result,'provider_writes':0})
                 if self.path == '/api/owner-actions/analyze':
                     source_proposal=launch_proposal.report(work_intake.latest())
                     operations=campaign_operations.status()

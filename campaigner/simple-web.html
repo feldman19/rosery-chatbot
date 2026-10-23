@@ -128,6 +128,8 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2
     <p class="caption" id="stats-caption"></p>
     <div class="label" id="todo-label">מה לעשות היום</div>
     <div class="cards" id="todo"><div class="skeleton"></div></div>
+    <div class="label" id="done-label" hidden>מה קרה אחרי מה שעשית</div>
+    <div class="cards" id="done"></div>
   </section>
 
   <section data-tab="ads" hidden aria-labelledby="ads-title">
@@ -219,15 +221,51 @@ function actionCard(item){
   if(item.kind==='approve'&&!item.ready_for_approval)card.append(el('p','note','צריך לרענן נתונים לפני ביצוע.'));
   const a=el('div','actions');
   if(item.link){const l=el('a','btn primary','לביצוע במטא');l.href=item.link;l.target='_blank';l.rel='noopener noreferrer';a.append(l)}
+  if(item.kind==='approve'&&item.proposal_id){const done=el('button','btn','ביצעתי');done.type='button';done.onclick=()=>markDone(item.proposal_id,done);a.append(done)}
   const later=el('button','btn ghost','לא עכשיו');later.type='button';later.onclick=()=>dismiss(item.headline);a.append(later);
   card.append(a);return card;
+}
+// Local record only: says the owner made the change in Meta. Nothing is sent to Meta.
+async function markDone(id,button){
+  button.disabled=true;
+  try{await api('/api/outcomes/mark',{proposal_id:id});await loadOutcomes();renderToday()}
+  catch(e){button.disabled=false;alert(e.message)}
+}
+async function answerDetected(id,answer){
+  try{await api('/api/outcomes/answer',{action_id:id,answer});await loadOutcomes();renderToday()}catch(e){alert(e.message)}
+}
+const PHASE={waiting:['idle','ממתין לנתונים'],preliminary:['watch','תוצאה ראשונית'],final:['grow','תוצאה סופית'],
+  different_change:['watch','שינוי שונה מההצעה'],unverified:['idle','עוד לא אומת במטא'],incomplete:['idle','חסרים נתונים']};
+function outcomeCard(o){
+  const card=el('article','card'),[cls,word]=PHASE[o.phase]||['idle',o.phase];
+  card.append(el('span','pill '+cls,word));
+  const title=(o.headline.match(/"([^"]+)"/)||[])[1]||o.headline;
+  card.append(el('h3','',(o.kind==='pause'?'השהית את ':'הגדלת את ')+title));
+  card.append(el('p','fact','השינוי ב-'+o.change_day.split('-').reverse().slice(0,2).join('.')+(o.source==='auto_detected'?' · זוהה בנתוני מטא':' · לפי הסימון שלך')));
+  if(o.needs_answer){
+    card.append(el('p','','זיהינו בנתוני מטא שהשינוי בוצע. זה היה לפי ההצעה?'));
+    const a=el('div','actions'),yes=el('button','btn primary','כן, לפי ההצעה'),no=el('button','btn ghost','לא');
+    yes.type=no.type='button';yes.onclick=()=>answerDetected(o.id,'yes');no.onclick=()=>answerDetected(o.id,'no');a.append(yes,no);card.append(a);
+  }
+  for(const line of o.lines||[])card.append(el('p','',line));
+  for(const w of o.warnings||[])card.append(el('p','note',w));
+  return card;
+}
+let outcomes=null;
+async function loadOutcomes(){try{outcomes=await api('/api/outcomes')}catch{outcomes=null}renderOutcomes()}
+function renderOutcomes(){
+  const box=$('done'),items=outcomes?.items||[];box.replaceChildren();$('done-label').hidden=!items.length;
+  for(const o of items)box.append(outcomeCard(o));
+  if(items.length)box.append(el('p','caption',outcomes.note));
 }
 function factPart(label,value){const s=el('span');s.append(label+' ',el('strong','num',value));return s}
 
 function renderToday(){
   const today=report?.recommendations?.today,hidden=new Set(dismissed());
+  // Proposals already marked or detected as done move to the results section.
+  const tracked=new Set((outcomes?.items||[]).map(o=>o.proposal_id));
   $('hello-title').textContent=greeting();
-  const items=(today?.items||[]).filter(i=>!hidden.has(i.headline)),todo=$('todo');todo.replaceChildren();
+  const items=(today?.items||[]).filter(i=>!hidden.has(i.headline)&&!tracked.has(i.proposal_id)),todo=$('todo');todo.replaceChildren();
   const approve=items.filter(i=>i.kind==='approve').length;
   $('badge').hidden=!approve;$('badge').textContent=String(approve);
   if(!today){$('hello-sub').textContent='אין עדיין נתונים. לחץ על "רענן" למעלה.';return}
@@ -294,6 +332,7 @@ $('composer').onsubmit=async e=>{
 async function load(refresh){
   if(refresh){$('fresh-text').textContent='מרענן…';try{await api('/api/live/refresh',{})}catch{}}
   try{report=await api('/api/management-report')}catch(e){$('hello-sub').textContent=e.message;$('todo').replaceChildren();return}
+  await loadOutcomes();
   renderHeader();renderStats();renderToday();renderAds();
 }
 $('fresh').onclick=()=>load(true);
