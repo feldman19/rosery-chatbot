@@ -1,0 +1,6 @@
+Follow-up on `codex/ux-pass` (after round 2). Owner on the phone: "it tells me to stop the ad, but today it worked". Data: "קטלוג נמכרים ביותר" — 3 full days ₪270, 2 purchases, ROAS 1.59 → PAUSE; today so far ₪130, 2 purchases, ₪407.5, ROAS 3.13. Do not commit; Hebrew report; no Meta writes; no rules edits.
+
+1. Every PAUSE/SCALE card shows a "היום עד עכשיו" line for that ad from `report.daily` (partial day): spend, purchases, ROAS, "מתעדכן". The decision itself stays on 3 full days (owner rule complete_days_only), and the card says so in one line.
+2. When today contradicts the card (PAUSE but today's ROAS ≥ the ad's hold threshold, or SCALE but today's ROAS < fail threshold, with ≥ ₪50 spent today), show a soft note: "היום היא דווקא עובדת טוב (ROAS 3.13). אפשר לחכות למחר ולראות אם זה ממשיך" and move the card below the others; the "עצור מודעה" button stays available. Never hide a recommendation because of a partial day.
+3. Bug: the card text says "מתחת לסף העצירה שלך (2.6)" but this ad's real threshold is 5.2 (retargeting/catalog doubled thresholds, `decision.thresholds.fail_below`). Use the decision's own thresholds in every text, and when the doubling applied, say why in one line: "זוהתה כמודעת ריטרגטינג/קטלוג לפי השם, ולכן הסף כפול (5.2)".
+Tests for 1–3; run the full suite (baseline here 6 failures, 19 errors).
