@@ -398,3 +398,104 @@ class OutcomeTracker:
 
 def _count(value):
     return f'{value:g}' if isinstance(value, (int, float)) else 'חסר'
+
+
+# BEGIN clear-actions: local presentation state, never provider execution.
+class ProposalVisibility:
+    def __init__(self, path):
+        from pathlib import Path
+        import threading
+        self.path = Path(path)
+        self.lock = threading.RLock()
+
+    def _load(self):
+        if not self.path.exists():
+            return {}
+        return json.loads(self.path.read_text(encoding='utf-8'))
+
+    @staticmethod
+    def fingerprint(item):
+        import hashlib
+        def bucket(value):
+            if isinstance(value, bool) or value is None:
+                return value
+            if isinstance(value, (float, int)):
+                return round(value, 1)
+            if isinstance(value, dict):
+                return {k: bucket(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [bucket(v) for v in value]
+            return value
+        content = {k: item.get(k) for k in ('action', 'headline', 'body', 'saving_per_day', 'features', 'creative_id', 'numbers')}
+        # Detection timestamps are age, not recommendation content.
+        if content['features']:
+            content['features'] = [{k: v for k, v in f.items() if k not in ('since', 'kind_label')} for f in content['features']]
+        return hashlib.sha256(json.dumps(bucket(content), sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+    def update(self, item, restore=False):
+        with self.lock:
+            records = self._load()
+            pid = item['proposal_id']
+            if restore:
+                records.pop(pid, None)
+            else:
+                records[pid] = {'fingerprint': self.fingerprint(item), 'dismissed_at': datetime.now(timezone.utc).isoformat(),
+                                'item': item}
+            temporary = self.path.with_suffix('.tmp')
+            temporary.write_text(json.dumps(records, ensure_ascii=False), encoding='utf-8')
+            temporary.replace(self.path)
+
+    def annotate(self, report, tracker, now=None):
+        now = now or datetime.now(timezone.utc)
+        with tracker._db() as db:
+            offers = tracker._offers(db)
+            acted = {a['proposal_id'] for a in tracker._actions(db)}
+        with self.lock:
+            records = self._load()
+        items = ((report.get('recommendations') or {}).get('today') or {}).get('items') or []
+        drift_items = (report.get('creative_drift') or {}).get('items') or []
+        decisions = {d['entity_id']: d for d in ((report.get('recommendations') or {}).get('rule_engine') or {}).get('decisions', [])}
+        for item in items:
+            if not item.get('proposal_id'):
+                import hashlib
+                import re
+                identity = [item.get(k) for k in ('action', 'entity_id', 'link')]
+                if not item.get('entity_id') and not item.get('link'):
+                    identity.append(re.sub(r'[\d,.]+', '', item.get('headline') or ''))
+                item['proposal_id'] = 'notice:' + hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:24]
+            entity_id = (item.get('proposal_id') or '').partition(':')[2]
+            if entity_id in decisions:
+                item['numbers'] = decisions[entity_id].get('numbers')
+        for item in drift_items:
+            item['proposal_id'] = 'drift:' + item['ad_id']
+        for item in items + drift_items:
+            pid = item.get('proposal_id')
+            if not pid:
+                continue
+            first = (offers.get(pid) or {}).get('first_offered')
+            if pid.startswith('drift:'):
+                first = min((f['since'] for f in item.get('features', []) if f.get('since')), default=None)
+            item['first_offered'] = first
+            try:
+                zone = ZoneInfo('Asia/Jerusalem')
+                if len(first) == 10:
+                    offered_day = date.fromisoformat(first)
+                else:
+                    stamp = datetime.fromisoformat(first.replace('Z', '+00:00'))
+                    offered_day = stamp.replace(tzinfo=stamp.tzinfo or timezone.utc).astimezone(zone).date()
+                days = (now.astimezone(zone).date() - offered_day).days
+                item['waiting_days'] = days if days >= 0 else None
+            except (TypeError, ValueError):
+                item['waiting_days'] = None
+            previous = records.get(pid)
+            item['dismissed'] = bool(previous and previous['fingerprint'] == self.fingerprint(item))
+            item['dismissed_at'] = previous['dismissed_at'] if item['dismissed'] else None
+            item['returned_changed'] = bool(previous and not item['dismissed'])
+            item['untouched'] = bool(item['waiting_days'] is not None and item['waiting_days'] >= 3 and not previous and pid not in acted)
+        for group in (items, drift_items):
+            group.sort(key=lambda i: (not i.get('untouched', False), -(i.get('waiting_days') or 0)))
+        current = {i.get('proposal_id') for i in items + drift_items}
+        report['dismissed_items'] = [i for i in items + drift_items if i.get('dismissed')]
+        report['dismissed_items'] += [{**r['item'], 'dismissed_at': r['dismissed_at']} for pid, r in records.items()
+                                      if pid not in current and r.get('item')]
+# END clear-actions
