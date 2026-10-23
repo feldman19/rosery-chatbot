@@ -317,7 +317,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 self.send_header('Set-Cookie','campaigner_preparation_media='+session+'; HttpOnly; SameSite=Strict; Path=/api/preparation-task/media/')
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'no-referrer')
-            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.fbcdn.net https://*.cdninstagram.com; frame-ancestors 'none'; connect-src 'self'")
+            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: https://*.fbcdn.net https://*.cdninstagram.com; frame-ancestors 'none'; connect-src 'self'")
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
