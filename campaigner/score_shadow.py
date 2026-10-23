@@ -26,6 +26,8 @@ class ScoreShadow:
         with self._db() as db:
             db.execute('CREATE TABLE IF NOT EXISTS calls(ad_id TEXT, day TEXT, payload TEXT NOT NULL, PRIMARY KEY(ad_id, day))')
             db.execute('CREATE TABLE IF NOT EXISTS daily(ad_id TEXT, day TEXT, spend REAL, revenue REAL, purchases REAL, PRIMARY KEY(ad_id, day))')
+            # A day is covered only when the whole account's day was read; then an ad with no row spent nothing.
+            db.execute('CREATE TABLE IF NOT EXISTS covered(day TEXT PRIMARY KEY)')
 
     @contextmanager
     def _db(self):
@@ -56,7 +58,10 @@ class ScoreShadow:
                            'agree': ad_score.agrees(s['verdict'], decision['action'])}
                 db.execute('INSERT OR REPLACE INTO calls VALUES (?,?,?)', (row['id'], w3['until'], json.dumps(payload, ensure_ascii=False)))
                 count += 1
-            if w1.get('until') and w1.get('since') == w1.get('until'):
+            if w1.get('until') and w1.get('since') == w1.get('until') and isinstance(w1.get('ads'), list):
+                rows = [(row, ad_score.metrics(row)) for row in w1['ads']]
+                if all(m for _, m in rows):  # one unknown row → the day is not complete
+                    db.execute('INSERT OR REPLACE INTO covered VALUES (?)', (w1['until'],))
                 for row in w1.get('ads') or []:
                     m = ad_score.metrics(row)
                     if m:
@@ -68,7 +73,8 @@ class ScoreShadow:
         start, end = (date.fromisoformat(day) + timedelta(days=n) for n in (1, FOLLOW_DAYS))
         rows = db.execute('SELECT spend, revenue, day FROM daily WHERE ad_id=? AND day BETWEEN ? AND ?',
                           (ad, start.isoformat(), end.isoformat())).fetchall()
-        return sum(r[0] for r in rows), sum(r[1] for r in rows), len(rows)
+        covered = db.execute('SELECT COUNT(*) FROM covered WHERE day BETWEEN ? AND ?', (start.isoformat(), end.isoformat())).fetchone()[0]
+        return sum(r[0] for r in rows), sum(r[1] for r in rows), covered
 
     def judge(self, today):
         """Every disagreement about stopping or scaling whose 11 follow-up days are over."""
@@ -84,18 +90,23 @@ class ScoreShadow:
                         continue
                     spend, revenue, days = self._follow(db, ad, day)
                     item = {'ad_id': ad, 'name': call['name'], 'day': day, 'topic': topic, 'rules': rules, 'score_verdict': verdict,
-                            'follow_spend': round(spend, 2), 'follow_days_seen': days}
-                    if spend < MIN_FOLLOW_SPEND:
+                            'follow_spend': round(spend, 2), 'follow_days_covered': days}
+                    if days < FOLLOW_DAYS:
+                        item['outcome'] = 'incomplete_follow_up'  # days not read stay unknown, never zero
+                    elif spend < MIN_FOLLOW_SPEND:
                         item['outcome'] = 'not_judgeable'
                     else:
                         item['follow_roas'] = round(revenue / spend, 3)
                         happened = right(revenue / spend)
                         item['outcome'] = 'score_right' if happened == says_score else 'rules_right'
                     judged.append(item)
-        # One judgement per ad and topic: its first disagreement (later days repeat the same overlap).
+        # One piece of evidence per ad: its first disagreement (later days and the other topic reuse the same
+        # follow-up, so counting them again would treat dependent results as independent).
         first = {}
         for item in judged:
-            first.setdefault((item['ad_id'], item['topic']), item)
+            if item['outcome'] == 'incomplete_follow_up':
+                continue
+            first.setdefault(item['ad_id'], item)
         return list(first.values())
 
     def summary(self, today):

@@ -16,10 +16,10 @@ from statistics import median
 WEIGHTS = {'roas': 45, 'ic': 20, 'atc': 15, 'lpv': 10, 'ctr': 10}
 ROAS_TARGET = 3.0
 FAIL_BELOW = 2.6          # Meta default attribution includes view-through (owner rule)
-LABELS = {'untested': 'לא נבדקה', 'continue': 'ממשיכה עד ₪300', 'kill': 'לכבות', 'hold': 'להחזיק',
+LABELS = {'unknown': 'חסרים נתונים', 'untested': 'לא נבדקה', 'continue': 'ממשיכה עד ₪300', 'kill': 'לכבות', 'hold': 'להחזיק',
           'success': 'מצליחה', 'winner': 'מנצחת: +20% תקציב'}
 # The same verdict in the rule engine's words, to tell agreement from disagreement.
-RULE_EQUIVALENT = {'untested': {'UNTESTED'}, 'continue': {'KEEP_TESTING'}, 'kill': {'PAUSE'}, 'hold': {'HOLD', 'KEEP_TESTING'},
+RULE_EQUIVALENT = {'unknown': {'INSUFFICIENT_DATA'}, 'untested': {'UNTESTED'}, 'continue': {'KEEP_TESTING'}, 'kill': {'PAUSE'}, 'hold': {'HOLD', 'KEEP_TESTING'},
                    'success': {'SUCCESS'}, 'winner': {'SCALE'}}
 
 
@@ -43,15 +43,18 @@ def baseline(ad_rows):
     """Account medians and ratios from a window's ad rows (ads with ≥₪100 spend)."""
     rows = [m for m in (metrics(r) for r in ad_rows) if m and m['spend'] >= 100]
     med = lambda xs: median(xs) if xs else None
-    total = lambda k: sum(m[k] or 0 for m in rows)
+    # Ratios only over ads where both sides are known; a missing count is not zero.
+    def ratio(top, bottom):
+        known = [m for m in rows if m[top] is not None and m[bottom] is not None]
+        below = sum(m[bottom] for m in known)
+        return sum(m[top] for m in known) / below if below else None
     return {'cpa': med([m['spend'] / m['purchases'] for m in rows if m['purchases']]),
             'cost_per_atc': med([m['spend'] / m['atc'] for m in rows if m['atc']]),
             'cost_per_ic': med([m['spend'] / m['ic'] for m in rows if m['ic']]),
             'lpv_rate': med([m['lpv'] / m['clicks'] for m in rows if m['lpv'] and m['clicks']]),
             'ctr': med([m['clicks'] / m['impressions'] for m in rows if m['clicks'] and m['impressions']]),
-            'atc_to_purchase': total('purchases') / total('atc') if total('atc') else None,
-            'ic_to_purchase': total('purchases') / total('ic') if total('ic') else None,
-            'aov': total('revenue') / total('purchases') if total('purchases') else None, 'ads': len(rows)}
+            'atc_to_purchase': ratio('purchases', 'atc'), 'ic_to_purchase': ratio('purchases', 'ic'),
+            'aov': ratio('revenue', 'purchases'), 'ads': len(rows)}
 
 
 def _ratio(x, m):
@@ -63,7 +66,13 @@ def _cost(c, m):
 
 
 def score(m, b, weights=WEIGHTS):
-    """Score, effective ROAS, confidence, verdict and the two components that moved the score most."""
+    """Score, effective ROAS, confidence, verdict and the two components that moved the score most.
+
+    Missing funnel counts (carts, checkouts, clicks, impressions) give no verdict: unknown is not zero."""
+    missing = [k for k in ('atc', 'ic', 'clicks', 'impressions') if m[k] is None]
+    if missing or not b['cpa']:
+        return {'score': None, 'effective_roas': None, 'trust_in_purchases': None, 'confidence': 'low', 'verdict': 'unknown',
+                'label': 'חסרים נתונים', 'reasons': ['חסרים נתוני משפך: ' + ', '.join(missing)] if missing else ['חסר בסיס חשבון']}
     funnel = 0.6 * (m['ic'] or 0) * (b['ic_to_purchase'] or 0) + 0.4 * (m['atc'] or 0) * (b['atc_to_purchase'] or 0)
     trust = min(1.0, m['spend'] / (3 * b['cpa'])) if b['cpa'] else 1.0
     effective = trust * m['purchases'] + (1 - trust) * funnel

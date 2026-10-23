@@ -62,9 +62,36 @@ class ShadowTests(unittest.TestCase):
 
     def test_paused_ad_without_follow_up_is_not_judged(self):
         self.shadow.record(report('2026-10-01', [ad(8, 250, 1, 250, 20, 12)], {'1008': 'PAUSE'}))
+        for n in range(2, 13):  # the account's days were read; the paused ad simply had no delivery
+            self.shadow.record(report(f'2026-10-{n:02d}', [], {}, []))
         result = self.shadow.summary(date(2026, 10, 20))
         self.assertEqual(result['not_judgeable'], 1)
         self.assertEqual(result['score_right'] + result['rules_right'], 0)
+
+
+    def test_one_profitable_day_and_ten_missing_days_is_not_a_result(self):
+        self.shadow.record(report('2026-10-01', [ad(9, 250, 1, 250, 20, 12)], {'1009': 'PAUSE'}))
+        self.shadow.record(report('2026-10-02', [], {}, [ad(9, 150, 2, 900, 3, 2)]))
+        result = self.shadow.summary(date(2026, 10, 20))
+        self.assertEqual((result['score_right'], result['rules_right'], result['not_judgeable']), (0, 0, 0))
+
+    def test_an_ad_disagreeing_on_stop_and_scale_counts_once(self):
+        hot = ad(10, 450, 6, 2700, 40, 25)  # the score may call it a winner while the rules say pause
+        self.shadow.record(report('2026-10-01', [hot], {'1010': 'PAUSE'}))
+        for n in range(2, 13):
+            self.shadow.record(report(f'2026-10-{n:02d}', [], {}, [ad(10, 50, 1, 200, 3, 2)]))
+        judged = self.shadow.summary(date(2026, 10, 20))['judged']
+        self.assertEqual(len([j for j in judged if j['ad_id'] == '1010']), 1)
+
+
+class MissingFunnelTests(unittest.TestCase):
+    def test_missing_funnel_gives_no_verdict_and_baseline_ignores_unknowns(self):
+        row = ad(11, 450, 0, 0, 0, 0)
+        row['funnel'] = {'add_to_cart': None, 'initiate_checkout': None, 'link_clicks': 100, 'impressions': 9000}
+        result = ad_score.score(ad_score.metrics(row), ad_score.baseline(BASE_ADS))
+        self.assertEqual((result['verdict'], result['score']), ('unknown', None))
+        base = ad_score.baseline(BASE_ADS + [dict(row, purchases=3, attributed_revenue=600)])
+        self.assertAlmostEqual(base['atc_to_purchase'], 12 / 90)
 
 
 class GateTests(unittest.TestCase):
