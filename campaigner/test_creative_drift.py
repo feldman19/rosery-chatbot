@@ -93,6 +93,30 @@ class CreativeDriftTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.drift.keep('9', data(ad('1', spec())))
 
+    def test_kept_feature_turned_off_then_on_again_is_shown(self):
+        self.drift.check(data(ad('1', spec(music='OPT_IN'))), self.rules, T1)
+        self.drift.keep('1', data(ad('1', spec(music='OPT_IN'))))
+        self.assertEqual(self.drift.check(data(ad('1', spec())), self.rules, T2)['items'], [])
+        again = self.drift.check(data(ad('1', spec(music='OPT_IN'))), self.rules, T2)
+        self.assertEqual([f['feature'] for f in again['items'][0]['features']], ['music'])
+        self.assertEqual(again['items'][0]['features'][0]['kind'], 'turned_on')
+
+    def test_unknown_feature_status_is_reported_not_dropped(self):
+        weird = spec()
+        weird['creative_features_spec']['music'] = {'enroll_status': 'SOMETHING_NEW'}
+        item = self.drift.check(data(ad('1', weird)), self.rules, T1)['items'][0]
+        self.assertEqual((item['features'], [u['feature'] for u in item['unclear']]), ([], ['music']))
+
+    def test_without_verified_rulebook_no_rule_claim(self):
+        result = self.drift.check(data(ad('1', spec(music='OPT_IN'))), {'status': 'unavailable'}, T1)
+        self.assertEqual((result['rule'], result['rule_status']), (None, 'unavailable'))
+        self.assertEqual(len(result['items']), 1)
+
+    def test_first_read_wording_does_not_claim_who_changed_it(self):
+        feature = self.drift.check(data(ad('1', spec(music='OPT_IN'))), self.rules, T1)['items'][0]['features'][0]
+        self.assertEqual(feature['kind_label'], 'נצפה מופעל בקריאה הראשונה')
+        self.assertNotIn('מטא', feature['kind_label'])
+
     def test_swapped_creative_is_reported(self):
         self.drift.check(data(ad('1', spec(), 'c1')), self.rules, T1)
         item = self.drift.check(data(ad('1', spec(), 'c2')), self.rules, T2)['items'][0]
@@ -147,7 +171,8 @@ class CreativeDriftHttpTests(unittest.TestCase):
         self.assertEqual(self.post({'ad_id': '123'})[0], 409)
 
     def test_simple_screen_has_drift_section(self):
-        self.assertIn('מטא שינתה משהו בלי אישור', self.page)
+        self.assertIn('שיפורי Advantage+ מופעלים לבדיקה', self.page)
+        self.assertNotIn('מטא שינתה משהו בלי אישור', self.page)
         self.assertIn('לכיבוי במטא', self.page)
 
 

@@ -1,4 +1,4 @@
-"""Advantage+ creative enhancements that are on although the owner's rule says off.
+"""Advantage+ creative enhancements observed on, although the owner's rule says off.
 
 Read-only toward Meta: it only looks at degrees_of_freedom_spec that the
 regular refresh already read. The owner's rule ("disable_text_improvements")
@@ -41,8 +41,9 @@ LABELS = {
     'media_type_automation': 'בחירת סוג מדיה אוטומטית', 'product_metadata_automation': 'פרטי מוצר אוטומטיים',
     'standard_enhancements_catalog': 'שיפורים סטנדרטיים לקטלוג',
 }
-KINDS = {'turned_on': 'נדלק אחרי שהיה כבוי', 'new_on': 'מטא הוסיפה אותו כשהוא מופעל',
-         'on_at_first_read': 'מופעל מהקריאה הראשונה'}
+# Observations only: a change between two reads does not say who made it.
+KINDS = {'turned_on': 'נצפה מופעל אחרי שהיה כבוי', 'new_on': 'שדה חדש שהופיע מופעל',
+         'on_at_first_read': 'נצפה מופעל בקריאה הראשונה'}
 
 
 def label(feature):
@@ -148,6 +149,11 @@ class CreativeDrift:
                     else:
                         kind = 'new_on' if before == 'absent' else 'turned_on'
                     events.append({'kind': kind, 'feature': feature, 'before': before})
+                # A kept feature that is seen off again loses its keep: a later re-enable is shown.
+                for feature, status in features.items():
+                    if status == 'OPT_OUT' and (ad_id, creative_id, feature) in kept:
+                        db.execute('DELETE FROM kept WHERE ad_id=? AND creative_id=? AND feature=?', (ad_id, creative_id, feature))
+                        kept.discard((ad_id, creative_id, feature))
                 for event in events:
                     event.update(creative_id=creative_id, detected_at=stamp)
                     db.execute('INSERT INTO events VALUES(?,?,?,?)',
@@ -171,21 +177,24 @@ class CreativeDrift:
             unclear = [f for f, s in sorted(features.items()) if s is None]
             replaced = [e for e in history.get(ad_id, []) if e['kind'] == 'creative_replaced' and e.get('after') == creative_id
                         and (ad_id, creative_id, CREATIVE_KEPT) not in kept]
-            if not on and not replaced:
+            if not on and not replaced and not unclear:
                 continue
-            first = {}
+            first = {}  # the latest time each feature was seen turning on
             for event in history.get(ad_id, []):
                 if event.get('feature') in on and event.get('creative_id') == creative_id:
-                    first.setdefault(event['feature'], event)
+                    first[event['feature']] = event
             base['items'].append({
                 'ad_id': ad_id, 'name': ad.get('name') or ad_id, 'adset_name': (ad.get('adset') or {}).get('name'),
                 'creative_id': creative_id, 'link': ads_manager_url(ad_id),
                 'features': [{'feature': f, 'label': label(f), 'kind': (first.get(f) or {}).get('kind', 'on_at_first_read'),
                               'kind_label': KINDS[(first.get(f) or {}).get('kind', 'on_at_first_read')],
                               'since': (first.get(f) or {}).get('detected_at')} for f in on],
-                'creative_replaced': replaced[-1] if replaced else None, 'unclear': unclear})
+                'creative_replaced': replaced[-1] if replaced else None,
+                'unclear': [{'feature': f, 'label': label(f)} for f in unclear]})
         base['items'].sort(key=lambda i: (-len(i['features']), i['name']))
-        return {**base, 'status': 'ready', 'checked_at': active.get('checked_at'), 'ads_checked': len(active['ads'])}
+        # Without a verified rulebook the finding is technical: "on", not "against your rule".
+        return {**base, 'status': 'ready', 'rule_status': 'verified' if rule else 'unavailable',
+                'checked_at': active.get('checked_at'), 'ads_checked': len(active['ads'])}
 
     def keep(self, ad_id, data, now=None):
         """Owner keeps the current state of one ad; the same state is not shown again."""
