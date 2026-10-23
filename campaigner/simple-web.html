@@ -743,7 +743,7 @@ function renderLearning(){
     card.append(el('span','pill '+(H_STATE[h.status]||'idle'),h.status_label),el('h3','',h.statement),el('p','fact','איך בודקים: '+h.test));
     const judged=(ev.for||0)+(ev.against||0);
     card.append(el('p','',judged?('עד עכשיו: הציון צדק ב-'+ev.for+', החוקים צדקו ב-'+ev.against+(ev.not_judgeable?' · '+ev.not_judgeable+' לא ניתן לבדוק (המודעה נעצרה)':'')+'. צריך לפחות '+ev.needed+' מקרים ותוצאה שמקרה לא מסביר.')
-      :'נאספים נתונים: '+(sh.days||0)+' ימים, '+(sh.today_disagreements||0)+' מחלוקות היום. תוצאה ראשונה אחרי 11 ימים מכל מחלוקת.'));
+      :'נאספים נתונים: '+(sh.days||0)+' ימים, '+(sh.today_disagreements||0)+' מחלוקות היום. כל מחלוקת נשפטת אחרי ₪600 הוצאה נוספת, לפחות 7 ימים ועד 21 יום.'));
     if(h.backtest)card.append(el('p','fact','בדיקה על העבר ('+h.backtest.ads+' מודעות): '+h.backtest.note));
     const out=h.outside||{},REL={supports:'תומך',contradicts:'סותר',context:'הקשר'};
     if(out.summary)card.append(el('p','','מה ידוע בחוץ (הקשר, לא הוכחה לחשבון שלך): '+out.summary));
