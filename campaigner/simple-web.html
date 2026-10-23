@@ -135,6 +135,27 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2
     <div class="cards" id="todo"><div class="skeleton"></div></div>
     <div class="label" id="done-label" hidden>מה קרה אחרי מה שעשית</div>
     <div class="cards" id="done"></div>
+<!-- BEGIN auto-mode-shadow: independent settings card -->
+<div class="card" aria-labelledby="shadow-title">
+<details class="why">
+<summary id="shadow-title">השהיית מודעות מפסידות</summary>
+<p>מצב צל מתעד הצעות בלבד. סיום התקופה אינו מפעיל ביצוע.</p>
+<form id="shadow-form">
+<label class="label">מצב <select id="shadow-mode"><option value="manual">ידני</option><option value="shadow">צל</option><option disabled>אוטומטי — בקרוב</option></select></label>
+<p>אוטומטי דורש הרחבת מסלול הביצוע לרמת מודעה.</p>
+<label class="label">סף ROAS <input id="shadow-roas" type="number" min="0.01" max="100" step="0.01" required></label>
+<label class="label">מרווח הרצה בשעות <input id="shadow-hours" type="number" min="0.01" max="720" step="0.01" required></label>
+<label class="label">ימי צל <input id="shadow-days" type="number" min="1" max="365" step="1" required></label>
+<div class="chips">
+<button class="btn ghost" type="submit">שמור מדיניות</button>
+<button class="btn primary" type="button" id="shadow-stop" aria-describedby="shadow-stop-help">עצור אוטומציה</button>
+</div>
+<p id="shadow-stop-help">עוצר את האוטומציה וגם מבטל אישורים ידניים שעוד לא בוצעו.</p>
+</form>
+<p id="shadow-state" role="status"></p><ul id="shadow-items"></ul>
+</details>
+</div>
+<!-- END auto-mode-shadow -->
   </section>
 
   <section data-tab="ads" hidden aria-labelledby="ads-title">
@@ -152,6 +173,7 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2
   </section>
 
   <p class="foot"><a href="/advanced">למסך המלא</a></p>
+
 </main>
 
 <nav class="tabs" aria-label="ניווט"><div class="wrap" role="tablist">
@@ -416,9 +438,42 @@ async function load(refresh){
   if(refresh){$('fresh-text').textContent='מרענן…';try{await api('/api/live/refresh',{})}catch{}}
   try{report=await api('/api/management-report')}catch(e){$('hello-sub').textContent=e.message;$('todo').replaceChildren();return}
   await loadOutcomes();
+  await loadShadow(); // auto-mode-shadow refresh
   renderHeader();renderStats();renderDrift();renderToday();renderAds();
   loadProfit();
 }
+// BEGIN auto-mode-shadow
+async function loadShadow(){
+  try{
+    const st=await api('/api/automation-shadow'),p=st.policy;
+    if(!document.activeElement?.closest('#shadow-form')){
+      $('shadow-mode').value=st.effective_mode;$('shadow-roas').value=p.roas_threshold??'';
+      $('shadow-hours').value=p.interval_hours;$('shadow-days').value=p.shadow_days;
+    }
+    $('shadow-state').textContent=st.phase==='ended'?'תקופת הצל הסתיימה. לא הופעל ביצוע אוטומטי.':st.blockers.length?'מצב הצל חסום; יש לבדוק את המדיניות וספר החוקים.':'ההגדרות נטענו. לא מבוצעות פעולות במטא.';
+    $('shadow-items').replaceChildren();
+    const seen=new Set();
+    for(const run of st.runs)for(const item of (run.items||[])){
+      if(seen.has(item.entity_id))continue;seen.add(item.entity_id);
+      const li=document.createElement('li');
+      li.textContent=item.label+': '+(item.entity_name||item.entity_id)+(item.blockers.length?' — חסום לבטיחות':'');
+      li.textContent+=' · '+new Date(run.at).toLocaleString('he-IL');
+      const comparisons=st.runs[0]?.comparisons||[];
+      for(const c of comparisons.filter(c=>c.proposal_id===item.id)){
+        li.textContent+=' · '+(c.owner_reported?'דיווח בעלים':'שינוי שנצפה')+
+          (c.change_observed?' — נראה בנתוני מטא':' — טרם נראה בנתוני מטא')+'; ללא אישור ביצוע מאומת';
+      }
+      $('shadow-items').append(li);
+    }
+  }catch(e){$('shadow-state').textContent=e.message}
+}
+$('shadow-form').onsubmit=async e=>{e.preventDefault();try{
+  await api('/api/automation-shadow/policy',{action:'pause_ad',mode:$('shadow-mode').value,
+    roas_threshold:Number($('shadow-roas').value),interval_hours:Number($('shadow-hours').value),shadow_days:Number($('shadow-days').value)});
+  await loadShadow();
+}catch(e){$('shadow-state').textContent=e.message}};
+$('shadow-stop').onclick=async()=>{try{await api('/api/automation-shadow/stop',{});await loadShadow()}catch(e){$('shadow-state').textContent=e.message}};
+// END auto-mode-shadow
 $('fresh').onclick=()=>load(true);
 load(false);setInterval(()=>load(false),5*60*1000);
 </script>

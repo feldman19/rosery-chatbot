@@ -47,6 +47,10 @@ from experiment_planner import plan_experiment
 from work_products import WorkProducts
 from meta_write_connection import configure as configure_meta_writer
 from exact_approval_bridge import ExactApprovalBridge
+# BEGIN auto-mode-shadow (read-only)
+from automation_policy import AutomationPolicy
+from automation_shadow import AutomationShadow
+# END auto-mode-shadow
 from campaign_operations import CampaignOperations
 from operations_config import operation_proposal
 from management_report import build_report as management_report
@@ -154,6 +158,13 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     private_orders=PrivateOrders(data)
     prepared_work=WorkProducts(data,key_file.read_bytes())
     execution_bridge=ExactApprovalBridge(data,key_file.read_bytes())
+    # BEGIN auto-mode-shadow (local policy, no write credential loading)
+    automation_policy=AutomationPolicy(data,lambda:execution_bridge._control()['generation'],load_rulebook)
+    def automation_snapshot():
+        snapshot=live.snapshot()
+        return ((snapshot.get('sources') or {}).get('meta') or {}).get('data'),management_report(snapshot)
+    automation_shadow=AutomationShadow(automation_policy,automation_snapshot,outcomes,load_rulebook)
+    # END auto-mode-shadow
     launch_workflow=LaunchWorkflow(data,history={'records':[
         {'kind':'business_intent','text':'פתיחת האתר לקולקציה החדשה, המשך קמפיין המכירות ותכנים חדשים מקישורי Drive','source':'user-current-chat-2026-10-17'},
         {'kind':'previous_shutdown','text':'ב־15.10 התבקשה השהיית Meta, Google ו־TikTok לסגירת האתר. נדרש מצב חי; אין הפעלה מחדש לפי תאריך בלבד','source':'outputs/rosery-media-operations-guide-v1-2026-10-15.md'},
@@ -325,10 +336,15 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 page = (ROOT / template).read_text(encoding='utf-8').replace('__SESSION__', session)
                 page = page.replace('</html>', '<script>' + (ROOT / 'pilot-format.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'registration-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'review-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'connection-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'operator-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'strategy-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-proposal-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'owner-instructions.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'preparation-loop-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'task-overview.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'work-home.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'live-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'decision-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'meta-execution-panel.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'pilot-ui.js').read_text(encoding='utf-8') + '</script></html>')
                 return self.reply(200, page, 'text/html; charset=utf-8')
-            if self.path not in ('/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
+            if self.path not in ('/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
                 return self.reply(404, {'error': 'Not found'})
             if not hmac.compare_digest(self.headers.get('X-Local-Session', ''), session):
                 return self.reply(403, {'error': 'Invalid local session'})
+            # BEGIN auto-mode-shadow
+            if self.path == '/api/automation-shadow':
+                if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
+                return self.reply(200,automation_shadow.status())
+            # END auto-mode-shadow
             if self.path == '/api/pilot':
                 try:
                     report = pilot_report(data / 'rosery-pilot.json')
@@ -483,6 +499,15 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 body = json.loads(self.rfile.read(size))
                 if not isinstance(body, dict):
                     raise ValueError('Object required')
+                # BEGIN auto-mode-shadow
+                if self.path in ('/api/automation-shadow/policy','/api/automation-shadow/stop'):
+                    if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
+                    if self.path.endswith('/stop'):
+                        if body!={}:raise ValueError('עצירה אינה מקבלת פרמטרים')
+                        execution_bridge.stop()
+                        return self.reply(200,automation_shadow.status())
+                    return self.reply(200,automation_policy.save(body))
+                # END auto-mode-shadow
                 if self.path.startswith('/api/decision-memory/'):
                     if workspace != 'manager':return self.reply(403,{'error':'Owner-local only'})
                     if self.path == '/api/decision-memory/query':
@@ -735,6 +760,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     class LocalServer(ExclusiveHTTPServer):
         def server_close(self):
             try:
+                automation_shadow.stop()  # auto-mode-shadow
                 live.stop()
             finally:
                 try:
@@ -749,6 +775,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         drive_flow=DriveOAuth(data,local_server.server_port)
         if start_live and workspace=='manager':
             live.start()
+            automation_shadow.start()  # auto-mode-shadow: independent of execution workers
             def history_loop():
                 # Read-only account history, at most once a day.
                 while not live.stop_event.is_set():
