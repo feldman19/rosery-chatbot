@@ -1,12 +1,14 @@
 <!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f5f4ef" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0a0e0c" media="(prefers-color-scheme: dark)"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ROSERY">
-<title>ROSERY</title>
+<title>ROSERY</title><script>
+try{document.documentElement.dataset.theme=localStorage.getItem('rosery-theme')||'light'}catch{document.documentElement.dataset.theme='light'}
+</script>
 <style>
 /* Layout: one column, four tabs (today / ads / upload / ask), glass header, floating tab bar. Summary first, detail on tap.
    Look: deep emerald + soft gold (jewelry brand), warm neutrals, big numbers, quiet motion. */
 :root{
   --bg:#f5f4ef;--surface:#ffffff;--surface-2:#faf9f6;--ink:#121a16;--muted:#66716b;--line:#e6e4dc;
   --brand:#0f3d2e;--brand-2:#1b5a44;--brand-soft:#e4ede8;--on-brand:#ffffff;--gold:#b08a4e;--gold-soft:#f4ecdf;
-  --stop:#b3261e;--stop-soft:#fbeae7;--grow:#1a6e46;--grow-soft:#e2f3e9;--watch:#7f5500;--watch-soft:#fbf1dc;--idle:#66716b;--idle-soft:#eeede8;
+  --stop:#b3261e;--stop-soft:#fbeae7;--grow:#1a6e46;--grow-soft:#e2f3e9;--watch:#7f5500;--watch-soft:#fbf1dc;--idle:#5c665f;--idle-soft:#eeede8;
   --font:-apple-system,BlinkMacSystemFont,"SF Hebrew","Segoe UI Variable Text","Segoe UI","Rubik","Heebo","Assistant","Noto Sans Hebrew",Arial,sans-serif;
   --r:20px;--r-sm:14px;
   --shadow:0 1px 1px rgb(18 26 22/.04),0 6px 24px -8px rgb(18 26 22/.12);
@@ -15,16 +17,16 @@
   --glass:rgb(245 244 239/.78);
   color-scheme:light
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+@media (prefers-color-scheme:dark){:root[data-theme="auto"]{
   --bg:#0a0e0c;--surface:#131916;--surface-2:#171e1a;--ink:#ecf1ee;--muted:#98a59f;--line:#232c27;
-  --brand:#2c7a5c;--brand-2:#3a8f6d;--brand-soft:#17231e;--on-brand:#ffffff;--gold:#d8b77f;--gold-soft:#2a2418;
+  --brand:#236247;--brand-2:#286a4e;--brand-soft:#17231e;--on-brand:#ffffff;--gold:#d8b77f;--gold-soft:#2a2418;
   --stop:#ff8a7a;--stop-soft:#341b18;--grow:#6fd8a0;--grow-soft:#13291d;--watch:#f2c46b;--watch-soft:#30260f;--idle:#a8b4ae;--idle-soft:#1e2522;
   --shadow:0 0 0 1px rgb(255 255 255/.02);--shadow-lift:0 0 0 1px rgb(255 255 255/.04),0 16px 40px -12px rgb(0 0 0/.6);
   --hero:linear-gradient(135deg,#0f3427 0%,#145039 55%,#1d644a 100%);
   --glass:rgb(10 14 12/.72);color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0a0e0c;--surface:#131916;--surface-2:#171e1a;--ink:#ecf1ee;--muted:#98a59f;--line:#232c27;
-  --brand:#2c7a5c;--brand-2:#3a8f6d;--brand-soft:#17231e;--on-brand:#ffffff;--gold:#d8b77f;--gold-soft:#2a2418;
+  --brand:#236247;--brand-2:#286a4e;--brand-soft:#17231e;--on-brand:#ffffff;--gold:#d8b77f;--gold-soft:#2a2418;
   --stop:#ff8a7a;--stop-soft:#341b18;--grow:#6fd8a0;--grow-soft:#13291d;--watch:#f2c46b;--watch-soft:#30260f;--idle:#a8b4ae;--idle-soft:#1e2522;
   --shadow:0 0 0 1px rgb(255 255 255/.02);--shadow-lift:0 0 0 1px rgb(255 255 255/.04),0 16px 40px -12px rgb(0 0 0/.6);
   --hero:linear-gradient(135deg,#0f3427 0%,#145039 55%,#1d644a 100%);
@@ -59,22 +61,22 @@ section[data-tab]{display:grid;gap:18px;animation:enter .35s ease both}
 
 /* hero: the one number that tells the story (store sales yesterday) */
 .hero{position:relative;overflow:hidden;background:var(--hero);color:#fff;border-radius:24px;padding:20px 20px 18px;display:grid;gap:14px;box-shadow:var(--shadow-lift)}
-.hero::after{content:"";position:absolute;inset:-40% -30% auto auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(closest-side,rgb(216 183 127/.35),transparent);pointer-events:none}
+.hero::after{content:"";position:absolute;inset:-40% -30% auto auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(closest-side,rgb(216 183 127/.08),transparent);pointer-events:none}
 .hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.hero-label{font-size:14px;font-weight:600;opacity:.82}
+.hero-label{font-size:14px;font-weight:600}
 .hero-value{font-size:44px;font-weight:800;line-height:1.05;letter-spacing:-.02em}
-.delta{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgb(255 255 255/.14);white-space:nowrap}
-.delta.up{color:#9cf0c2}.delta.down{color:#ffb4a8}
+.delta{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgb(0 0 0/.18);white-space:nowrap}
+.delta.up,.delta.down{color:#fff}
 .hero-bars{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:end;height:74px}
 .bar{display:grid;gap:6px;align-content:end;height:100%}
 .bar i{display:block;border-radius:8px 8px 4px 4px;background:rgb(255 255 255/.22);min-height:6px;transform-origin:bottom;animation:grow .7s cubic-bezier(.2,.8,.2,1) both}
 .bar.now i{background:linear-gradient(180deg,#e9cf9f,#c9a364)}
-.bar span{font-size:11.5px;opacity:.78;text-align:center;white-space:nowrap}
+.bar span{font-size:11.5px;opacity:1;text-align:center;white-space:nowrap}
 @keyframes grow{from{transform:scaleY(0)}}
 .hero-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding-top:12px;border-top:1px solid rgb(255 255 255/.14)}
 .hero-metrics div{display:grid;gap:0;min-width:0}
 .hero-metrics b{font-size:18px;font-weight:750}
-.hero-metrics span{font-size:12px;opacity:.75}
+.hero-metrics span{font-size:12px;opacity:1}
 
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line)}
 .stat{padding:14px 14px;display:grid;gap:2px;min-width:0}
@@ -156,7 +158,7 @@ nav.tabs{position:fixed;inset:auto 0 0;z-index:6;padding:0 12px calc(10px + env(
 nav.tabs .wrap{pointer-events:auto;display:grid;grid-template-columns:repeat(4,1fr);max-width:460px;background:var(--glass);backdrop-filter:saturate(1.6) blur(20px);-webkit-backdrop-filter:saturate(1.6) blur(20px);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-lift);padding:6px}
 nav.tabs button{position:relative;background:none;border:0;min-height:56px;border-radius:18px;display:grid;justify-items:center;align-content:center;gap:2px;font-size:12px;font-weight:700;color:var(--muted);transition:color .2s,background .2s}
 nav.tabs button[aria-selected="true"]{color:var(--brand);background:var(--brand-soft)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) nav.tabs button[aria-selected="true"]{color:var(--grow)}}
+@media (prefers-color-scheme:dark){:root[data-theme="auto"] nav.tabs button[aria-selected="true"]{color:var(--grow)}}
 :root[data-theme="dark"] nav.tabs button[aria-selected="true"]{color:var(--grow)}
 nav.tabs svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .badge{position:absolute;margin-inline-start:22px;margin-top:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--stop);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px var(--surface)}
@@ -280,9 +282,11 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand);flex:none;
 @keyframes rise{from{transform:translateY(40px);opacity:0}}
 .toast{position:fixed;inset-inline:16px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:21;max-width:520px;margin:0 auto;padding:14px 16px;border-radius:16px;background:var(--ink);color:var(--bg);font-weight:650;box-shadow:var(--shadow-lift);animation:rise .25s ease both}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.badge{background:#a32620;color:white}.flow li.done b{background:#236247;color:white}
+select,input,textarea{background:var(--surface);color:var(--ink)}
 </style>
 
-<header><div class="wrap"><span class="logo">ROSERY</span><button class="fresh" id="fresh" type="button" aria-label="רענן נתונים"><span class="dot" id="fresh-dot"></span><span id="fresh-text">טוען…</span></button></div></header>
+<header><div class="wrap"><span class="logo">ROSERY</span><select id="theme" aria-label="ערכת תצוגה"><option value="light">בהיר</option><option value="dark">כהה</option><option value="auto">אוטומטי</option></select><button class="fresh" id="fresh" type="button" aria-label="רענן נתונים"><span class="dot" id="fresh-dot"></span><span id="fresh-text">טוען…</span></button></div></header>
 
 <div class="newver" id="newver" role="alert" hidden><span>יש גרסה חדשה של המסך.</span><button class="btn primary" type="button" id="newver-go">רענן עכשיו</button></div>
 <main class="wrap">
@@ -396,7 +400,7 @@ const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className
 const ils=v=>typeof v==='number'?'₪'+Math.round(v).toLocaleString('he-IL'):'—';
 const x=v=>typeof v==='number'?v.toFixed(2):'—';
 // Plain-language mapping of the owner's rulebook verdicts.
-const KIND={PAUSE:['stop','לעצור'],SCALE:['grow','להגדיל'],SUCCESS:['grow','מצליחה'],HOLD:['watch','בינונית'],
+const KIND={PAUSE:['stop','עצור מודעה'],SCALE:['grow','הגדל תקציב'],SUCCESS:['grow','מצליחה'],HOLD:['watch','בינונית'],
   KEEP_TESTING:['watch','בבדיקה'],UNTESTED:['idle','מעט תקציב'],INSUFFICIENT_DATA:['idle','חסר מידע']};
 const GROUP={PAUSE:'act',SCALE:'act',SUCCESS:'good',HOLD:'good',KEEP_TESTING:'test',UNTESTED:'test',INSUFFICIENT_DATA:'test'};
 let report=null,filter='all',open=null,showQuiet=false;
@@ -407,8 +411,26 @@ async function api(path,body){
   if(!r.ok)throw Error(data&&typeof data.error==='string'?data.error:'לא הצלחנו להתחבר למערכת');
   return data;
 }
-function dismissed(){try{return JSON.parse(localStorage.getItem('rosery-dismissed-'+(report?.recommendations?.today?.window?.until||''))||'[]')}catch{return[]}}
-function dismiss(id){try{const d=dismissed();d.push(id);localStorage.setItem('rosery-dismissed-'+(report?.recommendations?.today?.window?.until||''),JSON.stringify(d))}catch{}renderToday()}
+async function dismiss(item,restore=false){
+  if(!restore&&!confirm("להסיר? אפשר להחזיר מ'הוסרו'"))return;
+  try{await api('/api/proposal-visibility',{proposal_id:item.proposal_id,restore});await load(false)}catch(e){alert(e.message)}
+}
+function actionWord(id){return id?.startsWith('pause:')?'עצור מודעה':id?.startsWith('scale:')?'הגדל תקציב':id?.startsWith('drift:')?'כבה שיפורים':'אשר שינוי'}
+function actionTitle(item){
+ if(item.proposal_id?.startsWith('pause:'))return 'לעצור את כל המודעה';
+ if(item.proposal_id?.startsWith('drift:'))return 'לכבות רק את שיפורי Advantage+';
+ if(item.proposal_id?.startsWith('scale:')){const m=item.headline.match(/₪([\d,]+)\D+₪([\d,]+)/);return 'להגדיל תקציב יומי של האד-סט ב-20%'+(m?': ₪'+m[1]+' → ₪'+m[2]:'')}
+ return item.headline;
+}
+function waiting(card,item){
+ const n=item.waiting_days;
+ if(n!==null&&n!==undefined)card.append(el('p','fact','מחכה לאישור שלך '+(n===0?'מהיום':n===1?'מאתמול':n+' ימים')));
+ if(item.untouched)card.append(el('p','note','לא נגעת בזה '+n+' ימים'));
+ if(item.returned_changed)card.append(el('p','note','חזרה כי הנתונים השתנו'));
+}
+const themeSelect=document.getElementById('theme');themeSelect.value=document.documentElement.dataset.theme;
+themeSelect.onchange=()=>{document.documentElement.dataset.theme=themeSelect.value;try{localStorage.setItem('rosery-theme',themeSelect.value)}catch{}};
+
 
 function go(tab){
   for(const s of document.querySelectorAll('section[data-tab]'))s.hidden=s.dataset.tab!==tab;
@@ -532,9 +554,9 @@ function renderHero(){
 function pauseExplanation(roas,daily){return (typeof roas!=='number'?'ההחזר אינו ידוע':roas<1?'מוציאה יותר ממה שהיא מכניסה':'מכניסה ₪'+x(roas)+' על כל ₪1, מתחת לסף העצירה שלך (2.6)')+'. ההוצאה היומית שלה כ-'+ils(daily)+'.'}
 function actionCard(item){
   const d=item.proposal_id&&item.proposal_id.startsWith('pause:')?decisionFor(item.proposal_id.slice(6)):null;
-  const card=el('article','card'),[cls,word]=item.action==='PAUSE'?['stop','לעצור']:item.action==='SCALE'?['grow','להגדיל תקציב']:item.action==='ALERT'?['idle','לתשומת לב']:['watch','לשים עין'];
+  const card=el('article','card'),[cls,word]=item.action==='PAUSE'?['stop','עצור מודעה']:item.action==='SCALE'?['grow','הגדל תקציב']:item.action==='ALERT'?['idle','לתשומת לב']:['watch','לשים עין'];
   card.append(el('span','pill '+cls,word));
-  const title=(item.headline.match(/"([^"]+)"/)||[])[1]||item.headline;card.append(el('h3','',title));
+  const title=(item.headline.match(/"([^"]+)"/)||[])[1]||item.headline;card.append(el('h3','',actionTitle(item)),el('p','fact',title));waiting(card,item);if(item.action==='PAUSE')card.append(el('p','','המודעה תפסיק לרוץ. אפשר להפעיל מחדש.'));
   if(item.action==='PAUSE'&&d){
     const f=el('div','fact');f.append(factPart('הוציאה',ils(d.numbers.spend)),factPart('מכירות',String(d.numbers.purchases??'—')),factPart('החזר על ₪1','₪'+x(d.numbers.roas)));card.append(f);
     card.append(el('p','',pauseExplanation(d.numbers.roas,item.saving_per_day)));
@@ -548,15 +570,15 @@ function actionCard(item){
   for(const w of item.warnings||[])inner.append(el('p','note',w));why.append(inner);card.append(why);
   if(item.kind==='approve'&&!item.ready_for_approval)card.append(el('p','note','צריך לרענן נתונים לפני ביצוע.'));
   const a=el('div','actions');
-  if(item.kind==='approve'&&item.proposal_id&&/^(pause|scale):/.test(item.proposal_id)){const run=el('button','btn primary','אשר ובצע');run.type='button';run.disabled=!item.ready_for_approval;run.onclick=()=>openAction(item.proposal_id);a.append(run)}
+  if(item.kind==='approve'&&item.proposal_id&&/^(pause|scale):/.test(item.proposal_id)){const run=el('button','btn primary',actionWord(item.proposal_id));run.type='button';run.disabled=!item.ready_for_approval;run.onclick=()=>openAction(item.proposal_id);a.append(run)}
   else if(item.link){const l=el('a','btn primary','לביצוע במטא');l.href=item.link;l.target='_blank';l.rel='noopener noreferrer';a.append(l)
     if(item.kind==='approve'&&item.proposal_id){const done=el('button','btn','ביצעתי');done.type='button';done.onclick=()=>markDone(item.proposal_id,done);a.append(done)}}
-  const later=el('button','btn ghost','לא עכשיו');later.type='button';later.onclick=()=>dismiss(item.headline);a.append(later);
+  const later=el('button','btn ghost','הסר מהרשימה');later.type='button';later.onclick=()=>dismiss(item);a.append(later);
   const help=el('p','btn-help'),hid='btn-help-'+(++helpSeq);help.id=hid;
   const part=(b,t)=>{help.append(el('b','',b+': '),t+' ')};
-  if(a.querySelector('.btn.primary')?.textContent==='אשר ובצע')part('אשר ובצע',item.action==='PAUSE'?'מראה לך בדיוק מה ייעצר, ורק אחרי אישור נוסף זה קורה במטא. אפשר להפעיל שוב בכל רגע.':'מראה לך את התקציב החדש, ורק אחרי אישור נוסף הוא משתנה במטא.');
+  if(item.kind==='approve')part(actionWord(item.proposal_id),item.action==='PAUSE'?'מראה לך בדיוק מה ייעצר, ורק אחרי אישור נוסף זה קורה במטא. אפשר להפעיל שוב בכל רגע.':'מראה לך את התקציב החדש, ורק אחרי אישור נוסף הוא משתנה במטא.');
   else if(item.link){part('לביצוע במטא','פותח את מנהל המודעות.');if(item.kind==='approve'&&item.proposal_id)part('ביצעתי','רושם שעשית את זה, כדי שנבדוק אחר כך מה קרה.')}
-  part('לא עכשיו','מסתיר את ההמלצה מהמסך. שום דבר לא משתנה.');
+  part('הסר מהרשימה','מסתיר את ההמלצה מהמסך. שום דבר לא משתנה.');
   for(const b of a.querySelectorAll('button,a'))b.setAttribute('aria-describedby',hid);
   card.append(a,help);return card;
 }
@@ -571,7 +593,7 @@ async function answerDetected(id,answer){
 }
 // Enhancements Meta has on against the owner's rule. Turning off happens in Ads Manager.
 function driftCard(item,rule){
-  const card=el('article','card');card.append(rule?el('span','pill stop','בניגוד לחוק שלך'):el('span','pill watch','לבדיקה · החוק לא אומת'),el('h3','',item.name));
+  const card=el('article','card');card.append(el('span','pill stop','כבה שיפורים'),el('h3','',actionTitle(item)),el('p','fact',item.name));waiting(card,item);card.append(el('p','','המודעה ממשיכה לרוץ; רק השיפורים האלה נכבים: '+item.features.map(f=>f.label).join(', ')));
   if(item.adset_name)card.append(el('p','fact','קבוצה: '+item.adset_name));
   const when=s=>s?' · מאז '+new Date(s).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
   if(item.features.length){
@@ -582,19 +604,19 @@ function driftCard(item,rule){
   if((item.unclear||[]).length)card.append(el('p','note','מצב לא ידוע (מטא לא החזירה כבוי או מופעל): '+item.unclear.map(f=>f.label).join(', ')));
   if(item.creative_replaced)card.append(el('p','note','הקריאייטיב של המודעה הוחלף'+when(item.creative_replaced.detected_at)+'.'));
   if(rule)card.append(el('p','fact','החוק שלך: "'+rule.quote+'"'));
-  const a=el('div','actions'),l=el('button','btn primary','כבה עכשיו');l.type='button';l.onclick=()=>openAction('drift:'+item.ad_id);
+  const a=el('div','actions'),l=el('button','btn primary','כבה שיפורים');l.type='button';l.onclick=()=>openAction('drift:'+item.ad_id);
   const keep=el('button','btn ghost','השאר כך');keep.type='button';
   keep.onclick=async()=>{keep.disabled=true;try{await api('/api/creative-drift/keep',{ad_id:item.ad_id});await load(false)}catch(e){keep.disabled=false;alert(e.message)}};
-  a.append(l,keep);
+  const remove=el('button','btn ghost','הסר מהרשימה');remove.onclick=()=>dismiss(item);a.append(l,keep,remove);
   const help=el('p','btn-help'),hid='btn-help-'+(++helpSeq);help.id=hid;
-  help.append(el('b','','כבה עכשיו: '),'מראה מה ייכבה במודעה הזו, ורק אחרי אישור נוסף זה קורה. ',el('b','','השאר כך: '),'מסמן שבדקת ושזה בסדר. ההתראה לא תחזור על אותו מצב; אם מטא תפעיל משהו נוסף, תראה שוב.');
+  help.append(el('b','','כבה שיפורים: '),'מראה מה ייכבה במודעה הזו, ורק אחרי אישור נוסף זה קורה. ',el('b','','השאר כך: '),'מסמן שבדקת ושזה בסדר. ההתראה לא תחזור על אותו מצב; אם מטא תפעיל משהו נוסף, תראה שוב.');
   l.setAttribute('aria-describedby',hid);keep.setAttribute('aria-describedby',hid);
   card.append(a,help);return card;
 }
 let showAllDrift=false;
 function renderDrift(){
   const d=report?.creative_drift,box=$('drift');box.replaceChildren();
-  const items=d?.status==='ready'?d.items:[];$('drift-label').hidden=!items.length&&!(d?.unknown||[]).length;$('drift-help').hidden=$('drift-label').hidden;
+  const items=d?.status==='ready'?d.items.filter(i=>!i.dismissed):[];$('drift-label').hidden=!items.length&&!(d?.unknown||[]).length;$('drift-help').hidden=$('drift-label').hidden;
   for(const i of showAllDrift?items:items.slice(0,3))box.append(driftCard(i,d.rule));
   if(items.length>3){const more=el('button','link',showAllDrift?'הצג פחות':'עוד '+(items.length-3)+' מודעות עם שיפורים מופעלים');more.type='button';more.onclick=()=>{showAllDrift=!showAllDrift;renderDrift()};box.append(more)}
   if((d?.unknown||[]).length)box.append(el('p','note','לא הצלחנו לקרוא את הגדרות השיפורים ב-'+d.unknown.length+' מודעות. זה לא אומר שהן כבויות.'));
@@ -667,12 +689,12 @@ function resultLine(o){
 function factPart(label,value){const s=el('span');s.append(label+' ',el('strong','num',value));return s}
 
 function renderToday(){
-  const today=report?.recommendations?.today,hidden=new Set(dismissed());
+  const today=report?.recommendations?.today;
   // Proposals already marked or detected as done move to the results section.
   const tracked=new Set((outcomes?.items||[]).map(o=>o.proposal_id));
   $('hello-title').textContent=greeting();
-  const items=(today?.items||[]).filter(i=>!hidden.has(i.headline)&&!tracked.has(i.proposal_id)),todo=$('todo');todo.replaceChildren();
-  const approve=items.filter(i=>i.kind==='approve').length+(report?.creative_drift?.status==='ready'?(report.creative_drift.items||[]).length:0);
+  const items=(today?.items||[]).filter(i=>!i.dismissed&&!tracked.has(i.proposal_id)),todo=$('todo');todo.replaceChildren();
+  const approve=items.filter(i=>i.kind==='approve').length+(report?.creative_drift?.status==='ready'?(report.creative_drift.items||[]).filter(i=>!i.dismissed).length:0);
   $('badge').hidden=!approve;$('badge').textContent=String(approve);
   if(!today){$('hello-sub').textContent='אין עדיין נתונים. לחץ על "רענן" למעלה.';return}
   if(today.status==='blocked'){$('hello-sub').textContent='לא הצלחתי לבדוק היום — חסרים נתונים.';todo.append(emptyState('!','צריך לרענן נתונים','לחץ על הנקודה למעלה כדי למשוך נתונים חדשים ממטא.'));return}
@@ -680,6 +702,8 @@ function renderToday(){
   $('todo-label').hidden=!items.length;
   if(!items.length&&!approve){const c=today.counts||{};todo.append(emptyState('✓','אין מה לשנות היום',(c.SUCCESS||0)+(c.HOLD||0)+' מודעות רצות טוב, '+((c.KEEP_TESTING||0)+(c.UNTESTED||0))+' עדיין בבדיקה.'))}
   for(const i of items)todo.append(actionCard(i));
+  const removed=report?.dismissed_items||[];
+  if(removed.length){const section=el('details','card');section.append(el('summary','','הוסרו ('+removed.length+')'));for(const i of removed){const row=el('div');row.append(el('p','',actionTitle(i)),el('p','fact',i.name||i.headline),el('p','fact',new Date(i.dismissed_at).toLocaleString('he-IL')));const back=el('button','btn','החזר');back.onclick=()=>dismiss(i,true);row.append(back);section.append(row)}todo.append(section)}
   if(items.length){const more=el('button','link','לכל המודעות ←');more.type='button';more.onclick=()=>go('ads');todo.append(more)}
 }
 function emptyState(icon,title,text){const e=el('div','card empty');e.append(el('div','big',icon),el('h3','',title),el('p','',text));return e}
@@ -1016,12 +1040,15 @@ async function openAction(target){
   let view;
   try{view=await api('/api/approve-execute/preview',{target})}
   catch(e){panel.replaceChildren(el('h2','','אי אפשר לבצע כרגע'),el('p','note',e.message));const c=el('button','btn','סגור');c.type='button';c.onclick=closeSheet;panel.append(c);return}
-  panel.replaceChildren(el('h2','',view.title),el('p','fact',view.entity_name||''));
+  const item=[...(report?.recommendations?.today?.items||[]),...(report?.creative_drift?.items||[])].find(i=>i.proposal_id===target);
+  let title=item?actionTitle(item):view.title;if(target.startsWith('scale:')&&view.changes?.length)title='להגדיל תקציב יומי של האד-סט ב-20%: '+view.changes[0].from+' → '+view.changes[0].to;
+  panel.replaceChildren(el('h2','',title),el('p','fact',view.entity_name||''));
+  if(item){waiting(panel,item);if(target.startsWith('pause:'))panel.append(el('p','','המודעה תפסיק לרוץ. אפשר להפעיל מחדש.'));if(target.startsWith('drift:'))panel.append(el('p','','המודעה ממשיכה לרוץ; רק השיפורים האלה נכבים: '+view.changes.map(f=>f.field).join(', ')))}
   const diff=el('div','diff');for(const c of view.changes){const r=el('div');r.append(el('span','',c.field),el('s','num',c.from),el('i','','←'),el('b','num',c.to));diff.append(r)}
   panel.append(diff);for(const w of view.warnings||[])panel.append(el('p','note',w));
   if(view.undo_note)panel.append(el('p','fact',view.undo_note));
-  panel.append(el('p','fact','השינוי יישלח למטא רק כשתלחץ "אשר ובצע". האישור תקף ל-10 דקות.'));
-  const a=el('div','actions'),go=el('button','btn primary','אשר ובצע'),no=el('button','btn ghost','ביטול');go.type=no.type='button';no.onclick=closeSheet;
+  panel.append(el('p','fact','השינוי יישלח למטא רק אחרי אישור הפעולה. האישור תקף ל-10 דקות.'));
+  const a=el('div','actions'),go=el('button','btn primary',actionWord(target)),no=el('button','btn ghost','ביטול');go.type=no.type='button';no.onclick=closeSheet;
   go.onclick=async()=>{go.disabled=no.disabled=true;go.textContent='מבצע ובודק במטא…';
     try{const r=await api('/api/approve-execute/confirm',{confirm_token:view.confirm_token});closeSheet();
       toast(r.state==='verified'?'✓ בוצע ואומת מול מטא':r.detail||'הסתיים');await load(false)}

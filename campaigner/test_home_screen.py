@@ -18,7 +18,7 @@ class HomeScreenTests(unittest.TestCase):
         self.assertIn('ההמלצות מתבססות תמיד על 3 הימים המלאים האחרונים', TODAY)
 
     def test_every_action_button_is_explained(self):
-        for words in ('אשר ובצע', 'לא עכשיו', 'ביצעתי', 'לביצוע במטא', 'כבה עכשיו: ', 'השאר כך: '):
+        for words in ('עצור מודעה', 'הגדל תקציב', 'הסר מהרשימה', 'ביצעתי', 'לביצוע במטא', 'כבה שיפורים: ', 'השאר כך: '):
             self.assertIn(words, PAGE)
         self.assertGreaterEqual(PAGE.count("setAttribute('aria-describedby',hid)"), 3)
 

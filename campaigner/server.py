@@ -18,7 +18,7 @@ from local_uploads import LocalUploads
 from action_recommendations import build_recommendations
 from owner_action_proposals import build_owner_action_proposals
 from owner_action_results import execute_local
-from outcome_tracking import OutcomeTracker, OutcomeDenied
+from outcome_tracking import OutcomeTracker, OutcomeDenied, ProposalVisibility
 from creative_drift import CreativeDrift
 from account_history import AccountHistory, chat_context as history_chat_context
 from meta_direct import read_account_history
@@ -142,6 +142,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     decision_memory=DecisionMemory(data / "decision-memory.sqlite3")
     decision_memory.bind("rosery", "393059510164294")
     outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3',verified_changes=lambda:owner_actions.verified_changes())
+    visibility=ProposalVisibility(data/'proposal-dismissals.json')
     drift=CreativeDrift(data/'creative-drift.sqlite3')
     history=AccountHistory(data,reader=read_account_history if start_live and workspace=='manager' else None)
     profit_settings=true_profit.ProfitSettings(data/'profit-settings.json')
@@ -560,6 +561,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                             report['outcomes_status']='unavailable'
                         try:report['creative_drift']=drift.check(((snapshot.get('sources') or {}).get('meta') or {}).get('data'),load_rulebook())
                         except Exception:report['creative_drift']={'status':'unavailable','items':[],'unknown':[],'provider_writes':0,'live_action_allowed':False}
+                    visibility.annotate(report,outcomes)
                     return self.reply(200,report)
                 except (ValueError,KeyError,TypeError,OSError):return self.reply(503,{'error':'דוח הניהול אינו זמין כרגע. לא בוצע שינוי בקמפיינים.'})
             if self.path == '/api/learning':
@@ -795,6 +797,22 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     import os
                     pending=data/'update-request.pending';pending.write_text(json.dumps({'requested_at':datetime.now(timezone.utc).isoformat()}),encoding='utf-8');os.replace(pending,data/'update-request.json')
                     return self.reply(200,update_status())
+                if self.path == '/api/proposal-visibility':
+                    if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
+                    if set(body)-{'proposal_id','restore'} or not isinstance(body.get('proposal_id'),str) or not isinstance(body.get('restore',False),bool):
+                        return self.reply(400,{'error':'בקשת הסרה או שחזור אינה תקינה'})
+                    if body.get('restore') is True:
+                        visibility.update({'proposal_id':body['proposal_id']},restore=True)
+                        return self.reply(200,{'saved':True,'provider_writes':0})
+                    report=owner_action_report()
+                    visibility.annotate(report,outcomes)
+                    items=(((report.get('recommendations') or {}).get('today') or {}).get('items') or [])
+                    for item in (report.get('creative_drift') or {}).get('items') or []:
+                        item['proposal_id']='drift:'+item['ad_id'];items.append(item)
+                    item=next((i for i in items if i.get('proposal_id')==body.get('proposal_id')),None)
+                    if not item:return self.reply(404,{'error':'ההמלצה אינה זמינה. יש לרענן.'})
+                    visibility.update(item,restore=body.get('restore') is True)
+                    return self.reply(200,{'saved':True,'provider_writes':0})
                 if self.path == '/api/creative-drift/keep':
                     # Local note that the owner keeps this state; nothing is sent to Meta.
                     if set(body)!={'ad_id'} or not isinstance(body['ad_id'],str) or not body['ad_id'].isdigit() or len(body['ad_id'])>40:
