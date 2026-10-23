@@ -5,6 +5,7 @@ others) are missing there. Also guards against merge leftovers: a handler pointi
 no longer on the page broke file picking on 2026-10-23.
 """
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -13,6 +14,17 @@ SCRIPT = '\n'.join(re.findall(r'<script>(.*?)</script>', PAGE, re.S))
 
 
 class SimpleScreenPhoneSafeTests(unittest.TestCase):
+    def test_chat_preview_removes_markdown_before_truncating(self):
+        helper=SCRIPT.split('function previewText',1)[1].split('async function threadList',1)[0]
+        script="const assert=require('assert');function previewText"+helper+r"""
+assert.equal(previewText('**bold** _text_ [link](https://example.com) `code`'),'bold text link code');
+assert.equal(previewText('## Heading\n~~old~~'),'Heading old');
+assert.equal(previewText(null),'');
+assert.equal(previewText('**'+'a'.repeat(140)+'**').length,120);
+"""
+        done=subprocess.run(['node','-e',script],capture_output=True,text=True)
+        self.assertEqual(done.returncode,0,done.stderr)
+
     def test_no_secure_only_browser_features(self):
         code = '\n'.join(line for line in SCRIPT.splitlines() if not line.lstrip().startswith('//'))
         for feature in ('randomUUID', 'navigator.clipboard', 'crypto.subtle', 'serviceWorker', 'navigator.share'):

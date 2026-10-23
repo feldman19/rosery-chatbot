@@ -68,6 +68,8 @@ class StoreTests(unittest.TestCase):
         block=page.split('// BEGIN experiments-ui')[1].split('// END experiments-ui')[0]
         script="""
 const assert=require('assert');
+let report=null;
+const ils=v=>'₪'+Math.round(v);
 function el(tag,cls,text){return {tag,text,children:[],append(...x){this.children.push(...x)}}}
 const $=()=>({});
 """+"//"+block+"""
@@ -75,7 +77,24 @@ assert.equal(experimentMoney(null),'לא ידוע');assert.equal(experimentMoney
 const idea='<img src=x onerror=alert(1)>';
 const proposed=experimentCard({question:idea,max_days:21,meta_note:'חיבור בהמשך'},true);
 assert(proposed.children.some(c=>c.text===idea));
-assert(proposed.children.some(c=>c.text==='אשר והכן במצב מושהה'&&c.disabled));
+assert(proposed.children.some(c=>c.text==='רעיון לבדיקה'));
+assert(!proposed.children.some(c=>(c.text||'').includes('ליום לכל זרוע')));
+assert(!proposed.children.some(c=>(c.text||'').includes('אשר והכן')));
+const assets={A:['a','b','c','d','e'],B:['f','g','h','i','j']};
+const candidate={a_kind:'תמונה',b_kind:'וידאו',asset_ids:assets,max_days:21};
+for(const metrics of [{spend:null,purchases:10},{spend:100,purchases:null},{spend:100,purchases:0},{spend:-1,purchases:10},{spend:'100',purchases:10}]){
+  report={windows:{'7':{metrics}}};assert.equal(experimentProposal(candidate).cpa,null);
+}
+report={windows:{'7':{metrics:{spend:900,purchases:10}}}};
+const ready=experimentProposal(candidate);assert.equal(ready.cpa,90);assert.equal(ready.daily,10000);assert.equal(ready.total,420000);
+assert.equal(experimentProposal({...candidate,daily_budget_minor:15000,max_days:7}).total,210000);
+assert(experimentProposal({...candidate,asset_ids:{A:assets.A,B:assets.A}}).missing.length>0);
+assert(experimentProposal({...candidate,asset_ids:{A:['a','a','a','a','a'],B:assets.B}}).missing.length>0);
+const prepared=experimentCard(candidate,true);
+assert(prepared.children.some(c=>c.text==='אשר והכן במצב מושהה'&&c.disabled));
+assert(prepared.children.some(c=>(c.text||'').includes('מחיר רכישה בחשבון (7 ימים): ₪90')));
+assert(prepared.children.some(c=>(c.text||'').includes('הצעת תקציב: ₪100')));
+report.windows['7'].metrics.spend=0;assert.equal(experimentProposal(candidate).cpa,0);
 const running=experimentCard({plan:{state:'running',question:'שאלה',a:{label:'א'},b:{label:'ב'},max_days:21,daily_budget_minor:100},totals:{A:{spend_minor:null,purchases:null},B:{spend_minor:0,purchases:0}},probability_words:'לא ידוע',days_left:3});
 assert(running.children.some(c=>c.text==='עצור ניסוי'));
 const result=experimentCard({plan:{state:'inconclusive',a:{label:'א'},b:{label:'ב'}},totals:{A:{},B:{}},verdict:'לא הוכרע',result:{lift_interval_90:[-.2,.4]},next_step:'לבדוק'});

@@ -377,10 +377,17 @@ select,input,textarea{background:var(--surface);color:var(--ink)}
     <div class="hello"><h1 id="ask-title" tabindex="-1">שאל על הפרסום</h1><p>שאלה פשוטה, תשובה פשוטה. שום דבר לא משתנה בחשבון.</p></div>
     <!-- BEGIN chat-threads -->
     <style>#thread-list .card{text-align:right;min-width:0;width:100%}#thread-list .thread-preview{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}</style>
+    <style>
+      #thread-list-screen>label:has(#thread-search){display:block;width:100%;margin-block:14px 10px}
+      #thread-search{display:block;width:100%;min-width:0;margin-top:6px}
+      #thread-list .chip,#thread-kind{display:inline-flex;width:auto;min-height:0;padding:3px 9px;border-radius:999px;font-size:12px;background:var(--surface-2)}
+      #thread-list-screen .archive-chip{display:inline-flex;align-items:center;gap:7px;width:auto;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px}
+      #thread-archive-filter{width:auto;margin:0}
+    </style>
     <div id="thread-list-screen">
       <button class="btn primary" id="new-thread" type="button">שיחה חדשה</button>
       <label>חיפוש בשיחות <input id="thread-search" type="search" placeholder="כותרת או שאלה"></label>
-      <label><input id="thread-archive-filter" type="checkbox"> ארכיון</label>
+      <label class="archive-chip"><input id="thread-archive-filter" type="checkbox"> ארכיון</label>
       <div id="thread-list" class="cards"></div>
     </div>
     <div id="thread-screen" hidden>
@@ -1034,11 +1041,14 @@ $('launch-form').onsubmit=async e=>{
   }catch(ex){$('launch-progress').hidden=true;showLaunchError(ex.message);toast(ex.message);go.disabled=false}
 };
 let chatTimer=null, currentThread=null, chatLoad=0;
+function previewText(text){return String(text||'').replace(/!?\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/[*_`~]/g,'').replace(/^\s{0,3}#{1,6}\s+/gm,'').replace(/\s+/g,' ').trim().slice(0,120)}
 async function threadList(){
   const result=await api('/api/claude-chat/threads',{search:$('thread-search').value,archived:$('thread-archive-filter').checked});
   const list=$('thread-list');list.replaceChildren();
   for(const t of result.threads){const row=el('button','card');row.type='button';
-    row.append(el('span','chip',t.kind),el('h3','',t.title),el('div','muted',t.last_answer_at?new Date(t.last_answer_at).toLocaleString('he-IL'):t.preview?'זמן התשובה הישנה אינו ידוע':'טרם התקבלה תשובה'),el('p','thread-preview',String(t.preview||'').replace(/\s+/g,' ').slice(0,120)));
+    row.append(el('span','chip',t.kind),el('h3','',t.title));
+    if(t.last_answer_at)row.append(el('div','muted',new Date(t.last_answer_at).toLocaleString('he-IL')));
+    row.append(el('p','thread-preview',previewText(t.preview)));
     row.onclick=()=>{currentThread=t;threadScreen();loadChat()};list.append(row)}
   if(!result.threads.length)list.append(el('p','','לא נמצאו שיחות'));
 }
@@ -1135,15 +1145,32 @@ function renderActed(){
 }
 // BEGIN experiments-ui: textContent via el keeps owner ideas inert.
 const experimentMoney=v=>v==null?'לא ידוע':'₪'+(v/100).toLocaleString('he-IL');
+function experimentProposal(item){
+  const m=report?.windows?.['7']?.metrics,valid=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0;
+  const cpa=m&&valid(m.spend)&&valid(m.purchases)&&m.purchases>0?m.spend/m.purchases:null;
+  const missing=[],assets=item.asset_ids||{};
+  if(!item.a_kind||!item.b_kind)missing.push('הגדרת שני הצדדים');
+  if(!['A','B'].every(k=>new Set(assets[k]||[]).size>=5))missing.push('5 קריאייטיבים לכל צד');
+  else if((assets.A||[]).some(id=>(assets.B||[]).includes(id)))missing.push('קריאייטיבים נפרדים לכל צד');
+  if(cpa===null)missing.push('מחיר רכישה בחשבון');
+  const daily=valid(item.daily_budget_minor)&&item.daily_budget_minor>0?item.daily_budget_minor:10000;
+  const days=Number.isInteger(item.max_days)&&item.max_days>0?item.max_days:21;
+  return {cpa,missing,daily,days,total:2*daily*days};
+}
 function experimentCard(item, proposed=false){
-  const c=el('div','card'),p=item.plan||item;
+  const c=el('div','card'),p=item.plan||item,proposal=proposed?experimentProposal(p):null;
+  if(proposal?.missing.length){
+    c.append(el('h3','','רעיון לבדיקה'),el('p','',p.question),el('p','',item.why),el('p','note','חסרים: '+proposal.missing.join(', ')));
+    if(proposal.cpa!==null)c.append(el('p','fact','מחיר רכישה בחשבון (7 ימים): '+ils(proposal.cpa)));
+    const dismiss=el('button','','הסר הצעה');dismiss.onclick=()=>experimentAction('/api/experiments/dismiss',{id:item.id});c.append(dismiss);return c;
+  }
   c.append(el('h3','',proposed?'ניסוי מוצע':p.state==='running'?'ניסוי פועל':item.verdict||'ניסוי בתכנון'));
   c.append(el('p','',p.question));
   if(proposed){
     c.append(el('p','',item.why));
     c.append(el('p','','זרוע א: '+(p.a_kind||'טרם הוגדרה')+' · זרוע ב: '+(p.b_kind||'טרם הוגדרה')));
-    c.append(el('p','','ליום לכל זרוע: '+experimentMoney(p.daily_budget_minor)+' · סך הכול: '+experimentMoney(p.estimated_cost_minor)+' · עד '+p.max_days+' ימים'));
-    c.append(el('p','',p.cost_note));
+    c.append(el('p','','הצעת תקציב: '+experimentMoney(proposal.daily)+' ליום לכל זרוע · '+experimentMoney(2*proposal.daily)+' ליום יחד · סך הכול: '+experimentMoney(proposal.total)+' לעד '+proposal.days+' ימים'));
+    c.append(el('p','','מחיר רכישה בחשבון (7 ימים): '+ils(proposal.cpa)));
     if(p.refusal_reason)c.append(el('p','',p.refusal_reason));
     const prepare=el('button','','אשר והכן במצב מושהה');prepare.disabled=true;c.append(prepare,el('p','',p.meta_note));
     const dismiss=el('button','','הסר הצעה');dismiss.onclick=()=>experimentAction('/api/experiments/dismiss',{id:item.id});c.append(dismiss);
@@ -1201,8 +1228,8 @@ const pageVersion=$('version').textContent;
 async function loadUpdate(){
   let st;try{st=await api('/api/update-status')}catch{return}
   if(st.version&&st.version!==pageVersion)$('newver').hidden=false;
-  const words={up_to_date:'המערכת מעודכנת.',no_runner:'עדכון אוטומטי לא פעיל: כדי לקבל עדכונים לבד, הפעל את המערכת במחשב עם START-ROSERY.bat.'};
-  $('update-state').textContent=st.message||words[st.state]||'';
+  const words={up_to_date:'המערכת מעודכנת.',no_runner:''};
+  $('update-state').textContent=st.state==='no_runner'?'':st.message||words[st.state]||'';
   $('update-check').hidden=st.state==='no_runner';
 }
 $('newver-go').onclick=()=>location.reload();
