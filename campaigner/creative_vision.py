@@ -58,6 +58,12 @@ def vision_output_schema():
         'proposed_adsets':{'type':'array','minItems':0,'maxItems':MAX_ADSETS,'items':group}}}
 
 
+def vision_timeout(payload):
+    """150 s for a few images, 20 s more per image beyond 3, at most 15 minutes."""
+    images=payload.count('"type": "image"')+payload.count('"type":"image"')
+    return min(900,150+20*max(0,images-3))
+
+
 def vision_cli_args(executable):
     return [executable,'-p','--safe-mode','--no-chrome','--tools','','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--no-session-persistence','--input-format','stream-json','--output-format','stream-json','--verbose','--max-turns','1','--json-schema',json.dumps(vision_output_schema(),separators=(',',':'))]
 
@@ -258,8 +264,9 @@ class CreativeVision:
                 try:proc.stdin.write(payload.encode('utf-8'));proc.stdin.close()
                 except (OSError,ValueError):pass
             writer=threading.Thread(target=write,daemon=True);writer.start()
-            try:proc.wait(timeout=150)
-            except subprocess.TimeoutExpired:proc.kill();proc.wait();raise ValueError('Vision review timed out') from None
+            # Videos send several stills each, so the bound grows with the images sent.
+            try:proc.wait(timeout=vision_timeout(payload))
+            except subprocess.TimeoutExpired:proc.kill();proc.wait();raise ValueError('הניתוח ב-Claude לקח יותר מדי זמן ונעצר. אפשר לנסות שוב או להעלות פחות קבצים בכל פעם.') from None
             finally:reader.join(timeout=5);writer.join(timeout=5)
             if overflow or reader.is_alive():raise ValueError('Vision output exceeded its bound or did not finish')
             try:events=[json.loads(line) for line in b''.join(chunks).decode('utf-8').splitlines() if line.strip()]
