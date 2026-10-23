@@ -152,6 +152,11 @@ class CampaignTransport:
         if not (set(params)=={'status'} and params['status'] in ('PAUSED','ACTIVE') or set(params) in ({'daily_budget'},{'lifetime_budget'}) and str(next(iter(params.values()))).isdigit()):raise ValueError('Unsupported mutation')
         return self._request(token,self._node(node),'POST',params)
 
+    def swap_creative(self,token,ad_id,creative_id):
+        """Owner-approved only (owner_actions): put an existing creative of this account on one ad."""
+        if not isinstance(creative_id,str) or not re.fullmatch(r'[0-9]{5,30}',creative_id):raise ValueError('Unsupported mutation')
+        return self._request(token,self._node(ad_id),'POST',{'creative':{'creative_id':creative_id}})
+
     def upload(self,token,raw,mime,name):
         if mime not in ('image/png','image/jpeg') or not isinstance(raw,bytes) or not 0<len(raw)<=MAX_UPLOAD_IMAGE_BYTES:raise ValueError('Bounded PNG/JPEG required')
         if not re.fullmatch(r'[A-Za-z0-9_.-]{1,120}',name):raise ValueError('Safe upload name required')

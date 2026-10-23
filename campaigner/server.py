@@ -116,7 +116,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     claude_chat=ClaudeChat(data)
     decision_memory=DecisionMemory(data / "decision-memory.sqlite3")
     decision_memory.bind("rosery", "393059510164294")
-    outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3')
+    outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3',verified_changes=lambda:owner_actions.verified_changes())
     drift=CreativeDrift(data/'creative-drift.sqlite3')
     history=AccountHistory(data,reader=read_account_history if start_live and workspace=='manager' else None)
     profit_settings=true_profit.ProfitSettings(data/'profit-settings.json')
@@ -148,6 +148,17 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     creative_launch=CreativeLaunch(data,uploads=local_uploads,
         analyze=lambda assets,owner_brief:CreativeVision(data).analyze(assets,owner_brief=owner_brief,local_image_review_consent=True),
         copy=copy_variants.variants,plan=launch_strategy.plan,report=lambda:management_report(live.snapshot()),rulebook=load_rulebook)
+    # --- "אשר ובצע" (Claude): owner-approved pause / +20% budget / Advantage+ off; preview → confirm → readback ---
+    from owner_actions import OwnerActions,ActionBlocked
+    def owner_action_report():
+        # Same recommendations the screen shows (rulebook proposals live there).
+        snapshot=live.snapshot();report=management_report(snapshot)
+        try:report['recommendations']=build_recommendations(report,load_rosery_dossier(include_owner_financials=True))
+        except ValueError:report['recommendations']=build_recommendations(report,None)
+        try:report['creative_drift']=drift.check(((snapshot.get('sources') or {}).get('meta') or {}).get('data'),load_rulebook())
+        except Exception:report['creative_drift']={'status':'unavailable','items':[]}
+        return report
+    owner_actions=OwnerActions(data,report=owner_action_report)
     launch_media_cache={}
     def launch_media(key):
         if not re.fullmatch(r'local_[a-f0-9]{32}~[a-f0-9]{64}',key):raise ValueError('Invalid media key')
@@ -360,7 +371,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except (ValueError,KeyError,OSError):return self.reply(404,{'error':'Not found'})
                 self.send_response(200);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(raw)))
                 self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw);return
-            if self.path not in ('/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
+            if self.path not in ('/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
                 return self.reply(404, {'error': 'Not found'})
             if not hmac.compare_digest(self.headers.get('X-Local-Session', ''), session):
                 return self.reply(403, {'error': 'Invalid local session'})
@@ -433,6 +444,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         except Exception:report['creative_drift']={'status':'unavailable','items':[],'unknown':[],'provider_writes':0,'live_action_allowed':False}
                     return self.reply(200,report)
                 except (ValueError,KeyError,TypeError,OSError):return self.reply(503,{'error':'דוח הניהול אינו זמין כרגע. לא בוצע שינוי בקמפיינים.'})
+            if self.path == '/api/approve-execute':
+                if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
+                return self.reply(200,owner_actions.status())
             if self.path == '/api/creative-launch':
                 if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
                 return self.reply(200,creative_launch.status())
@@ -593,6 +607,21 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     return self.reply(200, result)
                 if workspace != 'manager':
                     return self.reply(403, {'error': 'אישור ושינוי תקציב זמינים למנהל בלבד'})
+                if self.path in ('/api/approve-execute/preview','/api/approve-execute/confirm'):
+                    # Writes to Meta only on confirm, which needs the single-use token the owner saw in the preview.
+                    try:
+                        if self.path.endswith('/preview'):
+                            if set(body)!={'target'} or not isinstance(body['target'],str) or len(body['target'])>80:raise ActionBlocked('פעולה לא מוכרת')
+                            return self.reply(200,owner_actions.preview(body['target']))
+                        if set(body)!={'confirm_token'} or not isinstance(body['confirm_token'],str):raise ActionBlocked('חסר אישור')
+                        receipt=owner_actions.confirm(body['confirm_token'])
+                        if receipt['state']=='verified' and receipt['kind'] in ('pause_ad','scale_adset_budget'):
+                            # Result tracking follows the change like a "ביצעתי" mark.
+                            try:outcomes.mark(receipt['target'],management_report(live.snapshot()))
+                            except Exception:pass
+                        return self.reply(200,receipt)
+                    except ActionBlocked as error:return self.reply(409,{'error':str(error)})
+                    except (OSError,KeyError) as error:return self.reply(503,{'error':'הרשאת הביצוע במטא לא זמינה. לא בוצע שינוי.'})
                 if self.path == '/api/creative-launch/start':
                     try:return self.reply(200,creative_launch.start(body))
                     except ValueError as error:return self.reply(400,{'error':str(error)})

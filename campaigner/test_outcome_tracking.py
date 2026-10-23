@@ -247,7 +247,7 @@ class OutcomeHttpTests(unittest.TestCase):
     def test_simple_screen_has_done_button_and_results_section(self):
         page = urllib.request.urlopen(self.base).read().decode()
         self.assertIn('ביצעתי', page)
-        self.assertIn('מה קרה אחרי מה שעשית', page)
+        self.assertIn('מה עשית', page)
 
 
 if __name__ == '__main__':

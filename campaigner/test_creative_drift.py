@@ -173,7 +173,7 @@ class CreativeDriftHttpTests(unittest.TestCase):
     def test_simple_screen_has_drift_section(self):
         self.assertIn('שיפורי Advantage+ מופעלים לבדיקה', self.page)
         self.assertNotIn('מטא שינתה משהו בלי אישור', self.page)
-        self.assertIn('לכיבוי במטא', self.page)
+        self.assertIn('כבה עכשיו', self.page)
 
 
 if __name__ == '__main__':

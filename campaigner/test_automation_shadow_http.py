@@ -13,7 +13,7 @@ class AutomationHTTPTests(unittest.TestCase):
         page = Path(__file__).with_name('simple-web.html').read_text(encoding='utf-8')
         today = page.split('<section data-tab="today"', 1)[1].split('</section>', 1)[0]
         self.assertIn('id="shadow-form"', today)
-        self.assertLess(today.index('id="done"'), today.index('id="shadow-form"'))
+        self.assertLess(today.index('id="acted"'), today.index('id="shadow-form"'))
         self.assertIn('<div class="card" aria-labelledby="shadow-title">', today)
         self.assertIn('<details class="why">', today)
         self.assertIn('<button class="btn ghost" type="submit">', today)

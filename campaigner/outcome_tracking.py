@@ -74,8 +74,11 @@ def _updated(entity):
 
 
 class OutcomeTracker:
-    def __init__(self, path):
+    def __init__(self, path, verified_changes=None):
         self.path = str(path)
+        # {proposal_id: finished_at} of changes "אשר ובצע" wrote and read back from Meta. Used when the
+        # refreshed data no longer lists the entity (paused ads drop out of the active-only inventory).
+        self.verified_changes = verified_changes or (lambda: {})
         with self._db() as db:
             db.execute('CREATE TABLE IF NOT EXISTS offers(proposal_id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
             db.execute('CREATE TABLE IF NOT EXISTS actions(id TEXT PRIMARY KEY,payload TEXT NOT NULL,at TEXT NOT NULL)')
@@ -221,12 +224,16 @@ class OutcomeTracker:
                 if seen['status'] == 'confirmed':
                     self._store_days(db, action, data, ads, sets, today)
 
-    @staticmethod
-    def _readback(item, ads, sets):
+    def _readback(self, item, ads, sets):
+        executed = self.verified_changes().get(item['proposal_id'])
         if item['kind'] == 'pause':
             ad = ads.get(item['entity_id'])
-            if ad is None:
-                return {'status': 'unknown'}
+            if ad is None or ad.get('status') is None:
+                if executed:
+                    return {'status': 'confirmed', 'observed': {'status': 'PAUSED'}, 'updated_time': executed,
+                            'source': 'approve_execute_readback'}
+                if ad is None:
+                    return {'status': 'unknown'}
             adset = sets.get(ad.get('adset_id')) or {}
             if ad.get('status') == 'PAUSED':
                 return {'status': 'confirmed', 'observed': {'status': 'PAUSED'}, 'updated_time': _updated(ad)}
