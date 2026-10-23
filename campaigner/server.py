@@ -119,6 +119,23 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3')
     drift=CreativeDrift(data/'creative-drift.sqlite3')
     history=AccountHistory(data,reader=read_account_history if start_live and workspace=='manager' else None)
+    # --- simple-screen creative launch (Claude): uploads → analysis → copy → strategy; no Meta writes ---
+    from creative_launch import CreativeLaunch
+    from creative_vision import CreativeVision
+    import copy_variants, launch_strategy
+    creative_launch=CreativeLaunch(data,uploads=local_uploads,
+        analyze=lambda assets,owner_brief:CreativeVision(data).analyze(assets,owner_brief=owner_brief,local_image_review_consent=True),
+        copy=copy_variants.variants,plan=launch_strategy.plan,report=lambda:management_report(live.snapshot()),rulebook=load_rulebook)
+    launch_media_cache={}
+    def launch_media(key):
+        if not re.fullmatch(r'local_[a-f0-9]{32}~[a-f0-9]{64}',key):raise ValueError('Invalid media key')
+        identity,sha=key.split('~');asset=local_uploads.resolve([{'id':identity,'sha256':sha}])[0]
+        path=data/'drive-assets'/(identity+'-'+sha+'.bin')
+        if asset.get('media_kind')!='video':return path.read_bytes(),asset['mime_type']
+        if key not in launch_media_cache:
+            from video_validation import frames
+            launch_media_cache[key]=frames(path,asset['duration_ms'],count=1)[0][1]
+        return launch_media_cache[key],'image/jpeg'
     profit_settings=true_profit.ProfitSettings(data/'profit-settings.json')
     def profit_summary(snapshot=None,report=None):
         # --- true profit (Claude) ---
@@ -336,7 +353,14 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 page = (ROOT / template).read_text(encoding='utf-8').replace('__SESSION__', session)
                 page = page.replace('</html>', '<script>' + (ROOT / 'pilot-format.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'registration-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'review-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'connection-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'operator-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'strategy-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'launch-proposal-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'owner-instructions.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'preparation-loop-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'task-overview.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'work-home.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'live-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'decision-ui.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'meta-execution-panel.js').read_text(encoding='utf-8') + '</script><script>' + (ROOT / 'pilot-ui.js').read_text(encoding='utf-8') + '</script></html>')
                 return self.reply(200, page, 'text/html; charset=utf-8')
-            if self.path not in ('/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
+            if self.path.startswith('/api/creative-launch/media/'):
+                if workspace!='manager' or not hmac.compare_digest(self.headers.get('X-Local-Session',''),session):
+                    return self.reply(403,{'error':'Invalid local session'})
+                try:raw,mime=launch_media(self.path.rsplit('/',1)[-1])
+                except (ValueError,KeyError,OSError):return self.reply(404,{'error':'Not found'})
+                self.send_response(200);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(raw)))
+                self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw);return
+            if self.path not in ('/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
                 return self.reply(404, {'error': 'Not found'})
             if not hmac.compare_digest(self.headers.get('X-Local-Session', ''), session):
                 return self.reply(403, {'error': 'Invalid local session'})
@@ -409,6 +433,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         except Exception:report['creative_drift']={'status':'unavailable','items':[],'unknown':[],'provider_writes':0,'live_action_allowed':False}
                     return self.reply(200,report)
                 except (ValueError,KeyError,TypeError,OSError):return self.reply(503,{'error':'דוח הניהול אינו זמין כרגע. לא בוצע שינוי בקמפיינים.'})
+            if self.path == '/api/creative-launch':
+                if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
+                return self.reply(200,creative_launch.status())
             if self.path == '/api/profit':
                 if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
                 try:return self.reply(200,profit_summary())
@@ -566,6 +593,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     return self.reply(200, result)
                 if workspace != 'manager':
                     return self.reply(403, {'error': 'אישור ושינוי תקציב זמינים למנהל בלבד'})
+                if self.path == '/api/creative-launch/start':
+                    try:return self.reply(200,creative_launch.start(body))
+                    except ValueError as error:return self.reply(400,{'error':str(error)})
                 if self.path == '/api/profit/settings':
                     # Owner's own cost fields, stored locally; nothing is sent anywhere.
                     try:profit_settings.save(body)
