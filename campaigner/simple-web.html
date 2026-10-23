@@ -126,6 +126,9 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2
     <div class="hello"><h1 id="hello-title">שלום</h1><p id="hello-sub">בודק מה קורה בפרסום…</p></div>
     <div class="stats" id="stats" aria-label="אתמול"></div>
     <p class="caption" id="stats-caption"></p>
+    <!-- true profit (Claude) -->
+    <div class="label" id="profit-label" hidden>רווחיות אמיתית</div>
+    <div class="cards" id="profit"></div>
     <div class="label" id="drift-label" hidden>שיפורי Advantage+ מופעלים לבדיקה</div>
     <div class="cards" id="drift"></div>
     <div class="label" id="todo-label">מה לעשות היום</div>
@@ -279,6 +282,57 @@ function renderDrift(){
   if(items.length>3){const more=el('button','link',showAllDrift?'הצג פחות':'עוד '+(items.length-3)+' מודעות עם שיפורים מופעלים');more.type='button';more.onclick=()=>{showAllDrift=!showAllDrift;renderDrift()};box.append(more)}
   if((d?.unknown||[]).length)box.append(el('p','note','לא הצלחנו לקרוא את הגדרות השיפורים ב-'+d.unknown.length+' מודעות. זה לא אומר שהן כבויות.'));
 }
+// --- true profit (Claude): contribution after costs, shown next to Meta's ROAS, never merged ---
+let profit=null,profitWindow='7';
+async function loadProfit(){try{profit=await api('/api/profit')}catch{profit=null}renderProfit()}
+const pct=v=>typeof v==='number'?Math.round(v*100)+'%':'—';
+function renderProfit(){
+  const box=$('profit');box.replaceChildren();$('profit-label').hidden=!profit;
+  if(!profit)return;
+  if(profit.status!=='ready'){box.append(el('p','note',profit.reason||'נתוני הרווחיות עוד לא זמינים.'));box.append(profitSettings());return}
+  const w=profit.windows[profitWindow]||{},card=el('article','card');
+  const chips=el('div','chips');for(const [k,l] of [['7','7 ימים'],['90','90 ימים']]){const c=el('button','chip',l);c.type='button';c.setAttribute('aria-pressed',String(profitWindow===k));c.onclick=()=>{profitWindow=k;renderProfit()};chips.append(c)}
+  card.append(chips);
+  const meta=report?.windows?.[profitWindow]?.metrics;
+  const s=el('div','stats');
+  for(const [v,l] of [[typeof w.contribution_per_shekel==='number'?'₪'+x(w.contribution_per_shekel):'—',w.label+' לכל ₪1 פרסום'],[ils(w.contribution),w.label],[ils(w.after_ads),'אחרי הוצאת מטא']]){const d=el('div','stat');d.append(el('b','num',v),el('span','',l));s.append(d)}
+  card.append(s);
+  if(profitWindow==='7'&&meta&&typeof meta.roas==='number')card.append(el('p','fact','לשם השוואה, ROAS לפי מטא: '+x(meta.roas)+' (הכנסה מיוחסת, לפני עלויות)'));
+  const det=el('details','why');det.append(el('summary','','פירוט'));const inner=el('div');
+  inner.append(el('p','','הכנסה בלי מע"מ: '+ils(w.revenue_ex_vat)+' · עלות סחורה: '+ils(w.cogs_ex_vat)+' · רווח גולמי: '+pct(w.gross_margin)));
+  inner.append(el('p','','כיסוי עלויות: '+pct(w.cost_coverage)+(w.revenue_without_cost_ex_vat?' · מכירות בלי עלות רשומה: '+ils(w.revenue_without_cost_ex_vat):'')));
+  for(const c of w.cost_lines||[])inner.append(el('p','',c.name+' ('+c.type+'): '+ils(c.cost)));
+  if(typeof w.net_profit==='number')inner.append(el('p','','רווח נקי אחרי הוצאות קבועות: '+ils(w.net_profit)));
+  for(const m of w.missing||[])inner.append(el('p','note','חסר לחישוב: '+m));
+  if((profit.products||[]).length){inner.append(el('p','fact','המוצרים הכי רווחיים (90 יום, רווח גולמי):'));for(const p of profit.products.slice(0,5))inner.append(el('p','',p.product+' · '+ils(p.sales_ex_vat)+' מכירות · '+pct(p.gross_margin)))}
+  for(const l of profit.limits||[])inner.append(el('p','note',l));
+  det.append(inner);card.append(det);box.append(card);box.append(profitSettings());
+}
+function profitSettings(){
+  const st=JSON.parse(JSON.stringify(profit?.settings||{mode:'simple',vat_rate:0.18,sales_include_vat:true,cogs_include_vat:false,fields:[]}));
+  const det=el('details','why');det.append(el('summary','','הגדרות עלויות'));const f=el('div');
+  const mode=el('div','chips');for(const [k,l] of [['simple','פשוט: רק שופיפיי'],['detailed','מפורט: עם ההוצאות שלי']]){const c=el('button','chip',l);c.type='button';c.setAttribute('aria-pressed',String(st.mode===k));c.onclick=()=>{st.mode=k;draw()};mode.append(c)}
+  const body=el('div');
+  function check(label,key){const l=el('label','fact');const i=document.createElement('input');i.type='checkbox';i.checked=st[key];i.onchange=()=>st[key]=i.checked;l.append(i,' '+label);return l}
+  function draw(){
+    for(const b of mode.children)b.setAttribute('aria-pressed',String(b.textContent.startsWith(st.mode==='simple'?'פשוט':'מפורט')));
+    body.replaceChildren(check('מחירי המכירה כוללים מע"מ','sales_include_vat'),check('עלות הסחורה בשופיפיי כוללת מע"מ','cogs_include_vat'));
+    if(st.mode==='detailed'){
+      st.fields.forEach((fd,i)=>{const row=el('div','actions');
+        const n=document.createElement('input');n.value=fd.name;n.placeholder='שם ההוצאה';n.oninput=()=>fd.name=n.value;
+        const t=document.createElement('select');for(const [k,l] of [['per_order','לכל הזמנה'],['percent_of_revenue','אחוז מההכנסה'],['per_unit','לכל יחידה'],['monthly_fixed','קבוע חודשי']]){const o=document.createElement('option');o.value=k;o.textContent=l;o.selected=fd.type===k;t.append(o)}t.onchange=()=>fd.type=t.value;
+        const a=document.createElement('input');a.type='number';a.min='0';a.step='0.01';a.value=fd.amount;a.style.width='90px';a.oninput=()=>fd.amount=Number(a.value);
+        const v=el('label','fact');const vi=document.createElement('input');vi.type='checkbox';vi.checked=fd.vat_included;vi.onchange=()=>fd.vat_included=vi.checked;v.append(vi,' כולל מע"מ');
+        const del=el('button','btn ghost','הסר');del.type='button';del.onclick=()=>{st.fields.splice(i,1);draw()};
+        row.append(n,t,a,v,del);body.append(row)});
+      const add=el('button','link','+ הוספת הוצאה (למשל משלוח, אריזה, סליקה, החזרות)');add.type='button';add.onclick=()=>{st.fields.push({name:'',type:'per_order',amount:0,vat_included:true});draw()};body.append(add);
+    }
+  }
+  draw();
+  const save=el('button','btn primary','שמירה');save.type='button';
+  save.onclick=async()=>{save.disabled=true;try{profit=await api('/api/profit/settings',st);renderProfit()}catch(e){alert(e.message);save.disabled=false}};
+  f.append(mode,body,save);det.append(f);return det;
+}
 let outcomes=null;
 async function loadOutcomes(){try{outcomes=await api('/api/outcomes')}catch{outcomes=null}renderOutcomes()}
 function renderOutcomes(){
@@ -362,6 +416,7 @@ async function load(refresh){
   try{report=await api('/api/management-report')}catch(e){$('hello-sub').textContent=e.message;$('todo').replaceChildren();return}
   await loadOutcomes();
   renderHeader();renderStats();renderDrift();renderToday();renderAds();
+  loadProfit();
 }
 $('fresh').onclick=()=>load(true);
 load(false);setInterval(()=>load(false),5*60*1000);

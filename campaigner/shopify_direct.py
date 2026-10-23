@@ -6,7 +6,7 @@ import threading
 import time
 import urllib.request
 import urllib.error
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,timezone
 from pathlib import Path
 from connections import SHOP,QUERY,NoRedirect
 
@@ -100,6 +100,28 @@ def read_reports(data_dir):
         cost_data=graph(token,'query($q:String!){ shopifyqlQuery(query:$q){ tableData{ columns{name dataType} rows } parseErrors } }',{'q':cost_query})['shopifyqlQuery']
         if not cost_data.get('parseErrors') and cost_data.get('tableData'):economics=cost_data['tableData']
     except (ValueError,KeyError,TypeError,OSError):pass
+    try:profit=read_profit_tables(token)
+    except Exception:profit=None  # optional; never blocks the main report
     return {'verified':True,'shop':SHOP,'currency':identity['shop']['currencyCode'],'since':min(days) if days else None,'until':max(days) if days else None,
             'window':'Last 7 full days in Shopify store timezone; dates are row coverage',
-            'table':data['tableData'],'economics_28d':economics,'source':'direct_shopify_api','live_action_allowed':False}
+            'table':data['tableData'],'economics_28d':economics,'profit':profit,'source':'direct_shopify_api','live_action_allowed':False}
+
+
+PROFIT_COLUMNS='orders, gross_sales, discounts, returns, net_sales, taxes, shipping_charges, total_sales, cost_of_goods_sold, net_sales_with_cost_recorded, net_sales_without_cost_recorded, net_items_sold'
+
+
+def read_profit_tables(token):
+    """Fixed aggregate ShopifyQL: totals for the last 7 and 90 full days and cost per product. No customer data."""
+    query='query($q:String!){ shopifyqlQuery(query:$q){ tableData{ columns{name dataType} rows } parseErrors } }'
+    def table(q):
+        result=graph(token,query,{'q':q})['shopifyqlQuery']
+        if result.get('parseErrors') or not result.get('tableData'):raise ValueError('Profit table unavailable')
+        return result['tableData']['rows']
+    windows={}
+    for days in (7,90):
+        rows=table(f'FROM sales SHOW {PROFIT_COLUMNS} SINCE -{days}d UNTIL yesterday')
+        if len(rows)!=1 or not isinstance(rows[0],dict):raise ValueError('Profit totals shape')
+        windows[str(days)]=rows[0]
+    products=table('FROM sales SHOW net_sales, cost_of_goods_sold, net_sales_with_cost_recorded, net_sales_without_cost_recorded, net_items_sold '
+                   'GROUP BY product_title SINCE -90d UNTIL yesterday ORDER BY net_sales DESC LIMIT 50')
+    return {'windows':windows,'products_90':[r for r in products if isinstance(r,dict)],'checked_at':datetime.now(timezone.utc).isoformat()}

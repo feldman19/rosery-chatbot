@@ -187,6 +187,15 @@ class AccountHistory:
             self.last_error = 'הקריאה ההיסטורית ממטא נכשלה; נשמרה הגרסה הקודמת.'
             return False
 
+    def spend(self, window):
+        """Meta spend for one stored window ('90' or 'all'), or None when it was not read."""
+        stored = self._stored()
+        rows = ((stored or {}).get('windows') or {}).get(window, {}).get('rows')
+        if not isinstance(rows, list):
+            return None
+        values = [_float(r.get('spend')) for r in rows]
+        return sum(values) if all(v is not None for v in values) else None
+
     def _memory(self):
         try:
             db = sqlite3.connect(f'file:{self.directory / "decision-memory.sqlite3"}?mode=ro', uri=True)
