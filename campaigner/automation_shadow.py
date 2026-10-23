@@ -90,7 +90,7 @@ class AutomationShadow:
                     return None
             if now >= datetime.fromisoformat(policy['saved_at']) + timedelta(days=policy['shadow_days']):
                 return None  # Ending shadow never authorizes execution.
-            data, report = self.snapshot()
+            _, report = self.snapshot()
             book = self.rulebook()
             if digest(book) != policy['rulebook_digest']:
                 return None
@@ -98,11 +98,11 @@ class AutomationShadow:
             # Re-check generation after potentially slow snapshot collection.
             if self.policy.status()['effective_mode'] != 'shadow':
                 return None
-            offers = {'items': [{'kind': 'approve', 'proposal_id': p['id'], 'headline': p['label']}
-                                for p in result['items'] if p['would_pause']]}
-            self.outcomes.record_offers(offers, report, now=now)
-            self.outcomes.refresh(data, report, now=now)
-            comparisons = self.outcomes.list(report, now=now)['items']
+            # Compare only existing outcomes for current or previously shadowed proposals.
+            proposal_ids = {p['id'] for p in result['items']}
+            proposal_ids.update(p['id'] for run in previous for p in run.get('items', []))
+            comparisons = [c for c in self.outcomes.list(report, now=now)['items']
+                           if c['proposal_id'] in proposal_ids]
             result['comparisons'] = [
                 {'proposal_id': c['proposal_id'], 'source': c['source'],
                  'owner_reported': c['source'] == 'owner_marked',

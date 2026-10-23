@@ -122,6 +122,35 @@ class AutomationTests(unittest.TestCase):
         self.assertTrue(comparisons[1]['change_observed'])
         self.assertTrue(all(not c['execution_verified'] for c in comparisons))
 
+    def test_shadow_does_not_mutate_outcome_tracking(self):
+        self.report['windows']['1'] = {'until': '2026-10-22'}
+        self.tracker.record_offers({'items': [
+            {'kind': 'approve', 'proposal_id': 'pause:a', 'headline': 'Original ad'}]},
+            self.report, now=self.now)
+        with self.tracker._db() as db:
+            before = db.execute('SELECT * FROM offers').fetchall()
+        self.assertEqual(len(before), 1)
+        self.tracker.record_offers = Mock(side_effect=AssertionError('Shadow must not offer'))
+        self.tracker.refresh = Mock(side_effect=AssertionError('Shadow must not refresh'))
+        self.assertTrue(self.shadow.tick()['items'][0]['would_pause'])
+        self.now += timedelta(hours=2)
+        self.rows[0]['configured_active'] = False
+        self.shadow.tick()
+        with self.tracker._db() as db:
+            self.assertEqual(db.execute('SELECT * FROM offers').fetchall(), before)
+            self.assertEqual(db.execute('SELECT * FROM actions').fetchall(), [])
+            self.assertEqual(db.execute('SELECT * FROM days').fetchall(), [])
+        self.tracker.record_offers.assert_not_called()
+        self.tracker.refresh.assert_not_called()
+
+    def test_comparisons_exclude_unrelated_proposals(self):
+        self.tracker.list = Mock(return_value={'items': [
+            {'proposal_id': 'pause:other', 'source': 'owner_marked'},
+            {'proposal_id': 'scale:a', 'source': 'owner_marked'},
+            {'proposal_id': 'pause:a', 'source': 'owner_marked'}]})
+        run = self.shadow.tick()
+        self.assertEqual([c['proposal_id'] for c in run['comparisons']], ['pause:a'])
+
     def test_real_stop_generation_never_loads_writer(self):
         from exact_approval_bridge import ExactApprovalBridge
         loader, transport = Mock(), Mock()

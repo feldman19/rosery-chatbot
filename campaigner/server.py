@@ -331,7 +331,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 return self.reply(403, {'error': 'Invalid local session'})
             # BEGIN auto-mode-shadow
             if self.path == '/api/automation-shadow':
-                if workspace!='manager':return self.reply(403,{'error':'???? ?????? ????'})
+                if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
                 return self.reply(200,automation_shadow.status())
             # END auto-mode-shadow
             if self.path == '/api/pilot':
@@ -486,7 +486,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     raise ValueError('Object required')
                 # BEGIN auto-mode-shadow
                 if self.path in ('/api/automation-shadow/policy','/api/automation-shadow/stop'):
-                    if workspace!='manager':return self.reply(403,{'error':'???? ?????? ????'})
+                    if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
                     if self.path.endswith('/stop'):
                         if body!={}:raise ValueError('עצירה אינה מקבלת פרמטרים')
                         execution_bridge.stop()

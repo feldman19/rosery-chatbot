@@ -132,6 +132,27 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2
     <div class="cards" id="todo"><div class="skeleton"></div></div>
     <div class="label" id="done-label" hidden>מה קרה אחרי מה שעשית</div>
     <div class="cards" id="done"></div>
+<!-- BEGIN auto-mode-shadow: independent settings card -->
+<div class="card" aria-labelledby="shadow-title">
+<details class="why">
+<summary id="shadow-title">השהיית מודעות מפסידות</summary>
+<p>מצב צל מתעד הצעות בלבד. סיום התקופה אינו מפעיל ביצוע.</p>
+<form id="shadow-form">
+<label class="label">מצב <select id="shadow-mode"><option value="manual">ידני</option><option value="shadow">צל</option><option disabled>אוטומטי — בקרוב</option></select></label>
+<p>אוטומטי דורש הרחבת מסלול הביצוע לרמת מודעה.</p>
+<label class="label">סף ROAS <input id="shadow-roas" type="number" min="0.01" max="100" step="0.01" required></label>
+<label class="label">מרווח הרצה בשעות <input id="shadow-hours" type="number" min="0.01" max="720" step="0.01" required></label>
+<label class="label">ימי צל <input id="shadow-days" type="number" min="1" max="365" step="1" required></label>
+<div class="chips">
+<button class="btn ghost" type="submit">שמור מדיניות</button>
+<button class="btn primary" type="button" id="shadow-stop" aria-describedby="shadow-stop-help">עצור אוטומציה</button>
+</div>
+<p id="shadow-stop-help">עוצר את האוטומציה וגם מבטל אישורים ידניים שעוד לא בוצעו.</p>
+</form>
+<p id="shadow-state" role="status"></p><ul id="shadow-items"></ul>
+</details>
+</div>
+<!-- END auto-mode-shadow -->
   </section>
 
   <section data-tab="ads" hidden aria-labelledby="ads-title">
@@ -149,22 +170,7 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2
   </section>
 
   <p class="foot"><a href="/advanced">למסך המלא</a></p>
-<!-- BEGIN auto-mode-shadow: independent settings card -->
-<section aria-labelledby="shadow-title">
-<h2 id="shadow-title">השהיית מודעות מפסידות</h2>
-<p>מצב צל מתעד הצעות בלבד. סיום התקופה אינו מפעיל ביצוע.</p>
-<form id="shadow-form">
-<label>מצב <select id="shadow-mode"><option value="manual">ידני</option><option value="shadow">צל</option><option disabled>אוטומטי — בקרוב</option></select></label>
-<p>אוטומטי דורש הרחבת מסלול הביצוע לרמת מודעה.</p>
-<label>סף ROAS <input id="shadow-roas" type="number" min="0.01" max="100" step="0.01" required></label>
-<label>מרווח הרצה בשעות <input id="shadow-hours" type="number" min="0.01" max="720" step="0.01" required></label>
-<label>ימי צל <input id="shadow-days" type="number" min="1" max="365" step="1" required></label>
-<button type="submit">שמור מדיניות</button>
-<button type="button" id="shadow-stop">עצור אוטומציה</button>
-</form>
-<p id="shadow-state" role="status"></p><ul id="shadow-items"></ul>
-</section>
-<!-- END auto-mode-shadow -->
+
 </main>
 
 <nav class="tabs" aria-label="ניווט"><div class="wrap" role="tablist">
