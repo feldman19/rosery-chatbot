@@ -460,7 +460,8 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
                 try:
                     import sqlite3 as _sq
-                    with _sq.connect(score_shadow.path) as db:
+                    from contextlib import closing as _closing
+                    with _closing(_sq.connect(score_shadow.path)) as db:
                         last=db.execute('SELECT ad_id,payload FROM calls WHERE day=(SELECT MAX(day) FROM calls)').fetchall()
                     scores={ad:json.loads(raw)['score'] for ad,raw in last}
                     return self.reply(200,{'hypotheses':hypotheses.list(),'shadow':score_shadow.summary(datetime.now(timezone.utc).date()),'scores':scores,'provider_writes':0})
