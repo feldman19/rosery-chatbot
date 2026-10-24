@@ -6,6 +6,9 @@ import test_launch_proposal_schema as fixtures
 import test_http_creative_launch_flow as http_fixtures
 from campaign_operations import OperationBlocked
 from campaign_operations_transport import CampaignTransport, ProviderRejected
+from business_profile import feature_keys, feature_default
+
+PROFILE_FEATURES = {f: {"enroll_status": "OPT_IN" if feature_default(f) == "allowed" else "OPT_OUT"} for f in feature_keys()}
 
 
 class ReviewTests(fixtures.V2ExecutionTests):
@@ -14,7 +17,7 @@ class ReviewTests(fixtures.V2ExecutionTests):
         self.assertIn('Explicit creation_recipe',self.preview()['blocked_reasons'][0])
 
     def test_recipe_is_manifest_bound_and_sent(self):
-        self.proposal['creation_recipe']={'adset_fields':{'is_dynamic_creative':True,'destination_type':'WEBSITE','bid_strategy':'LOWEST_COST_WITHOUT_CAP'},'creative_fields':{'degrees_of_freedom_spec':{'creative_features_spec':{'standard_enhancements':{'enroll_status':'OPT_OUT'},'inline_comment':{'enroll_status':'OPT_IN'}}}},'optimization_type':'DEGREES_OF_FREEDOM'}
+        self.proposal['creation_recipe']={'adset_fields':{'is_dynamic_creative':True,'destination_type':'WEBSITE','bid_strategy':'LOWEST_COST_WITHOUT_CAP'},'creative_fields':{'degrees_of_freedom_spec':{'creative_features_spec':PROFILE_FEATURES}},'optimization_type':'DEGREES_OF_FREEDOM'}
         operation=self.preview()
         self.assertFalse(operation['blocked_reasons'])
         result=self.execute(operation)
@@ -172,7 +175,7 @@ class ReviewTests(fixtures.V2ExecutionTests):
                 self.assertTrue(self.preview()['blocked_reasons'])
                 self.assertEqual(self.provider.writes,[])
         self.proposal['creation_recipe']=original
-        self.proposal['creation_recipe']['creative_fields']={'degrees_of_freedom_spec':{'creative_features_spec':{'inline_comment':{'enroll_status':'OPT_IN'},'standard_enhancements':{'enroll_status':'OPT_OUT'}}}}
+        self.proposal['creation_recipe']['creative_fields']={'degrees_of_freedom_spec':{'creative_features_spec':PROFILE_FEATURES}}
         operation=self.preview(owner_confirmations=[])
         self.assertFalse(operation['blocked_reasons'])
         self.assertEqual(operation['manifest']['creation_recipe'],self.proposal['creation_recipe'])
@@ -236,7 +239,7 @@ class ReviewTests(fixtures.V2ExecutionTests):
         with self.assertRaises(OperationBlocked):self.service.abandon_unknown_video(job['operation_id'],job['digest'],step['key'],False)
 
     def test_recipe_degrees_fields_readback_requested(self):
-        self.proposal['creation_recipe']['creative_fields']={'degrees_of_freedom_spec':{'creative_features_spec':{'standard_enhancements':{'enroll_status':'OPT_OUT'},'inline_comment':{'enroll_status':'OPT_IN'}}}}
+        self.proposal['creation_recipe']['creative_fields']={'degrees_of_freedom_spec':{'creative_features_spec':PROFILE_FEATURES}}
         with patch.object(self.provider,'read',wraps=self.provider.read) as read:
             self.assertEqual(self.execute(self.preview())['state'],'verified')
         self.assertTrue(any('degrees_of_freedom_spec' in call.args[2] for call in read.call_args_list))

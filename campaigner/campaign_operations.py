@@ -442,8 +442,9 @@ class CampaignOperations:
         for ad in proposal['ads']:
             profile.check_copy(ad['primary_text_options'] + ad['headline_options'] + [ad['description']])
         recipe=proposal.get('creation_recipe')
-        if recipe!=creation_recipe(profile):raise OperationBlocked('Creation recipe differs from owner profile')
         if not isinstance(recipe,dict) or set(recipe)!={'adset_fields','creative_fields','optimization_type'}:raise OperationBlocked('Explicit creation_recipe required; live PAUSED canary approval pending')
+        wanted=creation_recipe(profile)['creative_fields']['degrees_of_freedom_spec']['creative_features_spec']
+        if ((recipe.get('creative_fields') or {}).get('degrees_of_freedom_spec') or {}).get('creative_features_spec')!=wanted:raise OperationBlocked('Creation recipe differs from owner profile')
         if set(recipe['adset_fields'])-{'is_dynamic_creative','destination_type','bid_strategy'} or set(recipe['creative_fields'])-{'degrees_of_freedom_spec'}:raise OperationBlocked('Unsupported recipe fields')
         book=context['rulebook'];count_rule=book['rules']['ads_per_adset']['params']
         if set(count_rule)!={'min','max'} or any(type(count_rule[k]) is not int for k in ('min','max')) or not 1<=count_rule['min']<=count_rule['max']<=15:raise OperationBlocked('Unsupported ad count rule')
