@@ -1,0 +1,2327 @@
+{
+ "note": "סט זהב סינתטי: 12 קריאייטיבים מתוארים בטקסט, תיוג ידני ותשובות מוקלטות של שני המעברים. הוא בודק את מנגנון האימות וההסכמה, לא את דיוק המודל החי.",
+ "items": [
+  {
+   "name": "golden-01",
+   "description": "סרטון: אישה מחייכת למצלמה, שרשרת, טקסט \"מתנה ליום הולדת\"",
+   "source": {
+    "asset_id": "golden-asset-01",
+    "sha256": "82083698aae1e7514ad7c12b83f5202a2b0e3914f8fed6f1640392447477e3c2",
+    "name": "golden-01",
+    "media_kind": "video",
+    "duration_ms": 8000,
+    "audio_status": "checked",
+    "transcript": "מחפשים מתנה ליום הולדת? השרשרת הזאת תעשה לה את היום. הזמינו עכשיו",
+    "frames_ms": [
+     500,
+     2285,
+     3428,
+     4571,
+     5714,
+     6857
+    ]
+   },
+   "labels": {
+    "opening": "face",
+    "angle": "gift",
+    "category": "necklaces",
+    "people_gender": "women",
+    "people_count": "1",
+    "on_screen_text": "yes",
+    "cta": "shop_now"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-01",
+     "sha256": "82083698aae1e7514ad7c12b83f5202a2b0e3914f8fed6f1640392447477e3c2",
+     "tags": {
+      "opening": {
+       "value": "face",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "gift",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מחפשים מתנה ליום הולדת"
+        }
+       ]
+      },
+      "category": {
+       "value": "necklaces",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "shop_now",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מחפשים מתנה ליום הולדת"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: אישה מחייכת למצלמה, שרשרת, טקסט \"מתנה ליום הולדת\"",
+     "spoken_message": "מחפשים מתנה ליום הולדת? השרשרת הזאת תעשה לה את היום. הזמינו עכשיו"
+    },
+    "checklist": {
+     "asset_id": "golden-asset-01",
+     "sha256": "82083698aae1e7514ad7c12b83f5202a2b0e3914f8fed6f1640392447477e3c2",
+     "tags": {
+      "opening": {
+       "value": "face",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "gift",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מחפשים מתנה ליום הולדת"
+        }
+       ]
+      },
+      "category": {
+       "value": "necklaces",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "shop_now",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מחפשים מתנה ליום הולדת"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: אישה מחייכת למצלמה, שרשרת, טקסט \"מתנה ליום הולדת\"",
+     "spoken_message": "מחפשים מתנה ליום הולדת? השרשרת הזאת תעשה לה את היום. הזמינו עכשיו"
+    }
+   }
+  },
+  {
+   "name": "golden-02",
+   "description": "סרטון: תקריב צמידים, טקסט 1+1 עד חצות",
+   "source": {
+    "asset_id": "golden-asset-02",
+    "sha256": "c5c841e58ccf5186f23d4ee2729a40eb56d95fd45b3ef3be6a6ec2aea466725a",
+    "name": "golden-02",
+    "media_kind": "video",
+    "duration_ms": 15000,
+    "audio_status": "checked",
+    "transcript": "רק עד חצות: אחד ועוד אחד על כל הצמידים",
+    "frames_ms": [
+     500,
+     4285,
+     6428,
+     8571,
+     10714,
+     12857
+    ]
+   },
+   "labels": {
+    "opening": "product",
+    "angle": "offer",
+    "category": "bracelets",
+    "people_gender": "none",
+    "people_count": "0",
+    "on_screen_text": "yes",
+    "cta": "limited_time"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-02",
+     "sha256": "c5c841e58ccf5186f23d4ee2729a40eb56d95fd45b3ef3be6a6ec2aea466725a",
+     "tags": {
+      "opening": {
+       "value": "product",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "offer",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "רק עד חצות: אחד ועוד אחד על כל הצמידים"
+        }
+       ]
+      },
+      "category": {
+       "value": "bracelets",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "none",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "0",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "limited_time",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "רק עד חצות: אחד ועוד אחד על כל הצמידים"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: תקריב צמידים, טקסט 1+1 עד חצות",
+     "spoken_message": "רק עד חצות: אחד ועוד אחד על כל הצמידים"
+    },
+    "checklist": {
+     "asset_id": "golden-asset-02",
+     "sha256": "c5c841e58ccf5186f23d4ee2729a40eb56d95fd45b3ef3be6a6ec2aea466725a",
+     "tags": {
+      "opening": {
+       "value": "product",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "offer",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "רק עד חצות: אחד ועוד אחד על כל הצמידים"
+        }
+       ]
+      },
+      "category": {
+       "value": "bracelets",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "none",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "0",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "limited_time",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "רק עד חצות: אחד ועוד אחד על כל הצמידים"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: תקריב צמידים, טקסט 1+1 עד חצות",
+     "spoken_message": "רק עד חצות: אחד ועוד אחד על כל הצמידים"
+    }
+   }
+  },
+  {
+   "name": "golden-03",
+   "description": "סרטון בלי קול: טקסט ביקורת לקוחה, יד עם טבעת",
+   "source": {
+    "asset_id": "golden-asset-03",
+    "sha256": "c80c749e266ee03d7c0650a8a1145675a9e8b1101af1ed239c2f40c9ed48a774",
+    "name": "golden-03",
+    "media_kind": "video",
+    "duration_ms": 25000,
+    "audio_status": "no_audio",
+    "transcript": "",
+    "frames_ms": [
+     500,
+     7142,
+     10714,
+     14285,
+     17857,
+     21428
+    ]
+   },
+   "labels": {
+    "opening": "text",
+    "angle": "social_proof",
+    "category": "rings",
+    "people_gender": "women",
+    "people_count": "1",
+    "on_screen_text": "yes",
+    "cta": "link"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-03",
+     "sha256": "c80c749e266ee03d7c0650a8a1145675a9e8b1101af1ed239c2f40c9ed48a774",
+     "tags": {
+      "opening": {
+       "value": "text",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "social_proof",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "rings",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "link",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון בלי קול: טקסט ביקורת לקוחה, יד עם טבעת",
+     "spoken_message": ""
+    },
+    "checklist": {
+     "asset_id": "golden-asset-03",
+     "sha256": "c80c749e266ee03d7c0650a8a1145675a9e8b1101af1ed239c2f40c9ed48a774",
+     "tags": {
+      "opening": {
+       "value": "text",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "offer",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "rings",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "link",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון בלי קול: טקסט ביקורת לקוחה, יד עם טבעת",
+     "spoken_message": ""
+    }
+   }
+  },
+  {
+   "name": "golden-04",
+   "description": "תמונה: שתי חברות בבית קפה עונדות שרשראות",
+   "source": {
+    "asset_id": "golden-asset-04",
+    "sha256": "292a26d7baf933498f9ea170db0739ffc4a27700a2df75d462607e4df1d23c4f",
+    "name": "golden-04",
+    "media_kind": "image"
+   },
+   "labels": {
+    "angle": "lifestyle",
+    "category": "necklaces",
+    "people_gender": "women",
+    "people_count": "2",
+    "on_screen_text": "no",
+    "cta": "none"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-04",
+     "sha256": "292a26d7baf933498f9ea170db0739ffc4a27700a2df75d462607e4df1d23c4f",
+     "tags": {
+      "opening": {
+       "value": "not_applicable",
+       "confidence": 0.85,
+       "evidence": []
+      },
+      "angle": {
+       "value": "lifestyle",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "necklaces",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "2",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "shop_now",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "תמונה: שתי חברות בבית קפה עונדות שרשראות",
+     "spoken_message": ""
+    },
+    "checklist": {
+     "asset_id": "golden-asset-04",
+     "sha256": "292a26d7baf933498f9ea170db0739ffc4a27700a2df75d462607e4df1d23c4f",
+     "tags": {
+      "opening": {
+       "value": "not_applicable",
+       "confidence": 0.8,
+       "evidence": []
+      },
+      "angle": {
+       "value": "lifestyle",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "necklaces",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "none",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "תמונה: שתי חברות בבית קפה עונדות שרשראות",
+     "spoken_message": ""
+    }
+   }
+  },
+  {
+   "name": "golden-05",
+   "description": "סרטון: יד מסתובבת עם צמיד, דיבור על פינוק עצמי",
+   "source": {
+    "asset_id": "golden-asset-05",
+    "sha256": "bc60535212735b41a4ccce6e2f4d92efdadbe0a965b35df57fad4bb1ed352a38",
+    "name": "golden-05",
+    "media_kind": "video",
+    "duration_ms": 12000,
+    "audio_status": "checked",
+    "transcript": "מגיע לך משהו יפה. הצמיד שלא תורידי",
+    "frames_ms": [
+     500,
+     3428,
+     5142,
+     6857,
+     8571,
+     10285
+    ]
+   },
+   "labels": {
+    "opening": "movement",
+    "angle": "self_upgrade",
+    "category": "bracelets",
+    "people_gender": "women",
+    "people_count": "1",
+    "on_screen_text": "no",
+    "cta": "none"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-05",
+     "sha256": "bc60535212735b41a4ccce6e2f4d92efdadbe0a965b35df57fad4bb1ed352a38",
+     "tags": {
+      "opening": {
+       "value": "movement",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 6857,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "self_upgrade",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מגיע לך משהו יפה"
+        }
+       ]
+      },
+      "category": {
+       "value": "bracelets",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "none",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מגיע לך משהו יפה"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: יד מסתובבת עם צמיד, דיבור על פינוק עצמי",
+     "spoken_message": "מגיע לך משהו יפה. הצמיד שלא תורידי"
+    },
+    "checklist": {
+     "asset_id": "golden-asset-05",
+     "sha256": "bc60535212735b41a4ccce6e2f4d92efdadbe0a965b35df57fad4bb1ed352a38",
+     "tags": {
+      "opening": {
+       "value": "movement",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "self_upgrade",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מגיע לך משהו יפה"
+        }
+       ]
+      },
+      "category": {
+       "value": "bracelets",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "none",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מגיע לך משהו יפה"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: יד מסתובבת עם צמיד, דיבור על פינוק עצמי",
+     "spoken_message": "מגיע לך משהו יפה. הצמיד שלא תורידי"
+    }
+   }
+  },
+  {
+   "name": "golden-06",
+   "description": "סרטון: גבר מדבר למצלמה על שרשרת, אדם שני חלקית ברקע",
+   "source": {
+    "asset_id": "golden-asset-06",
+    "sha256": "85c38dec36cacb15ae218c8d1042c4c25b020577fdad70a6b3e92bfff3aeea0a",
+    "name": "golden-06",
+    "media_kind": "video",
+    "duration_ms": 18000,
+    "audio_status": "checked",
+    "transcript": "קניתי את השרשרת לפני חודש ואני לא מוריד אותה. הקישור בפרופיל",
+    "frames_ms": [
+     500,
+     5142,
+     7714,
+     10285,
+     12857,
+     15428
+    ]
+   },
+   "labels": {
+    "opening": "face",
+    "angle": "social_proof",
+    "category": "necklaces",
+    "people_gender": "men",
+    "people_count": "2",
+    "on_screen_text": "yes",
+    "cta": "link"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-06",
+     "sha256": "85c38dec36cacb15ae218c8d1042c4c25b020577fdad70a6b3e92bfff3aeea0a",
+     "tags": {
+      "opening": {
+       "value": "face",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "social_proof",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "קניתי את השרשרת לפני חודש ואני לא מוריד אותה"
+        }
+       ]
+      },
+      "category": {
+       "value": "necklaces",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "men",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "link",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "קניתי את השרשרת לפני חודש ואני לא מוריד אותה"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: גבר מדבר למצלמה על שרשרת, אדם שני חלקית ברקע",
+     "spoken_message": "קניתי את השרשרת לפני חודש ואני לא מוריד אותה. הקישור בפרופיל"
+    },
+    "checklist": {
+     "asset_id": "golden-asset-06",
+     "sha256": "85c38dec36cacb15ae218c8d1042c4c25b020577fdad70a6b3e92bfff3aeea0a",
+     "tags": {
+      "opening": {
+       "value": "face",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "social_proof",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "קניתי את השרשרת לפני חודש ואני לא מוריד אותה"
+        }
+       ]
+      },
+      "category": {
+       "value": "necklaces",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "men",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "link",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "קניתי את השרשרת לפני חודש ואני לא מוריד אותה"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: גבר מדבר למצלמה על שרשרת, אדם שני חלקית ברקע",
+     "spoken_message": "קניתי את השרשרת לפני חודש ואני לא מוריד אותה. הקישור בפרופיל"
+    }
+   }
+  },
+  {
+   "name": "golden-07",
+   "description": "תמונה: עגילים על רקע לבן עם מחיר ו\"קנו עכשיו\"",
+   "source": {
+    "asset_id": "golden-asset-07",
+    "sha256": "4c5c4fd12510eacf1755085ce9eaa590fc952345b759ce7d147828995d72c21b",
+    "name": "golden-07",
+    "media_kind": "image"
+   },
+   "labels": {
+    "angle": "offer",
+    "category": "earrings",
+    "people_gender": "none",
+    "people_count": "0",
+    "on_screen_text": "yes",
+    "cta": "shop_now"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-07",
+     "sha256": "4c5c4fd12510eacf1755085ce9eaa590fc952345b759ce7d147828995d72c21b",
+     "tags": {
+      "opening": {
+       "value": "not_applicable",
+       "confidence": 0.85,
+       "evidence": []
+      },
+      "angle": {
+       "value": "offer",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "earrings",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "none",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "0",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "shop_now",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "תמונה: עגילים על רקע לבן עם מחיר ו\"קנו עכשיו\"",
+     "spoken_message": ""
+    },
+    "checklist": {
+     "asset_id": "golden-asset-07",
+     "sha256": "4c5c4fd12510eacf1755085ce9eaa590fc952345b759ce7d147828995d72c21b",
+     "tags": {
+      "opening": {
+       "value": "not_applicable",
+       "confidence": 0.8,
+       "evidence": []
+      },
+      "angle": {
+       "value": "offer",
+       "confidence": 0.5,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "earrings",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "none",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "0",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "shop_now",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "תמונה: עגילים על רקע לבן עם מחיר ו\"קנו עכשיו\"",
+     "spoken_message": ""
+    }
+   }
+  },
+  {
+   "name": "golden-08",
+   "description": "סרטון: קופסת מתנה נפתחת ובתוכה טבעת",
+   "source": {
+    "asset_id": "golden-asset-08",
+    "sha256": "7cfe3575bff8597a43de41f681657dd295b807907505859792576b381dab2d40",
+    "name": "golden-08",
+    "media_kind": "video",
+    "duration_ms": 9000,
+    "audio_status": "checked",
+    "transcript": "הדבר הכי יפה שאפשר לתת",
+    "frames_ms": [
+     500,
+     2571,
+     3857,
+     5142,
+     6428,
+     7714
+    ]
+   },
+   "labels": {
+    "opening": "product",
+    "angle": "gift",
+    "category": "rings",
+    "people_gender": "none",
+    "people_count": "0",
+    "on_screen_text": "no",
+    "cta": "none"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-08",
+     "sha256": "7cfe3575bff8597a43de41f681657dd295b807907505859792576b381dab2d40",
+     "tags": {
+      "opening": {
+       "value": "product",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "gift",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "הדבר הכי יפה שאפשר לתת"
+        }
+       ]
+      },
+      "category": {
+       "value": "rings",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "none",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "0",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "none",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "הדבר הכי יפה שאפשר לתת"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: קופסת מתנה נפתחת ובתוכה טבעת",
+     "spoken_message": "הדבר הכי יפה שאפשר לתת"
+    },
+    "checklist": {
+     "asset_id": "golden-asset-08",
+     "sha256": "7cfe3575bff8597a43de41f681657dd295b807907505859792576b381dab2d40",
+     "tags": {
+      "opening": {
+       "value": "product",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "gift",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מתנה מושלמת לאמא"
+        }
+       ]
+      },
+      "category": {
+       "value": "rings",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "none",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "0",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "none",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "מתנה מושלמת לאמא"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: קופסת מתנה נפתחת ובתוכה טבעת",
+     "spoken_message": "הדבר הכי יפה שאפשר לתת"
+    }
+   }
+  },
+  {
+   "name": "golden-09",
+   "description": "תמונה: גבר בקפוצ׳ון שחור ברחוב",
+   "source": {
+    "asset_id": "golden-asset-09",
+    "sha256": "316d5681fcdf86576ed45a2ba140afb3a4cc048212bcedc5c7529c9789215cc4",
+    "name": "golden-09",
+    "media_kind": "image"
+   },
+   "labels": {
+    "angle": "lifestyle",
+    "category": "hoodies",
+    "people_gender": "men",
+    "people_count": "1",
+    "on_screen_text": "no",
+    "cta": "none"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-09",
+     "sha256": "316d5681fcdf86576ed45a2ba140afb3a4cc048212bcedc5c7529c9789215cc4",
+     "tags": {
+      "opening": {
+       "value": "not_applicable",
+       "confidence": 0.85,
+       "evidence": []
+      },
+      "angle": {
+       "value": "lifestyle",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "hoodies",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "men",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "none",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "תמונה: גבר בקפוצ׳ון שחור ברחוב",
+     "spoken_message": ""
+    },
+    "checklist": {
+     "asset_id": "golden-asset-09",
+     "sha256": "316d5681fcdf86576ed45a2ba140afb3a4cc048212bcedc5c7529c9789215cc4",
+     "tags": {
+      "opening": {
+       "value": "not_applicable",
+       "confidence": 0.8,
+       "evidence": []
+      },
+      "angle": {
+       "value": "lifestyle",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "hoodies",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "men",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "none",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "תמונה: גבר בקפוצ׳ון שחור ברחוב",
+     "spoken_message": ""
+    }
+   }
+  },
+  {
+   "name": "golden-10",
+   "description": "סרטון בלי דיבור: טקסט \"סוף עונה\" ואז כמה מוצרים",
+   "source": {
+    "asset_id": "golden-asset-10",
+    "sha256": "2ba25ea2aeaf5380d3b37e008a16a5e2043f637e13fdacfca6e96c2a23b7f29b",
+    "name": "golden-10",
+    "media_kind": "video",
+    "duration_ms": 7000,
+    "audio_status": "checked",
+    "transcript": "",
+    "frames_ms": [
+     500,
+     2000,
+     3000,
+     4000,
+     5000,
+     6000
+    ]
+   },
+   "labels": {
+    "opening": "text",
+    "angle": "offer",
+    "category": "mixed",
+    "people_gender": "none",
+    "people_count": "0",
+    "on_screen_text": "yes",
+    "cta": "limited_time"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-10",
+     "sha256": "2ba25ea2aeaf5380d3b37e008a16a5e2043f637e13fdacfca6e96c2a23b7f29b",
+     "tags": {
+      "opening": {
+       "value": "text",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "offer",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "mixed",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "none",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "0",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "limited_time",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון בלי דיבור: טקסט \"סוף עונה\" ואז כמה מוצרים",
+     "spoken_message": ""
+    },
+    "checklist": {
+     "asset_id": "golden-asset-10",
+     "sha256": "2ba25ea2aeaf5380d3b37e008a16a5e2043f637e13fdacfca6e96c2a23b7f29b",
+     "tags": {
+      "opening": {
+       "value": "product",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "offer",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "mixed",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "none",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "0",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "limited_time",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון בלי דיבור: טקסט \"סוף עונה\" ואז כמה מוצרים",
+     "spoken_message": ""
+    }
+   }
+  },
+  {
+   "name": "golden-11",
+   "description": "תמונה: טבעת ביד של אישה, טקסט \"למי שאת אוהבת\"",
+   "source": {
+    "asset_id": "golden-asset-11",
+    "sha256": "5635b3d0a6f649bf8650c348c3310015d0934be384dc7e7dd4ddbb2eaf71aab1",
+    "name": "golden-11",
+    "media_kind": "image"
+   },
+   "labels": {
+    "angle": "gift",
+    "category": "rings",
+    "people_gender": "women",
+    "people_count": "1",
+    "on_screen_text": "yes",
+    "cta": "shop_now"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-11",
+     "sha256": "5635b3d0a6f649bf8650c348c3310015d0934be384dc7e7dd4ddbb2eaf71aab1",
+     "tags": {
+      "opening": {
+       "value": "not_applicable",
+       "confidence": 0.85,
+       "evidence": []
+      },
+      "angle": {
+       "value": "gift",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "category": {
+       "value": "rings",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "shop_now",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "תמונה: טבעת ביד של אישה, טקסט \"למי שאת אוהבת\"",
+     "spoken_message": ""
+    },
+    "checklist": {
+     "asset_id": "golden-asset-11",
+     "sha256": "5635b3d0a6f649bf8650c348c3310015d0934be384dc7e7dd4ddbb2eaf71aab1",
+     "tags": {
+      "opening": {
+       "value": "not_applicable",
+       "confidence": 0.8,
+       "evidence": []
+      },
+      "angle": {
+       "value": "unclear",
+       "confidence": 0.8,
+       "evidence": []
+      },
+      "category": {
+       "value": "rings",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "yes",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "visible_text",
+         "frame_ms": null,
+         "quote": "טקסט על המסך"
+        }
+       ]
+      },
+      "cta": {
+       "value": "shop_now",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": null,
+         "quote": ""
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "תמונה: טבעת ביד של אישה, טקסט \"למי שאת אוהבת\"",
+     "spoken_message": ""
+    }
+   }
+  },
+  {
+   "name": "golden-12",
+   "description": "סרטון: אישה בבוקר עם קפה ושרשרת",
+   "source": {
+    "asset_id": "golden-asset-12",
+    "sha256": "e532f690019d92786af6a66d2cc1383ee183fa0b1f7c4f56d1ad3478836b0bff",
+    "name": "golden-12",
+    "media_kind": "video",
+    "duration_ms": 22000,
+    "audio_status": "checked",
+    "transcript": "בוקר, קפה, והשרשרת שלי",
+    "frames_ms": [
+     500,
+     6285,
+     9428,
+     12571,
+     15714,
+     18857
+    ]
+   },
+   "labels": {
+    "opening": "face",
+    "angle": "lifestyle",
+    "category": "necklaces",
+    "people_gender": "women",
+    "people_count": "1",
+    "on_screen_text": "no",
+    "cta": "none"
+   },
+   "passes": {
+    "observer": {
+     "asset_id": "golden-asset-12",
+     "sha256": "e532f690019d92786af6a66d2cc1383ee183fa0b1f7c4f56d1ad3478836b0bff",
+     "tags": {
+      "opening": {
+       "value": "face",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "self_upgrade",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "בוקר, קפה, והשרשרת שלי"
+        }
+       ]
+      },
+      "category": {
+       "value": "necklaces",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "none",
+       "confidence": 0.85,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "בוקר, קפה, והשרשרת שלי"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: אישה בבוקר עם קפה ושרשרת",
+     "spoken_message": "בוקר, קפה, והשרשרת שלי"
+    },
+    "checklist": {
+     "asset_id": "golden-asset-12",
+     "sha256": "e532f690019d92786af6a66d2cc1383ee183fa0b1f7c4f56d1ad3478836b0bff",
+     "tags": {
+      "opening": {
+       "value": "face",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "angle": {
+       "value": "self_upgrade",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "בוקר, קפה, והשרשרת שלי"
+        }
+       ]
+      },
+      "category": {
+       "value": "necklaces",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_gender": {
+       "value": "women",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "people_count": {
+       "value": "1",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "on_screen_text": {
+       "value": "no",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "frame",
+         "frame_ms": 500,
+         "quote": ""
+        }
+       ]
+      },
+      "cta": {
+       "value": "none",
+       "confidence": 0.8,
+       "evidence": [
+        {
+         "source": "transcript",
+         "frame_ms": null,
+         "quote": "בוקר, קפה, והשרשרת שלי"
+        }
+       ]
+      }
+     },
+     "on_screen_text_content": "סרטון: אישה בבוקר עם קפה ושרשרת",
+     "spoken_message": "בוקר, קפה, והשרשרת שלי"
+    }
+   }
+  }
+ ]
+}
