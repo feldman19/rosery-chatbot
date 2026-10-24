@@ -48,7 +48,7 @@ KINDS = {'turned_on': 'נצפה מופעל אחרי שהיה כבוי', 'new_on'
 
 def label(feature):
     from business_profile import guidance
-    return LABELS.get(feature, guidance().get(feature, {}).get('label', feature))
+    return guidance().get(feature, {}).get('label') or LABELS.get(feature, feature)
 
 
 def _features(creative):
@@ -65,10 +65,17 @@ def _features(creative):
     return result
 
 
+DISPLAY_ONLY = frozenset({'thumbnail_url', 'image_url', 'body', 'title', 'link_url'})
+
+
 def _copyable(creative):
+    """Display-only fields of the report read (pictures, and texts Meta mirrors from object_story_spec) are not content
+    to copy; any other field the action does not copy still blocks."""
     from owner_actions import ActionBlocked, _creative_content
+    if not isinstance(creative, dict):
+        return False
     try:
-        _creative_content(creative)
+        _creative_content({k: v for k, v in creative.items() if k not in DISPLAY_ONLY})
         return True
     except ActionBlocked:
         return False

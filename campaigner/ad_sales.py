@@ -167,8 +167,8 @@ def entity_sales(source, entities, since, until, currency, tz, settings=None, ki
                               'meta_minus_store_orders': float(purchases) - count if purchases is not None and count is not None else None,
                               'profit_after_product_and_ads': after, 'profit_label': 'רווח מהמודעה אחרי עלות מוצר ופרסום',
                               'status': 'ready' if complete else 'unavailable', 'since': since, 'until': until,
-                              'card_line': f'בחנות: {count} הזמנות מהמודעה, {share:.0f}% לקוחות חדשים' if share is not None else
-                                           f'בחנות: {count} הזמנות מהמודעה, שיעור לקוחות חדשים לא ידוע' if count is not None else 'מכירות מהמודעה בחנות: לא ידוע',
+                              'card_line': f'בחנות: {_orders(count)} מהמודעה, {share:.0f}% לקוחות חדשים' if share is not None else
+                                           f'בחנות: {_orders(count)} מהמודעה, שיעור לקוחות חדשים לא ידוע' if count is not None else 'מכירות מהמודעה בחנות: לא ידוע',
                               'limits': LIMITS}
     return unmatched
 
@@ -194,3 +194,7 @@ def attach_report(report, source=None, settings=None, tz=None):
     report['ad_sales'] = {k: v for k, v in source.items() if k != 'orders'}
     report['ad_sales']['limits'] = LIMITS
     return report
+
+
+def _orders(count):
+    return 'הזמנה אחת' if count == 1 else f'{count} הזמנות'

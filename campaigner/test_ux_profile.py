@@ -60,7 +60,7 @@ const primary=c.querySelector('.primary');assert.equal(primary.tag,'button');ass
     def test_missing_sales_is_unknown_and_window_is_not_mixed(self):
         self.run_js(r"""
 assert.equal(salesLine(null),'לא ידוע');assert.equal(salesLine({status:'unavailable',store_orders:0}),'לא ידוע');
-assert.ok(salesLine({status:'ready',store_orders:0,store_revenue:0,new_customer_percent:null}).includes('0 הזמנות'));
+assert.ok(salesLine({status:'ready',store_orders:0,store_revenue:0,new_customer_percent:null}).includes('אין הזמנות'));assert.ok(salesLine({status:'ready',store_orders:1,store_revenue:190,new_customer_percent:100,since:'2026-10-10',until:'2026-10-23'}).startsWith('ב-14 ימים: הזמנה אחת'));
 report={windows:{'14':{ads:[{id:'123',ad_sales:{status:'ready',store_orders:99}}]}}};assert.equal(salesFor({entity_id:'123'}),undefined);
 const c=actionCard({action:'PAUSE',entity_id:'123',numbers:{}});
 const tile=c.querySelectorAll('.key-tile').find(n=>allText(n).includes('ספירה נפרדת'));assert.ok(allText(tile).includes('לא ידוע'));assert.ok(allText(c).includes('UTM'));

@@ -15,6 +15,10 @@ class DriftInAppTests(unittest.TestCase):
         self.assertFalse(_copyable({'object_story_spec': story, 'degrees_of_freedom_spec': dof, 'made_up_field': 1}))
         self.assertFalse(_copyable({'object_story_spec': story}))  # no feature settings to copy
         self.assertFalse(_copyable({}))
+        # The report's read adds display-only fields; they must not hide the in-app button (regression 2026-10-24).
+        self.assertTrue(_copyable({'id': '9', 'thumbnail_url': 'https://x.fbcdn.net/t.jpg', 'image_url': 'https://x.fbcdn.net/i.jpg',
+                                   'body': 'טקסט', 'title': 'כותרת', 'link_url': 'https://roseryjewelry.com',
+                                   'object_story_spec': story, 'degrees_of_freedom_spec': dof}))
 
 if __name__ == '__main__':
     unittest.main()

@@ -73,7 +73,7 @@ class CreativeDriftTests(unittest.TestCase):
         self.drift.check(data(ad('1', spec())), self.rules, T1)
         result = self.drift.check(data(ad('1', spec(product_browsing='OPT_IN'))), self.rules, T2)
         feature = result['items'][0]['features'][0]
-        self.assertEqual((feature['feature'], feature['kind'], feature['label']), ('product_browsing', 'new_on', 'עיון במוצרים'))
+        self.assertEqual((feature['feature'], feature['kind'], feature['label']), ('product_browsing', 'new_on', 'גלישה במוצרים'))  # label from enhancement_guidance.json
 
     def test_on_at_first_read_is_still_against_the_rule(self):
         result = self.drift.check(data(ad('1', spec(standard_enhancements='OPT_IN'))), self.rules, T1)

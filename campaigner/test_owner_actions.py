@@ -160,7 +160,7 @@ class OwnerActionsTests(unittest.TestCase):
     def test_enhancements_off_copies_creative_keeps_comments_and_undo_restores(self):
         self.actions.profile.update({'settings': {'inline_comment': 'allowed'}})
         view = self.actions.preview('drift:' + AD)
-        self.assertEqual([c['field'] for c in view['changes']], ['אנימציה לתמונה'])
+        self.assertEqual([c['field'] for c in view['changes']], ['הנפשת תמונה'])  # label from enhancement_guidance.json
         receipt = self.actions.confirm(view['confirm_token'])
         self.assertEqual(receipt['state'], 'verified', receipt.get('detail'))
         created = next(w for w in self.meta.writes if w[0] == 'create')[2]

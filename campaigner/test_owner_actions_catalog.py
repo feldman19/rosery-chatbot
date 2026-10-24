@@ -84,7 +84,7 @@ class CatalogTests(unittest.TestCase):
             'message': 'standard_enhancements_catalog does not support OPT_OUT'})
         receipt = self.actions.confirm(view['confirm_token'])
         self.assertEqual(receipt['state'], 'rejected')
-        self.assertEqual(receipt['detail'], 'מטא לא מאפשרת לכבות את שיפורים סטנדרטיים לקטלוג במודעת קטלוג')
+        self.assertEqual(receipt['detail'], 'מטא לא מאפשרת לכבות את חבילת השינויים לקטלוג במודעת קטלוג')
         self.assertEqual(len(self.meta.writes), 1)
 
 
