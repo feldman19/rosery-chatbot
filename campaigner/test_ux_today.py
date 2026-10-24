@@ -65,3 +65,47 @@ class VersionTests(unittest.TestCase):
             self.assertTrue(screen_update_newer('1234567','גרסה abcdef012 · המסך עודכן 23.10'))
         with patch('subprocess.run',return_value=subprocess.CompletedProcess([],1)):
             self.assertFalse(screen_update_newer('1234567','גרסה abcdef012'))
+
+class RecommendationTodayTests(unittest.TestCase):
+    def test_partial_day_context_and_thresholds(self):
+        from pathlib import Path
+        page=Path(__file__).with_name('simple-web.html').read_text(encoding='utf-8')
+        helpers=page.split('// UX pass: partial-day context',1)[1].split('// UX pass: keep',1)[0]
+        script="const assert=require('assert'); // context"+helpers+r"""
+const x=v=>typeof v==='number'?v.toFixed(2):'—',ils=v=>'₪'+v,el=(tag,cls,text)=>({text});
+const ds=[{entity_id:'a',entity_name:'catalog',adset_id:'s',action:'PAUSE',retargeting:true,thresholds:{fail_below:5.2,hold_up_to:6},numbers:{roas:1.59}}];
+const decisions=()=>ds,decisionFor=id=>ds.find(d=>d.entity_id===id);
+let report={daily:[{partial:false,ads:[{id:'a',spend:270,roas:1.59}]},{partial:true,ads:[{id:'a',spend:130,purchases:2,roas:3.13}]}]};
+const pause={action:'PAUSE',proposal_id:'pause:a'};
+assert.equal(todayContradicts(pause),false);
+let lines=[];const card={append:n=>lines.push(n.text)};appendTodayContext(card,pause);
+assert(lines.some(t=>t.includes('130')&&t.includes('3.13')&&t.includes('מתעדכן')));
+assert(lines.some(t=>t.includes('3 ימים מלאים בלבד')));
+assert(lines.some(t=>t.includes('הסף כפול (5.2)')));
+assert(pauseExplanation(1.59,90,ds[0].thresholds).includes('(5.2)'));
+assert(!pauseExplanation(1.59,90,{}).includes('2.6'));
+ds[0].thresholds.hold_up_to=3;assert.equal(todayContradicts(pause),true);
+lines=[];appendTodayContext(card,pause);assert(lines.some(t=>t.includes('היום היא דווקא עובדת טוב (ROAS 3.13)')));
+const other={action:'ALERT'};
+assert.deepEqual([pause,other].sort((a,b)=>Number(todayContradicts(a))-Number(todayContradicts(b))),[other,pause]);
+report.daily[1].ads[0].spend=49;assert.equal(todayContradicts(pause),false);
+report.daily[1].ads[0].spend=50;assert.equal(todayContradicts(pause),true);
+ds[0].action='SCALE';const scale={action:'SCALE',proposal_id:'scale:s'};assert.equal(todayContradicts(scale),true);
+report.daily[1].ads[0].roas=5.2;assert.equal(todayContradicts(scale),false);
+report.daily[1].ads=[];assert.equal(todayContradicts(scale),false);
+lines=[];appendTodayContext(card,scale);assert(lines.some(t=>t.includes('לא ידועה')&&t.includes('מתעדכן')));
+assert.equal(ds[0].numbers.roas,1.59);
+"""
+        done=subprocess.run(['node','-e',script],capture_output=True,text=True,encoding='utf-8')
+        self.assertEqual(done.returncode,0,done.stderr)
+        self.assertIn("run.onclick=()=>openAction(item.proposal_id)",page)
+
+    def test_daily_keeps_ads_beyond_top_ten(self):
+        from copy import deepcopy
+        data=deepcopy(TodayReadTests().data())
+        rows=data['rows']
+        base=rows[0]
+        rows[:]=[{**base,'ad_id':str(i),'spend':str(i+1)} for i in range(11)]
+        with patch('management_report._meta_rows',return_value=(rows,None)),patch('management_report._coverage',return_value=True):
+            result=_daily(data,{},date(2026,10,23),True,'ILS')[-1]
+        self.assertEqual(len(result['ads']),11)

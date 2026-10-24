@@ -616,7 +616,38 @@ function renderHero(){
   box.append(card);
 }
 
-function pauseExplanation(roas,daily){return (typeof roas!=='number'?'ההחזר אינו ידוע':roas<1?'מוציאה יותר ממה שהיא מכניסה':'מכניסה ₪'+x(roas)+' על כל ₪1, מתחת לסף העצירה שלך (2.6)')+'. ההוצאה היומית שלה כ-'+ils(daily)+'.'}
+// UX pass: partial-day context never changes the complete-day recommendation.
+function actionDecisions(item){
+  const id=item.proposal_id||'';
+  if(item.action==='PAUSE')return [decisionFor(id.slice(6))].filter(Boolean);
+  if(item.action==='SCALE')return decisions().filter(d=>d.action==='SCALE'&&String(d.adset_id)===id.slice(6));
+  return [];
+}
+function todayContext(item){
+  const day=(report?.daily||[]).find(d=>d.partial===true);
+  return actionDecisions(item).map(d=>{
+    const ad=(day?.ads||[]).find(a=>String(a.id)===String(d.entity_id));
+    const t=d.thresholds||{},r=ad?.roas,spend=ad?.spend;
+    const contradicts=Number.isFinite(spend)&&spend>=50&&Number.isFinite(r)&&
+      (item.action==='PAUSE'&&Number.isFinite(t.hold_up_to)&&r>=t.hold_up_to||
+       item.action==='SCALE'&&Number.isFinite(t.fail_below)&&r<t.fail_below);
+    return {d,ad,contradicts};
+  });
+}
+function todayContradicts(item){return todayContext(item).some(c=>c.contradicts)}
+function appendTodayContext(card,item){
+  if(!['PAUSE','SCALE'].includes(item.action))return;
+  card.append(el('p','note','ההמלצה מבוססת על 3 ימים מלאים בלבד; היום החלקי אינו משנה אותה.'));
+  const contexts=todayContext(item);
+  if(!contexts.length)card.append(el('p','note','היום עד עכשיו · הוצאה לא ידועה · רכישות לא ידועות · ROAS לא ידוע · מתעדכן'));
+  for(const {d,ad,contradicts} of contexts){
+    const value=v=>Number.isFinite(v)?x(v):'לא ידוע';
+    card.append(el('p','note','היום עד עכשיו · '+d.entity_name+' · הוצאה '+(Number.isFinite(ad?.spend)?ils(ad.spend):'לא ידועה')+' · רכישות '+(Number.isFinite(ad?.purchases)?String(ad.purchases):'לא ידוע')+' · ROAS '+value(ad?.roas)+' · מתעדכן'));
+    if(d.retargeting&&Number.isFinite(d.thresholds?.fail_below))card.append(el('p','note','זוהתה כמודעת ריטרגטינג/קטלוג לפי השם, ולכן הסף כפול ('+String(d.thresholds.fail_below)+')'));
+    if(contradicts)card.append(el('p','note',item.action==='PAUSE'?'היום היא דווקא עובדת טוב (ROAS '+x(ad.roas)+'). אפשר לחכות למחר ולראות אם זה ממשיך':'היום היא מתחת לסף העצירה (ROAS '+x(ad.roas)+'). אפשר לחכות למחר ולראות אם זה ממשיך'));
+  }
+}
+function pauseExplanation(roas,daily,thresholds){return (typeof roas!=='number'?'ההחזר אינו ידוע':'מכניסה ₪'+x(roas)+' על כל ₪1, '+(Number.isFinite(thresholds?.fail_below)?'מתחת לסף העצירה שלך ('+String(thresholds.fail_below)+')':'סף העצירה אינו ידוע'))+'. ההוצאה היומית שלה כ-'+ils(daily)+'.'}
 // UX pass: keep the decision summary visible; supporting evidence stays available on tap.
 function compactCard(card){
   const detail=el('details','why card-details'),body=el('div');detail.append(el('summary','','פרטים'),body);
@@ -637,13 +668,14 @@ function actionCard(item){
   const title=(item.headline.match(/"([^"]+)"/)||[])[1]||item.headline;card.append(el('h3','',actionTitle(item)),el('p','fact',title));waiting(card,item);if(item.action==='PAUSE')card.append(el('p','','המודעה תפסיק לרוץ. אפשר להפעיל מחדש.'));
   if(item.action==='PAUSE'&&d){
     const f=el('div','fact');f.append(factPart('הוציאה',ils(d.numbers.spend)),factPart('מכירות',String(d.numbers.purchases??'—')),factPart('החזר על ₪1','₪'+x(d.numbers.roas)));card.append(f,el('p','key-metric',typeof d.numbers.roas==='number'?'החזר על ₪1: ₪'+x(d.numbers.roas):'ההחזר אינו ידוע'));
-    card.append(el('p','',pauseExplanation(d.numbers.roas,item.saving_per_day)));
+    card.append(el('p','',pauseExplanation(d.numbers.roas,item.saving_per_day,d.thresholds)));
     card.append(el('p','fact','הנתונים ב-3 ימים מלאים.'));
   }else if(item.action==='SCALE'){
     const m=item.headline.match(/₪([\d,]+)\D+₪([\d,]+)/);
     if(m){const c=el('div','change');c.append(el('s','num','₪'+m[1]),el('span','','←'),el('span','num','₪'+m[2]),el('span','',' ביום'));card.append(c)}
     card.append(el('p','',item.body.replace(/^\d+ מודעות ווינר באד-סט: /,'מנצחת: ')+'. מגדילים ב-20% בלבד, כמו בחוקים שלך.'));
   }else card.append(el('p','',item.body));
+  appendTodayContext(card,item);
   const why=el('details','why');why.append(el('summary','','למה?'));const inner=el('div');inner.append(el('p','',item.body));
   for(const w of item.warnings||[])inner.append(el('p','note',w));why.append(inner);card.append(why);
   if(item.kind==='approve'&&!item.ready_for_approval)card.append(el('p','note','צריך לרענן נתונים לפני ביצוע.'));
@@ -782,7 +814,7 @@ function renderToday(){
   $('hello-sub').textContent=approve?(approve+' דברים מחכים לך היום'):'הכל רץ כמו שצריך';
   $('todo-label').hidden=!items.length;$('todo-label').textContent='מה לעשות היום · '+items.length;
   if(!items.length&&!approve){const c=today.counts||{};todo.append(emptyState('✓','אין מה לשנות היום',(c.SUCCESS||0)+(c.HOLD||0)+' מודעות רצות טוב, '+((c.KEEP_TESTING||0)+(c.UNTESTED||0))+' עדיין בבדיקה.'))}
-  for(const i of items)todo.append(actionCard(i));
+  for(const i of [...items].sort((a,b)=>Number(todayContradicts(a))-Number(todayContradicts(b))))todo.append(actionCard(i));
   const removed=report?.dismissed_items||[];
   if(removed.length){const section=el('details','card');section.append(el('summary','','הוסרו ('+removed.length+')'));for(const i of removed){const row=el('div');row.append(el('p','',actionTitle(i)),el('p','fact',i.name||i.headline),el('p','fact',new Date(i.dismissed_at).toLocaleString('he-IL')));const back=el('button','btn','החזר');back.onclick=()=>dismiss(i,true);row.append(back);section.append(row)}todo.append(section)}
   if(items.length){const more=el('button','link','לכל המודעות ←');more.type='button';more.onclick=()=>go('ads');todo.append(more)}

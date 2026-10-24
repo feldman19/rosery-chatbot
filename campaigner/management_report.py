@@ -379,7 +379,7 @@ def _daily(data,store,today,valid,currency):
         orders,sales,sreason=_store(store,day,day,currency)
         if sreason:notes.append(sreason)
         days.append({'date':day.isoformat(),'partial':back==0,'metrics':{**metrics,'store_orders':_public(orders),'store_revenue':_public(sales)},
-                     'funnel':funnel,'ads':ads[:10],'ads_with_spend':len(ads),'notes':notes})
+                     'funnel':funnel,'ads':ads,'ads_with_spend':len(ads),'notes':notes})
     return days
 
 def build_report(live_snapshot,proposal_report=None,operations_status=None,now=None,change_history=None):
