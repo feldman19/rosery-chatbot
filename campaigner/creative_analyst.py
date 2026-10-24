@@ -19,8 +19,10 @@ Read-only: no Meta writes, no rulebook changes, nothing here changes a decision.
 
 Data directory files: account-history.json (the existing daily history read), creative-tags.json (tag records by
 sha256, written by CreativeAnalyst.save_tags), creative-ad-assets.json ({ad_id: sha256}, which uploaded file an ad
-uses) and creative-golden.json ({asset_id: {tag: value}}, the owner's hand labels). Command line:
-`python creative_analyst.py <data_dir>` prints the Hebrew report. A read-only route is one line where the GET routes
+uses), creative-golden.json ({asset_id: {tag: value}}, the owner's hand labels), creative-funnel.json (ThruPlays and
+the viewing curve, creative_signals.read_funnel) and creative-library.json (Ad Library context, creative_signals.save_library;
+filled from a Claude session with the Meta connector, since the local Graph path has no Ad Library access). Command line:
+`python creative_analyst.py <data_dir> [--refresh-funnel]` prints the Hebrew report, after a daily read-only funnel GET. A read-only route is one line where the GET routes
 are, e.g. `/api/creative-analyst` -> `self.reply(200, CreativeAnalyst(data).summary())`; not wired here so this module
 merges cleanly with the ongoing server.py work.
 """
@@ -38,6 +40,7 @@ from pathlib import Path
 
 from account_history import GROUP_MIN_ADS, GROUP_MIN_PURCHASES, MIN_SPEND, _live_rows, traits
 from hypotheses import gate
+import creative_signals as signals
 
 PROMPT_VERSION = 'creative-analyst-1'
 MIN_CONFIDENCE = 0.6
@@ -45,6 +48,7 @@ OPENING_MS = 2000
 BOOTSTRAP = 1000
 QUOTE_MAX = 200
 MAX_OUTPUT = 512 * 1024
+BATCH = 6
 
 # tag -> (Hebrew label, value labels). Model tags are read from the creative; the rest are deterministic.
 TAGS = {
@@ -353,17 +357,21 @@ def tag_record(source, first, second, name=None):
 class CreativeTagger:
     """Runs both passes over the same stills and transcript; the runner gets (payload, schema) and returns a dict."""
 
-    def __init__(self, vision, runner=None):
-        self.vision, self.runner = vision, runner or cli_runner
+    def __init__(self, vision, runner=None, opening_frames=True):
+        self.vision, self.runner, self.opening_frames = vision, runner or cli_runner, opening_frames
 
     def tag(self, images, *, local_image_review_consent=False):
         # Same consent boundary as CreativeVision.analyze, for injected runners too.
         local = any(x.get('source_kind') == 'device' for x in images) if isinstance(images, list) else False
         if (local and local_image_review_consent is not True) or (not local and not self.vision.sharing_approved()):
             raise ValueError('Creative image sharing approval required')
-        sources = self.vision._sources(images)
-        passes = {name: validate_pass(self.runner(build_payload(sources, name), pass_schema()), sources, name)
-                  for name in ('observer', 'checklist')}
+        sources = [signals.add_opening_frames(s, self.vision.directory) if self.opening_frames else s
+                   for s in self.vision._sources(images)]
+        passes = {'observer': {}, 'checklist': {}}
+        for start in range(0, len(sources), BATCH):  # a few assets per call keeps each request's image count small
+            chunk = sources[start:start + BATCH]
+            for name in passes:
+                passes[name].update(validate_pass(self.runner(build_payload(chunk, name), pass_schema()), chunk, name))
         stamp = datetime.now(timezone.utc).isoformat()
         return [{**tag_record(s, passes['observer'], passes['checklist']), 'checked_at': stamp} for s in sources]
 
@@ -391,7 +399,10 @@ def cli_runner(payload, schema):
         def read():
             total = 0
             while True:
-                chunk = proc.stdout.read(8192)
+                try:
+                    chunk = proc.stdout.read(8192)
+                except (OSError, ValueError):
+                    break
                 if not chunk:
                     break
                 total += len(chunk)
@@ -412,6 +423,7 @@ def cli_runner(payload, schema):
         finally:
             for thread in threads:
                 thread.join(timeout=5)
+            proc.stdout.close()
     if None in chunks or threads[1].is_alive():
         raise ValueError('Tagging output exceeded its bound or did not finish')
     out = b''.join(chunks)
@@ -608,27 +620,88 @@ def sentence(row):
     return f'{what} — עדיין לא ברור ({numbers}): ' + '; '.join(row['reasons']) + '.'
 
 
-def ads_from_history(stored, tag_records=None, ad_assets=None):
-    """{window: [ad]} from the stored account-history read; tags = metadata tags + agreed creative tags if linked."""
+def ads_from_history(stored, tag_records=None, ad_assets=None, funnel=None):
+    """{window: [ad]} from the stored account-history read; tags = metadata tags + agreed creative tags if linked.
+    Each ad also carries its funnel: impressions, 3-second views and link clicks from the same history row, and the
+    video fields from the separate funnel read when there is one. Unknown stays None."""
     by_sha = {r['sha256']: r for r in tag_records or []}
     creatives = stored.get('creatives') or {}
+    video = (funnel or {}).get('windows') or {}
     windows = {}
     for key, window in (stored.get('windows') or {}).items():
         ads = []
-        for row in _live_rows(window):
+        for raw, row in zip(window.get('rows') or [], _live_rows(window)):
             tags = usable(metadata_tags(row['name'], creatives.get(row['ad_id'])))
             record = by_sha.get((ad_assets or {}).get(row['ad_id']))
             if record:
                 tags.update(usable(record['tags']))
-            ads.append({**row, 'tags': tags, 'creative_tagged': bool(record)})
+            metrics = {**{k: None for k in signals.VIDEO_FIELDS}, **((video.get(key) or {}).get(row['ad_id']) or {}),
+                       **signals.history_metrics(raw)}
+            ads.append({**row, 'tags': tags, 'creative_tagged': bool(record), 'funnel': metrics})
         windows[key] = ads
     return windows
 
 
+FUNNEL_TAGS = ('opening', 'length', 'speech', 'on_screen_text', 'people_count', 'angle', 'format', 'category')
+
+
+def funnel_section(ads, seed=''):
+    links = signals.links_to_roas(ads, MIN_SPEND, seed)
+    rows = []
+    for tag, value in sorted({(t, v) for a in ads for t, v in a['tags'].items() if t in FUNNEL_TAGS},
+                             key=lambda x: (FUNNEL_TAGS.index(x[0]), str(x[1]))):
+        for metric, (_, _, _, video_only) in signals.METRICS.items():
+            if video_only and tag == 'format':
+                continue
+            row = signals.compare_rate(ads, tag, value, metric, seed)
+            if row['verdict'] != 'not_enough_data':
+                rows.append({**row, 'label': TAGS[tag][0], 'value_label': value_label(tag, value),
+                             'metric_goes_with_roas': links[metric]['verdict']})
+    rows.sort(key=lambda r: ({'higher': 0, 'lower': 1, 'unclear': 2}[r['verdict']], -(r.get('ratio') or 0)))
+    return {'comparisons': rows, 'links_to_roas': links, 'drop_off': signals.drop_off(ads),
+            'ads_with_impressions': sum(1 for a in ads if a['funnel'].get('impressions')),
+            'ads_with_curve': sum(1 for a in ads if a['funnel'].get('plays') is not None)}
+
+
+ROAS_LINK = {'goes_with': 'והמדד הזה הולך כאן יחד עם ROAS', 'against': 'אבל כאן המדד הזה הולך דווקא עם ROAS נמוך יותר',
+             'no_clear_link': 'ולא נמצא כאן קשר ברור בין המדד הזה ל-ROAS', 'not_enough_data': 'ועוד אין מספיק מודעות לבדוק אם המדד הזה הולך כאן עם ROAS'}
+
+
+def funnel_sentence(row):
+    what = f'{row["label"]}: {row["value_label"]}'
+    numbers = (f'{row["group"]["rate"] * 100:.1f}% מול {row["rest"]["rate"] * 100:.1f}%'
+               + (f', טווח סביר פי {row["interval"][0]:.2f}–{row["interval"][1]:.2f}' if row.get('interval') else ''))
+    tail = ROAS_LINK[row['metric_goes_with_roas']] + '. מדד ביניים, לא תוצאה.'
+    if row['verdict'] in ('higher', 'lower'):
+        side = 'גבוה' if row['verdict'] == 'higher' else 'נמוך'
+        return f'{what} הולך כאן עם {row["metric_label"]} {side} יותר ({numbers}; החזיק בחצי נפרד), {tail}'
+    return f'{what} — {row["metric_label"]}: עדיין לא ברור ({numbers}), {tail}'
+
+
+def roas_link_sentence(item):
+    if item['verdict'] == 'not_enough_data':
+        return f'{item["metric_label"]}: רק {item["ads"]} מודעות עם מספיק הוצאה ונתונים; צריך {signals.MIN_RANK_ADS} כדי לבדוק אם הוא הולך עם ROAS.'
+    words = {'goes_with': 'הולך כאן יחד עם ROAS גבוה', 'against': 'הולך כאן דווקא עם ROAS נמוך',
+             'no_clear_link': 'לא הולך כאן בבירור עם ROAS'}[item['verdict']]
+    if item.get('rho') is None:
+        return f'{item["metric_label"]}: כמעט אין שונות בין המודעות, אז אי אפשר לבדוק אם הוא הולך עם ROAS.'
+    interval = f', טווח {item["interval"][0]:.2f}–{item["interval"][1]:.2f}' if item.get('interval') else ''
+    return f'{item["metric_label"]} {words} (מתאם דירוג {item["rho"]:.2f}{interval}, {item["ads"]} מודעות).'
+
+
+def drop_off_sentence(drop):
+    if drop['status'] != 'ready':
+        return f'עקומת הצפייה: רק {drop["ads"]} סרטונים עם נתוני צפייה מלאים; צריך לפחות {signals.MIN_ADS}.'
+    c, s = drop['curve'], drop['steepest']
+    return (f'עקומת הצפייה ({drop["ads"]} סרטונים): {c["p25"] * 100:.0f}% מההפעלות הגיעו לרבע, {c["p50"] * 100:.0f}% לחצי, '
+            f'{c["p75"] * 100:.0f}% לשלושה רבעים ו-{c["p100"] * 100:.0f}% לסוף. הכי הרבה צופים יורדים בין {s["from"]} ל-{s["to"]} '
+            f'({s["lost_share"] * 100:.0f}% מאלה שהגיעו לשם).')
+
+
 # --- 4. brief ------------------------------------------------------------------------------------------------------
 
-def brief(rows, tagged_tags=()):
-    """3-5 directions: supported patterns first, then leanings to test, then what has not been tried enough."""
+def brief(rows, tagged_tags=(), funnel=None):
+    """3-5 directions: supported patterns first, then funnel findings, then leanings to test, then gaps."""
     out, used = [], set()
     for row in rows:
         if len(out) >= 5:
@@ -645,6 +718,22 @@ def brief(rows, tagged_tags=()):
             out.append({'tag': row['tag'], 'direction': f'לא לבנות את המודעה הבאה על "{row["value_label"]}" ({row["label"]})',
                         'strength': 'נתמך בנתונים של החשבון', 'evidence': sentence(row),
                         'uncertain': 'ייתכן שהתוצאה החלשה באה מהקהל, מההצעה או מהעיתוי ולא מהקריאייטיב.'})
+    for row in (funnel or {}).get('comparisons') or []:
+        if len(out) >= 3:
+            break
+        if row['verdict'] != 'higher' or row['tag'] in used or row['metric_goes_with_roas'] == 'against':
+            continue
+        used.add(row['tag'])
+        backed = row['metric_goes_with_roas'] == 'goes_with'
+        out.append({'tag': row['tag'], 'direction': DIRECTIONS.get((row['tag'], row['value']), f'{row["label"]}: {row["value_label"]}'),
+                    'strength': 'נתמך במדד ביניים שהולך כאן עם ROAS' if backed else 'מדד ביניים בלבד — כיוון לבדיקה',
+                    'evidence': funnel_sentence(row),
+                    'uncertain': 'מדד צפייה או הקלקה הוא לא רכישה' + ('.' if backed else '; עוד לא ידוע אם הוא הולך כאן עם תוצאות.')})
+    drop = (funnel or {}).get('drop_off') or {}
+    if drop.get('status') == 'ready' and len(out) < 4 and (drop['steepest']['lost_share'] or 0) >= 0.4:
+        out.append({'tag': 'drop_off', 'direction': f'לחזק או לקצר את הקטע בין {drop["steepest"]["from"]} ל-{drop["steepest"]["to"]} '
+                    'של הסרטון, ולהראות את המוצר לפני שם', 'strength': 'אבחון משפך — לבדיקה', 'evidence': drop_off_sentence(drop),
+                    'uncertain': 'העקומה ממוצעת על כל הסרטונים; סרטון בודד יכול להתנהג אחרת, וזה עדיין לא רכישה.'})
     leaning = [r for r in rows if r['verdict'] == 'unclear' and (r.get('ratio') or 0) > 1]
     for row in leaning:
         if len(out) >= 4:
@@ -659,7 +748,11 @@ def brief(rows, tagged_tags=()):
     for row in sorted(thin, key=lambda r: r['group']['ads']):
         if len(out) >= 5 or (len(out) >= 3 and row is not thin[0]):
             break
-        out.append({'tag': row['tag'], 'direction': f'לבדוק {DIRECTIONS.get((row["tag"], row["value"]), row["label"] + ": " + row["value_label"])}',
+        if row['rest']['ads'] < row['group']['ads']:  # almost everything already is this value: the gap is the rest
+            do = f'לנסות גם משהו שאינו "{row["value_label"]}" ({row["label"]}): כמעט כל המודעות כאן כאלה, אז אין עם מה להשוות'
+        else:
+            do = f'לבדוק {DIRECTIONS.get((row["tag"], row["value"]), row["label"] + ": " + row["value_label"])}'
+        out.append({'tag': row['tag'], 'direction': do,
                     'strength': 'פער ידע — עוד לא נבדק מספיק', 'evidence': sentence(row),
                     'uncertain': 'אין מספיק מודעות או רכישות כדי לדעת אם זה עובד כאן.'})
     for tag in ('opening', 'angle', 'people_count', 'speech'):
@@ -681,11 +774,12 @@ LIMITS = ['ROAS ורכישות הם ייחוס של מטא, לא רווח נטו
           'מקורות חיצוניים לא משתתפים בבדיקה; שום ממצא כאן לא משנה החלטה בלי אישור הבעלים.']
 
 
-def report(history, tag_records=(), ad_assets=None, golden=None, fixture=None):
-    windows = ads_from_history(history, tag_records, ad_assets) if history else {}
+def report(history, tag_records=(), ad_assets=None, golden=None, fixture=None, funnel=None, library=None):
+    windows = ads_from_history(history, tag_records, ad_assets, funnel) if history else {}
     results = {}
     for key, ads in windows.items():
         linked = link(ads, seed=key)
+        linked['funnel'] = funnel_section(ads, seed=key)
         linked['label'] = 'כל ההיסטוריה' if key == 'all' else f'{key} הימים המלאים האחרונים'
         linked['sentences'] = [sentence(r) for r in linked['comparisons'] if r['verdict'] != 'not_enough_data'][:12]
         results[key] = linked
@@ -696,7 +790,9 @@ def report(history, tag_records=(), ad_assets=None, golden=None, fixture=None):
             row['other_windows'] = {k: v.get((row['tag'], row['value'])) for k, v in other.items()}
     tagged = {t for a in (windows.get('all') or next(iter(windows.values()), [])) for t in a['tags']}
     return {'status': 'ready' if main else 'no_history', 'windows': results,
-            'brief': brief(main['comparisons'] if main else [], tagged),
+            'brief': brief(main['comparisons'] if main else [], tagged, main['funnel'] if main else None),
+            'funnel_read': {'checked_at': (funnel or {}).get('checked_at'), 'video_fields': bool(funnel)},
+            'outside_context': signals.library_context(library),
             'disagreements': disagreements(list(tag_records)),
             'golden': {'owner_labels': golden_accuracy(golden, list(tag_records)) if golden else None,
                        'fixture': fixture},
@@ -733,6 +829,13 @@ def text(rep):
         lines.append(f'\n{window["label"]}: {window["ads_with_results"]} מודעות עם תוצאות, '
                      f'{window["ads_results_unknown"]} בלי נתון רכישות (לא נספרו).')
         lines += ['  · ' + s for s in window['sentences']] or ['  · אין עדיין תכונה עם מספיק נתונים.']
+        f = window['funnel']
+        lines.append(f'  משפך ({f["ads_with_impressions"]} מודעות עם חשיפות, {f["ads_with_curve"]} עם נתוני צפייה):')
+        lines += ['    · ' + roas_link_sentence(x) for x in f['links_to_roas'].values()]
+        lines.append('    · ' + drop_off_sentence(f['drop_off']))
+        lines += ['    · ' + funnel_sentence(r) for r in f['comparisons'] if r['verdict'] != 'unclear'][:8]
+    if not rep['funnel_read']['video_fields']:
+        lines.append('\nנתוני ThruPlay ועקומת צפייה עוד לא נקראו ממטא (הרצה עם --refresh-funnel במחשב הבעלים).')
     lines.append('\nכיוונים לקריאייטיב הבא:')
     for i, item in enumerate(rep['brief'], 1):
         lines += [f'{i}. {item["direction"]} — {item["strength"]}', f'   ראיה: {item["evidence"]}',
@@ -742,6 +845,13 @@ def text(rep):
         for d in rep['disagreements'][:10]:
             lines.append(f'  · {d["name"] or d["asset_id"]} — {d["tag"]}: {d["status"]} '
                          + ', '.join(f'{k}={v}' for k, v in d['answers'].items()))
+    ctx = rep['outside_context']
+    if ctx:
+        lines.append(f'\nהקשר חיצוני מספריית המודעות ({ctx["ads"]} מודעות של {ctx["pages"]} עמודים, {ctx["checked_at"][:10]}):')
+        names = {'gift': 'מתנה', 'offer': 'הצעה או מחיר', 'social_proof': 'הוכחה חברתית', 'urgency': 'דחיפות'}
+        lines.append('  · מודעות לפי זווית בטקסט: ' + ', '.join(f'{names[k]} {v}' for k, v in ctx['angle_counts'].items()))
+        lines += [f'  · רצה {a["days"]} ימים: {a["page"]} — {a["title"]}' for a in ctx['long_running']]
+        lines.append('  · ' + ctx['note'])
     lines += ['\nגבולות:'] + ['  · ' + x for x in rep['limits']]
     return '\n'.join(lines)
 
@@ -772,10 +882,15 @@ class CreativeAnalyst:
         records = list(self._json('creative-tags.json', {}).values())
         golden = self._json('creative-golden.json', None)  # owner's hand labels {asset_id: {tag: value}}
         fixture_records, fixture_labels, _ = golden_fixture_records()
+        funnel = self._json('creative-funnel.json', None)
+        funnel = funnel if isinstance(funnel, dict) and funnel.get('verified') is True else None
         return report(history, records, self._json('creative-ad-assets.json', {}), golden,
-                      golden_accuracy(fixture_labels, fixture_records))
+                      golden_accuracy(fixture_labels, fixture_records), funnel, self._json('creative-library.json', None))
 
 
 if __name__ == '__main__':
     import sys
-    print(text(CreativeAnalyst(sys.argv[1] if len(sys.argv) > 1 else 'data').summary()))
+    folder = next((a for a in sys.argv[1:] if not a.startswith('--')), 'data')
+    if '--refresh-funnel' in sys.argv:
+        print('נתוני המשפך נקראו ממטא.' if signals.refresh_funnel(folder) else 'נתוני המשפך לא נקראו (עדכניים, או שהקריאה נכשלה).')
+    print(text(CreativeAnalyst(folder).summary()))

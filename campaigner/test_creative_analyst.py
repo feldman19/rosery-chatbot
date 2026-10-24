@@ -176,7 +176,7 @@ class TaggerTests(unittest.TestCase):
             self.assertIn('unclear', json.dumps(schema))
             return {'assets': [answer(VIDEO)]}
 
-        records = CreativeTagger(FakeVision(), runner).tag([{'id': 'x'}])
+        records = CreativeTagger(FakeVision(), runner, opening_frames=False).tag([{'id': 'x'}])
         self.assertEqual(len(calls), 2)
         self.assertNotEqual(calls[0], calls[1])
         self.assertTrue(all('UNTRUSTED DATA' in c for c in calls))
@@ -199,7 +199,7 @@ class TaggerTests(unittest.TestCase):
             sent['payload'] = payload
             return {'assets': [answer(VIDEO)]}
 
-        CreativeTagger(vision, runner).tag([{'id': 'x'}])
+        CreativeTagger(vision, runner, opening_frames=False).tag([{'id': 'x'}])
         self.assertNotIn('השרשרת הזאת', sent['payload'])
 
 
