@@ -1,0 +1,7 @@
+Follow-up on `codex/ux-pass` (after the plain-language pass). Owner: the "מה עשית" cards look odd inside Today; make it an action report / history. Do not commit; Hebrew report; no Meta writes; no rules edits.
+
+1. Remove the "מה עשית" cards from Today. In their place one line: "השבוע בוצעו 2 פעולות · היסטוריה ›" (hidden when none).
+2. A "היסטוריה" screen (from that line and from the settings menu; on the phone a full screen with a back arrow): a timeline grouped by day ("היום", "אתמול", "ה׳ 23.10"), newest first. Each entry in plain words: what was done ("עצרת את המודעה AFTER HOUR C14", "כיבית שינויים אוטומטיים של מטא במודעה 0851"), when (time), by whom (from the screen / marked "ביצעתי" / detected in Meta), status ("בוצע ובדקנו במטא ✓", "לא בטוח שנקלט — כדאי לבדוק"), and the result line when there is one ("אחרי 3 ימים: חסכת ₪250, המכירות בקבוצה לא ירדו" / "ממתינים לנתונים: עוד 3 ימים"). "בטל" stays on entries that can be undone, behind a confirm, with its consequence in one line.
+3. Include everything already recorded: approve-execute receipts, owner "ביצעתי" marks, auto-detected changes, dismissed recommendations ("הסתרת המלצה"), and finished experiments. Filters as chips: הכל · פעולות במטא · הסתרות · ניסויים.
+4. A one-paragraph weekly summary at the top of the history ("השבוע: 2 פעולות, נחסכו בערך ₪170 ביום, מודעה אחת נעצרה והמכירות נשמרו") built only from recorded facts; unknown stays unknown.
+Tests for grouping, labels and the Today line. Full suite (baseline here 6 failures, 19 errors).
