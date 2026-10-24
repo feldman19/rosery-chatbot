@@ -32,8 +32,8 @@ class OwnerScreenTests(unittest.TestCase):
 
     def test_safe_markdown_pause_counts_and_budget(self):
         html = Path(__file__).with_name('simple-web.html').read_text(encoding='utf-8')
-        names = ('todayContext', 'todayContradicts', 'actionDecisions', 'safeAnswer', 'pauseExplanation', 'isolate', 'lastLaunchBudget', 'launchBudgetMinor',
-                 'launchBlockReason', 'launchCounts', 'renderToday', 'renderLearning')
+        names = ('counted', 'todayContext', 'todayContradicts', 'actionDecisions', 'safeAnswer', 'pauseExplanation', 'isolate', 'lastLaunchBudget', 'launchBudgetMinor',
+                 'launchBlockReason', 'launchCounts', 'renderToday')
         functions = []
         for name in names:
             start = html.index('function '+name+'(')
@@ -50,7 +50,7 @@ const document={createElement:tag=>new N(tag),createTextNode:text=>new N('#text'
 const nodes={};const $=id=>nodes[id]||(nodes[id]=new N('div'));
 const x=n=>String(n),ils=n=>'₪'+n;
 const greeting=()=>'',dismissed=()=>[],emptyState=()=>new N('div'),actionCard=()=>new N('article');
-let outcomes=null,report={creative_drift:{status:'ready',items:[{},{}]},recommendations:{today:{items:[],status:'ready'}}};
+let outcomes=null,report={creative_drift:{status:'ready',items:[{features:[{feature:'music'}]},{features:[{feature:'music'}]}]},recommendations:{today:{items:[],status:'ready'}}};
 let launchState={draft:{adsets:[{key:'a',target:{mode:'new'}},{key:'b',target:{mode:'new'}}],ads:[{adset_key:'a'},{adset_key:'b'}]}};
 const compactCard=card=>card;const H_STATE={};let learning={hypotheses:[{id:'x',outside:{summary:'משפט ראשון. More internal jargon.'},evidence:{},sources:[]}],shadow:{days:1}};
 const text=n=>n.textContent+n.children.map(c=>typeof c==='string'?c:text(c)).join('');
@@ -62,7 +62,7 @@ assert.ok(text(answer).includes('<img src=x onerror=alert(1)>'));
 assert.ok(!text(answer).includes('**'));
 assert.ok(pauseExplanation(1.59,90,{fail_below:5.2}).includes('מתחת לסף העצירה'));
 assert.ok(!pauseExplanation(1.59,90,{fail_below:5.2}).includes('מוציאה יותר'));
-assert.ok(pauseExplanation(0.5,90,{fail_below:5.2}).includes('מתחת לסף העצירה שלך (5.2)'));
+assert.ok(pauseExplanation(0.5,90,{fail_below:5.2}).includes('מתחת לסף העצירה שלך (₪5.20)'));
 assert.ok(pauseExplanation(1.59,90,{}).includes('סף העצירה אינו ידוע'));
 assert.equal(isolate('20.10–22.10'),'\u206620.10–22.10\u2069');
 assert.equal(lastLaunchBudget(),'');
@@ -76,11 +76,8 @@ assert.ok(launchBlockReason('ads_per_adset: live plus proposed count outside rul
 assert.ok(launchBlockReason('Proposal expired').includes('ההצעה פגה'));
 assert.ok(launchBlockReason('Campaign budget conflicts with adset budget').includes('מתנגש'));
 assert.ok(launchBlockReason('No active ad set of that gender in the campaign to copy targeting from').includes('אין בקמפיין'));
-renderToday();assert.equal($('badge').textContent,'2');assert.ok(text($('hello-sub')).includes('2 מודעות עם שינויים אוטומטיים'));
-renderLearning();const card=$('learn').children[0];
-assert.ok(text(card).includes('יום אחד'));assert.ok(!text(card).includes('1 ימים'));
-assert.ok(card.children.some(c=>c.tag==='p'&&text(c).includes('משפט ראשון.')));
-assert.ok(card.children.filter(c=>c.tag==='p').some(c=>text(c).includes('More internal jargon.')));
+renderToday();assert.equal($('badge').textContent,'2');assert.ok(text($('hello-sub')).includes('2 מודעות עם שינויים של מטא'));
+
 """
         result = subprocess.run(['node', '-e', '\n'.join(functions)+'\n'+harness],
                                 encoding='utf-8', capture_output=True)

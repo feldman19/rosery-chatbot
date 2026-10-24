@@ -193,6 +193,7 @@ class CreativeDrift:
             base['items'].append({
                 'ad_id': ad_id, 'name': ad.get('name') or ad_id, 'adset_name': (ad.get('adset') or {}).get('name'),
                 'creative_id': creative_id, 'link': ads_manager_url(ad_id),
+                'thumbnail_url': creative.get('thumbnail_url') or creative.get('image_url'),
                 'features': [{'feature': f, 'label': label(f), 'kind': (first.get(f) or {}).get('kind', 'on_at_first_read'),
                               'kind_label': KINDS[(first.get(f) or {}).get('kind', 'on_at_first_read')],
                               'since': (first.get(f) or {}).get('detected_at')} for f in on],

@@ -44,6 +44,14 @@ class CreativeDriftTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_thumbnail_survives_report_without_inventing_media(self):
+        row = ad('1', spec(music='OPT_IN'))
+        row['creative']['thumbnail_url'] = 'https://example.test/ad.jpg'
+        result = self.drift.check(data(row), self.rules, T1)
+        self.assertEqual(result['items'][0]['thumbnail_url'], 'https://example.test/ad.jpg')
+        del row['creative']['thumbnail_url']
+        self.assertIsNone(self.drift.check(data(row), self.rules, T2)['items'][0]['thumbnail_url'])
+
     def test_all_off_is_clean_and_relevant_comments_are_allowed(self):
         result = self.drift.check(data(ad('1', spec(inline_comment='OPT_IN'))), self.rules, T1)
         self.assertEqual((result['status'], result['items']), ('ready', []))
@@ -173,7 +181,7 @@ class CreativeDriftHttpTests(unittest.TestCase):
     def test_simple_screen_has_drift_section(self):
         self.assertIn('שינויים אוטומטיים במודעות', self.page)
         self.assertNotIn('מטא שינתה משהו בלי אישור', self.page)
-        self.assertIn('כבה שיפורים', self.page)
+        self.assertIn('לכבות שינויים של מטא', self.page)
 
 
 if __name__ == '__main__':

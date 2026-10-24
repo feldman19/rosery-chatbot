@@ -18,9 +18,9 @@ class HomeScreenTests(unittest.TestCase):
         self.assertIn('ההמלצות מתבססות תמיד על 3 הימים המלאים האחרונים', TODAY)
 
     def test_every_action_button_is_explained(self):
-        for words in ('עצור מודעה', 'הגדל תקציב', 'הסר מהרשימה', 'ביצעתי', 'לביצוע במטא', 'כבה שיפורים: ', 'השאר כך: '):
+        for words in ('לעצור את המודעה', 'להעלות תקציב של ', 'הסר מהרשימה', 'לחכות למחר', 'לפתוח את המודעה במטא', 'מציג את השינוי לבדיקה.', 'מסתיר את המצב הנוכחי בלי לשנות את המודעה.'):
             self.assertIn(words, PAGE)
-        self.assertGreaterEqual(PAGE.count("setAttribute('aria-describedby',hid)"), 3)
+        self.assertIn("setAttribute('aria-describedby',help.id)", PAGE)
 
     def test_section_titles_are_headings_and_page_titles_take_focus(self):
         self.assertNotIn('<div class="label"', PAGE)

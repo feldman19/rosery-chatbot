@@ -126,7 +126,7 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(self.run_one(ad('a', 300, 2, None))['action'], NO_DATA)
 
     def test_retargeting_doubles_thresholds(self):
-        row = ad('a', 300, 4, 1350, campaign_name='ריטרגטינג DPA')  # ROAS 4.5
+        row = ad('a', 300, 4, 1350, campaign_name='ריטרגטינג DPA', audience_type='retargeting')  # ROAS 4.5
         result = self.run_one(row)
         self.assertTrue(result['retargeting'])
         self.assertEqual(result['action'], PAUSE)

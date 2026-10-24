@@ -81,10 +81,9 @@ def evaluate_ad(row, window, rulebook, *, attribution_click_only=False):
     spend, purchases, revenue = (_number(row.get(k)) for k in ('spend', 'purchases', 'attributed_revenue'))
     funnel = row.get('funnel') or {}
     days = window.get('days') or param(rulebook, 'ad_min_full_days', 'ad_days')
-    campaign_text = ' '.join(str(row.get(k) or '') for k in ('campaign_name', 'adset_name'))
     audience_type = row.get('audience_type', 'unknown')
     audience_fallback = audience_type not in ('prospecting', 'retargeting')
-    retargeting = bool(RETARGETING.search(campaign_text)) if audience_fallback else audience_type == 'retargeting'
+    retargeting = audience_type == 'retargeting'
     limits, applied = thresholds(rulebook, retargeting=retargeting, click_only_attribution=attribution_click_only)
     citations += applied
     roas = revenue / spend if spend and revenue is not None else (0.0 if spend and purchases == 0 else None)
@@ -99,7 +98,7 @@ def evaluate_ad(row, window, rulebook, *, attribution_click_only=False):
     if not attribution_click_only:
         not_supported.append('הנתונים כוללים ייחוס צפייה (ברירת מחדל), לכן סף הכישלון הועלה ל-2.6.')
     if audience_fallback:
-        not_supported.append('לפי השם, כי הטירגוט לא נקרא')
+        not_supported.append('לא הצלחנו לקרוא למי המודעה מוצגת — השתמשנו בסף הרגיל.')
     if retargeting:
         not_supported.append('סווג כריטרגטינג — הספים הוכפלו.')
     action, title, why = NO_DATA, 'חסרים נתונים', ''

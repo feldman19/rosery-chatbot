@@ -34,8 +34,8 @@ class StoreTests(unittest.TestCase):
         history={'verified':True,'windows':{'all':{'patterns':{'dimensions':[{'dimension':'סוג','values':[{'value':'א','enough_data':False},{'value':'ב','enough_data':False}]}]}}}}
         Path(self.tmp.name,'account-history.json').write_text(json.dumps(history),encoding='utf-8')
         candidates=self.store.candidates([{'statement':'השערה','status':'testing'}])
-        self.assertEqual(len(candidates),3)
-        self.assertTrue(any('השערה'==c['question'] for c in candidates))
+        self.assertEqual(len(candidates),2)
+        self.assertFalse(any('השערה'==c['question'] for c in candidates))
         identity=candidates[0]['id'];self.store.dismiss(identity,[{'statement':'השערה','status':'testing'}])
         self.assertNotIn(identity,[c['id'] for c in self.store.candidates([{'statement':'השערה','status':'testing'}])])
         with self.assertRaises(ValueError):self.store.idea(' ')
@@ -55,68 +55,27 @@ class StoreTests(unittest.TestCase):
         self.store.save(plan('inconclusive'),result={'lift_interval_90':[-.2,.4]},identity=identity)
         self.assertEqual(self.store.list()[0]['verdict'],'לא הוכרע')
 
-    def test_owner_input_is_rendered_as_text_and_prepare_disabled(self):
-        page=Path(__file__).with_name('simple-web.html').read_text(encoding='utf-8')
-        block=page.split('// BEGIN experiments-ui')[1].split('// END experiments-ui')[0]
-        self.assertNotIn('innerHTML',block)
-        self.assertIn('prepare.disabled=true',block)
-        self.assertIn('experimentMoney=v=>v==null',block)
-
-
-    def test_javascript_cards_with_unknown_zero_and_owner_markup(self):
-        page=Path(__file__).with_name('simple-web.html').read_text(encoding='utf-8')
-        block=page.split('// BEGIN experiments-ui')[1].split('// END experiments-ui')[0]
-        compact=page.split('function compactCard(card){',1)[1].split('function actionCard(',1)[0]
-        script="""
-const assert=require('assert');
-let report=null;
-const ils=v=>'₪'+Math.round(v);
-function el(tag,cls='',text){return {tag,cls,text,children:[],parent:null,
- get childElementCount(){return this.children.length},
- classList:{add(){}},
- append(...nodes){for(const n of nodes){if(n.parent)n.parent.children.splice(n.parent.children.indexOf(n),1);n.parent=this;this.children.push(n)}},
- matches(selector){return selector.split(',').some(s=>{
-   if(s==='p:not(.btn-help)')return this.tag==='p'&&!this.cls.split(' ').includes('btn-help');
-   const [t,c]=s.split('.');return (!t||t===this.tag)&&(!c||this.cls.split(' ').includes(c))})},
- querySelectorAll(selector){return selector===':scope > button'?this.children.filter(n=>n.tag==='button'):all(this).filter(n=>n!==this&&n.matches(selector))},
- querySelector(selector){return this.querySelectorAll(selector)[0]||null},
- insertBefore(n,ref){if(n.parent)n.parent.children.splice(n.parent.children.indexOf(n),1);n.parent=this;const i=ref?this.children.indexOf(ref):this.children.length;assert(i>=0);this.children.splice(i,0,n)}
-}}
-function all(n){return [n,...n.children.flatMap(all)]}
-const $=()=>({});
-"""+"function compactCard(card){"+compact+"//"+block+"""
-assert.equal(experimentMoney(null),'לא ידוע');assert.equal(experimentMoney(0),'₪0');
-const idea='<img src=x onerror=alert(1)>';
-const proposed=experimentCard({question:idea,max_days:21,meta_note:'חיבור בהמשך'},true);
-assert(all(proposed).some(c=>c.text===idea));
-assert(all(proposed).some(c=>c.text==='רעיון לבדיקה'));
-assert(!all(proposed).some(c=>(c.text||'').includes('ליום לכל זרוע')));
-assert(!all(proposed).some(c=>(c.text||'').includes('אשר והכן')));
-const assets={A:['a','b','c','d','e'],B:['f','g','h','i','j']};
-const candidate={a_kind:'תמונה',b_kind:'וידאו',asset_ids:assets,max_days:21};
-for(const metrics of [{spend:null,purchases:10},{spend:100,purchases:null},{spend:100,purchases:0},{spend:-1,purchases:10},{spend:'100',purchases:10}]){
-  report={windows:{'7':{metrics}}};assert.equal(experimentProposal(candidate).cpa,null);
-}
-report={windows:{'7':{metrics:{spend:900,purchases:10}}}};
-const ready=experimentProposal(candidate);assert.equal(ready.cpa,90);assert.equal(ready.daily,10000);assert.equal(ready.total,420000);
-assert.equal(experimentProposal({...candidate,daily_budget_minor:15000,max_days:7}).total,210000);
-assert(experimentProposal({...candidate,asset_ids:{A:assets.A,B:assets.A}}).missing.length>0);
-assert(experimentProposal({...candidate,asset_ids:{A:['a','a','a','a','a'],B:assets.B}}).missing.length>0);
-const prepared=experimentCard(candidate,true);
-assert(prepared.children.some(n=>n.tag==='details'&&!n.open));
-assert(prepared.children.some(n=>n.tag==='button'&&n.disabled));
-assert(prepared.children.filter(n=>n.tag==='p').length<=2);
-assert(all(prepared).some(c=>c.text==='אשר והכן במצב מושהה'&&c.disabled));
-assert(all(prepared).some(c=>(c.text||'').includes('מחיר רכישה בחשבון (7 ימים): ₪90')));
-assert(all(prepared).some(c=>(c.text||'').includes('הצעת תקציב: ₪100')));
-report.windows['7'].metrics.spend=0;assert.equal(experimentProposal(candidate).cpa,0);
-const running=experimentCard({plan:{state:'running',question:'שאלה',a:{label:'א'},b:{label:'ב'},max_days:21,daily_budget_minor:100},totals:{A:{spend_minor:null,purchases:null},B:{spend_minor:0,purchases:0}},probability_words:'לא ידוע',days_left:3});
-assert(all(running).some(c=>c.text==='עצור ניסוי'));
-const result=experimentCard({plan:{state:'inconclusive',a:{label:'א'},b:{label:'ב'}},totals:{A:{},B:{}},verdict:'לא הוכרע',result:{lift_interval_90:[-.2,.4]},next_step:'לבדוק'});
-assert(all(result).some(c=>(c.text||'').includes('90%')));
+    def test_owner_input_is_rendered_as_text_and_start_unavailable(self):
+        from test_card_component import HELPERS, DOM
+        script = r"""
+const text='<img src=x onerror=alert(1)>';
+const c=experimentCard({question:text},true);
+assert.ok(surface(c).includes(text));assert.equal(c.querySelectorAll('img').length,0);
+assert.ok(surface(c).includes('הפעלה מכאן תגיע בגרסה הבאה'));
+assert.ok(!c.querySelectorAll('button').some(b=>b.disabled));
+const running=experimentCard({id:'r',plan:{state:'running',question:'שאלה',a:{label:'א'},b:{label:'ב'}},totals:{A:{spend_minor:null},B:{spend_minor:0}}});
+assert.ok(allText(running).includes('לא ידוע'));assert.ok(allText(running).includes('₪0'));
+running.querySelector('.primary').onclick();assert.equal(clicked.path,'/api/experiments/stop');
 """
-        done=subprocess.run(['node','-e',script],capture_output=True,text=True)
+        done=subprocess.run(['node'],input=HELPERS+'\n'+DOM+script,capture_output=True,encoding='utf-8')
         self.assertEqual(done.returncode,0,done.stderr)
+
+    def test_seed_hypotheses_never_become_ideas(self):
+        from hypotheses import SEED
+        self.store.idea('מה מוכר יותר בחנות?')
+        proposals=self.store.candidates(SEED)
+        self.assertEqual([r['question'] for r in proposals], ['מה מוכר יותר בחנות?'])
+        self.assertFalse(any(r.get('id') in {h['id'] for h in SEED} for r in proposals))
 
 
 class RouteTests(unittest.TestCase):

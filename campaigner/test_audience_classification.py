@@ -21,20 +21,21 @@ class AudienceTests(unittest.TestCase):
                 self.assertEqual(classify_audience(targeting)['audience_type'], expected)
 
     def test_broad_catalog_uses_real_threshold(self):
-        row = ad('1', 300, 2, 900, campaign_name='catalog', objective='PRODUCT_CATALOG_SALES',
-                 **classify_audience({}))
+        row = ad('1', 300, 2, 900, campaign_name='קטלוג נמכרים ביותר', objective='PRODUCT_CATALOG_SALES', frequency_7d=2.8,
+                 **classify_audience({'geo_locations': {'countries': ['IL']}}))
         result = evaluate_ad(row, {'days': 3}, BOOK)
         self.assertFalse(result['retargeting'])
         self.assertEqual(2.6, result['thresholds']['fail_below'])
         row.update(classify_audience({'custom_audiences': [{'id': '1'}]}))
         self.assertEqual(5.2, evaluate_ad(row, {'days': 3}, BOOK)['thresholds']['fail_below'])
 
-    def test_unknown_falls_back_to_name_and_explains(self):
+    def test_unknown_uses_normal_threshold_and_explains(self):
         row = ad('1', 300, 2, 900, campaign_name='catalog')
         result = evaluate_ad(row, {'days': 3}, BOOK)
         self.assertTrue(result['audience_fallback'])
-        self.assertTrue(result['retargeting'])
-        self.assertIn('לפי השם, כי הטירגוט לא נקרא', result['data_does_not_support'])
+        self.assertFalse(result['retargeting'])
+        self.assertEqual(2.6, result['thresholds']['fail_below'])
+        self.assertIn('לא הצלחנו לקרוא למי המודעה מוצגת — השתמשנו בסף הרגיל.', result['data_does_not_support'])
         row.update(campaign_name='sales', objective='PRODUCT_CATALOG_SALES')
         self.assertFalse(evaluate_ad(row, {'days': 3}, BOOK)['retargeting'])
 

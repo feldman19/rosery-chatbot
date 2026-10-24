@@ -40,8 +40,8 @@ assert.equal(previewText('**'+'a'.repeat(140)+'**').length,120);
 
     def test_card_and_button_structure(self):
         self.assertIn('card-details', SCRIPT)
-        self.assertIn('return compactCard(card)', SCRIPT)
-        self.assertIn('return compactCard(c)', SCRIPT)
+        self.assertIn('return windowCard({node:root', SCRIPT)
+        self.assertIn('return windowCard({node:c', SCRIPT)
         for style in ('.btn.primary', '.btn.secondary', '.btn.tertiary', '.btn:disabled'):
             self.assertIn(style, PAGE)
         self.assertIn('.actions>.primary{flex-basis:100%;width:100%}', PAGE)

@@ -88,7 +88,9 @@ class ExperimentStore:
                 history = AccountHistory(self.data).summary()  # saved data only; never refresh
         except (OSError, ValueError):
             history = {}
-        journal = [{**h, 'question': h.get('question') or h.get('statement', '')} for h in hypotheses]
+        # System scoring hypotheses belong exclusively to the learning journal.
+        # Keep this boundary here as well as at the HTTP caller.
+        journal = []
         # Filter before ranking so dismissing a top-three item reveals the next one.
         def identify(row):
             return hashlib.sha256(json.dumps({k: row.get(k) for k in ('question', 'variable', 'a_kind', 'b_kind')}, ensure_ascii=False, sort_keys=True).encode()).hexdigest()

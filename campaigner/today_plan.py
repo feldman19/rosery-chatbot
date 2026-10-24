@@ -22,7 +22,8 @@ def build_today(evaluation):
         if decision['action'] == PAUSE:
             proposal = proposals.get(decision['entity_id']) or {}
             items.append({'kind': 'approve', 'action': PAUSE, 'headline': f'להשהות את "{decision["entity_name"]}"',
-                          'body': decision['why'], 'saving_per_day': decision['numbers']['avg_daily_spend'],
+                          'entity_id': decision['entity_id'], 'entity_name': decision['entity_name'],
+                          'numbers': decision['numbers'], 'body': decision['why'], 'saving_per_day': decision['numbers']['avg_daily_spend'],
                           'warnings': proposal.get('warnings', []) + decision['data_does_not_support'][:1],
                           'proposal_id': proposal.get('id'), 'ready_for_approval': proposal.get('ready_for_approval', False),
                           'link': decision['ads_manager_url']})
@@ -37,7 +38,8 @@ def build_today(evaluation):
              and (d['numbers']['spend'] or 0) >= 150]
     for decision in watch:
         items.append({'kind': 'watch', 'action': KEEP_TESTING, 'headline': f'לעקוב אחרי "{decision["entity_name"]}"',
-                      'body': decision['why'], 'warnings': [], 'link': decision['ads_manager_url']})
+                      'entity_id': decision['entity_id'], 'entity_name': decision['entity_name'],
+                      'numbers': decision['numbers'], 'body': decision['why'], 'warnings': [], 'link': decision['ads_manager_url']})
     for alert in evaluation.get('account_alerts') or []:
         items.append({'kind': 'alert', 'action': 'ALERT', 'headline': 'שים לב למבנה החשבון', 'body': alert['text'],
                       'warnings': [], 'link': None})

@@ -186,7 +186,7 @@ class ProfitHttpTests(unittest.TestCase):
         self.assertTrue(Path(self.temp.name, 'profit-settings.json').exists())
 
     def test_screen_has_profit_section(self):
-        self.assertIn('רווחיות אמיתית', self.page)
+        self.assertIn('כמה באמת הרווחת', self.page)
         self.assertIn('מפורט: עם ההוצאות שלי', self.page)
 
 
