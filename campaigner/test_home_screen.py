@@ -24,7 +24,7 @@ class HomeScreenTests(unittest.TestCase):
 
     def test_section_titles_are_headings_and_page_titles_take_focus(self):
         self.assertNotIn('<div class="label"', PAGE)
-        self.assertEqual(len(re.findall(r'<h1 id="[\w-]+" tabindex="-1"', PAGE)), 4)
+        self.assertEqual(len(re.findall(r'<h1 id="[\w-]+" tabindex="-1"', PAGE)), 5)
 
     def test_the_screen_shows_which_version_it_runs(self):
         import server

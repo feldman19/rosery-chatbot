@@ -58,7 +58,9 @@ assert.equal(previewText('**'+'a'.repeat(140)+'**').length,120);
 
     def test_today_order_and_hebrew_integrity(self):
         self.assertLess(PAGE.index('id="todo"'), PAGE.index('id="drift"'))
-        self.assertLess(PAGE.index('id="drift"'), PAGE.index('id="acted"'))
+        self.assertLess(PAGE.index('id="drift"'), PAGE.index('id="acted-label"'))
+        today = PAGE.split('<section data-tab="today"', 1)[1].split('</section>', 1)[0]
+        self.assertNotIn('id="acted"', today)
         self.assertNotIn('????', PAGE)
         self.assertIn("$('todo-label').textContent=", SCRIPT)
         self.assertIn("$('drift-label').textContent=", SCRIPT)

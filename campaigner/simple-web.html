@@ -307,10 +307,14 @@ main{padding-top:16px;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px
 #experiment-idea{width:100%;min-height:88px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--surface)}#experiment-add{min-height:44px;border:1px solid var(--brand);border-radius:14px;padding:8px 16px;background:var(--surface)}
 #new-thread-options{padding-bottom:40px}#thread-back{justify-self:start;min-height:44px}input[type=checkbox]{width:44px;height:44px;flex:none;margin:0;accent-color:var(--brand)}
 /* END owner mobile UX pass */
+/* Owner action history: a day-by-day report, with a visible timeline. */
+#acted{display:grid;gap:16px}#acted article{position:relative;border:0;border-inline-start:2px solid var(--line);border-radius:0;box-shadow:none;background:transparent;margin-inline-start:8px;padding-inline-start:24px}
+#acted article::before{content:'';position:absolute;inset-inline-start:-5px;top:24px;width:8px;height:8px;border-radius:50%;background:var(--brand)}
+#acted-label{justify-self:start;text-align:start;background:transparent;border:0;color:var(--ink)}#history-back{justify-self:start}#history-filters [aria-pressed=true]{background:var(--brand-soft);border-color:var(--brand)}
 </style>
 
 <header><div class="wrap header-nowrap"><span class="logo">ROSERY</span><button class="fresh" id="fresh" type="button" aria-label="רענן נתונים"><span class="dot" id="fresh-dot"></span><span id="fresh-text">טוען…</span></button><button class="menu-button" id="owner-menu" type="button" aria-label="הגדרות" aria-haspopup="dialog">&#9881;</button></div></header>
-<dialog role="dialog" aria-modal="true" id="menu-sheet" aria-labelledby="menu-title"><div class="sheet-head"><h2 id="menu-title">הגדרות</h2><button class="btn tertiary" id="menu-close" type="button">סגור</button></div><label class="field" for="theme">תצוגה<select id="theme"><option value="light">בהיר</option><option value="dark">כהה</option><option value="auto">אוטומטי</option></select></label><a class="btn secondary" href="/advanced">למסך המלא</a><p class="menu-version">גרסה לא ידועה</p></dialog>
+<dialog role="dialog" aria-modal="true" id="menu-sheet" aria-labelledby="menu-title"><div class="sheet-head"><h2 id="menu-title">הגדרות</h2><button class="btn tertiary" id="menu-close" type="button">סגור</button></div><label class="field" for="theme">תצוגה<select id="theme"><option value="light">בהיר</option><option value="dark">כהה</option><option value="auto">אוטומטי</option></select></label><button class="btn secondary" id="menu-history" type="button">היסטוריה</button><a class="btn secondary" href="/advanced">למסך המלא</a><p class="menu-version">גרסה לא ידועה</p></dialog>
 
 <div class="newver" id="newver" role="alert" hidden><span>יש גרסה חדשה של המסך.</span><button class="btn primary" type="button" id="newver-go">רענן עכשיו</button></div>
 <main class="wrap">
@@ -329,8 +333,7 @@ main{padding-top:16px;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px
     <h2 class="label" id="drift-label" hidden>שינויים אוטומטיים במודעות</h2>
     <p class="caption" id="drift-help" hidden>מטא הפעילה שינויים אוטומטיים בתמונה ובטקסט. לפי החוקים שלך הם אמורים להיות כבויים, אז כדאי לבדוק כל מודעה כאן.</p>
     <div class="cards" id="drift"></div>
-    <h2 class="label" id="acted-label" hidden>מה עשית</h2>
-    <div class="cards" id="acted"></div>
+    <button class="link" id="acted-label" type="button" hidden></button>
     <!-- true profit (Claude) -->
     <h2 class="label" id="profit-label" hidden>רווחיות אמיתית</h2>
     <div class="cards" id="profit"></div>
@@ -357,6 +360,15 @@ main{padding-top:16px;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px
 <!-- END auto-mode-shadow -->
   </section>
 
+  <!-- BEGIN owner action history -->
+  <section data-tab="history" hidden aria-labelledby="history-title">
+    <button class="btn tertiary" id="history-back" type="button">→ חזרה</button>
+    <h1 id="history-title" tabindex="-1">היסטוריה</h1>
+    <p id="history-summary"></p>
+    <div class="chips" id="history-filters" role="group" aria-label="סינון היסטוריה"></div>
+    <div id="acted" class="list" aria-live="polite"></div>
+  </section>
+  <!-- END owner action history -->
   <section data-tab="ads" hidden aria-labelledby="ads-title">
     <div class="hello"><h1 id="ads-title" tabindex="-1">המודעות שלך</h1><p id="ads-sub">3 הימים האחרונים</p></div>
     <div class="chips" id="filters" role="group" aria-label="סינון"></div>
@@ -820,6 +832,7 @@ async function loadOutcomes(){try{outcomes=await api('/api/outcomes')}catch{outc
 function renderOutcomes(){renderActed()}
 function resultLine(o){
   if(!o)return null;const line=(o.lines||[])[0];
+  if(!line)return null;
   return o.phase==='final'?'תוצאה: '+line:o.phase==='preliminary'?'תוצאה ראשונית: '+line:line||null;
 }
 function factPart(label,value){const s=el('span');s.append(label+' ',el('strong','num',value));return s}
@@ -841,8 +854,6 @@ function renderToday(){
   $('todo-label').hidden=!items.length;$('todo-label').textContent='מה לעשות היום · '+items.length;
   if(!items.length&&!approve){const c=today.counts||{};todo.append(emptyState('✓','אין מה לשנות היום',(c.SUCCESS||0)+(c.HOLD||0)+' מודעות רצות טוב, '+((c.KEEP_TESTING||0)+(c.UNTESTED||0))+' עדיין בבדיקה.'))}
   for(const i of [...items].sort((a,b)=>Number(todayContradicts(a))-Number(todayContradicts(b))))todo.append(actionCard(i));
-  const removed=report?.dismissed_items||[];
-  if(removed.length){const section=el('details','card');section.append(el('summary','','הוסרו ('+removed.length+')'));for(const i of removed){const row=el('div');row.append(el('p','',actionTitle(i)),el('p','fact',i.name||i.headline),el('p','fact',new Date(i.dismissed_at).toLocaleString('he-IL')));const back=el('button','btn','החזר');back.onclick=()=>dismiss(i,true);row.append(back);section.append(row)}todo.append(section)}
   if(items.length){const more=el('button','link','לכל המודעות ←');more.type='button';more.onclick=()=>go('ads');todo.append(more)}
 }
 function emptyState(icon,title,text){const e=el('div','card empty');e.append(el('div','big',icon),el('h3','',title),el('p','',text));return e}
@@ -1233,27 +1244,78 @@ async function openAction(target){
 }
 const ACT_STATE={verified:['grow','בוצע ואומת'],not_verified:['watch','לא אומת עדיין'],unknown:['stop','לא ידוע אם נקלט'],rejected:['stop','מטא דחתה'],blocked:['idle','לא נשלח'],inflight:['watch','מתבצע']};
 async function loadActed(){try{acted=await api('/api/approve-execute')}catch{acted=null}renderActed()}
-function renderActed(){
-  const box=$('acted'),since=Date.now()-10*86400000,byProposal=Object.fromEntries((outcomes?.items||[]).map(o=>[o.proposal_id,o]));
-  const items=(acted?.receipts||[]).filter(r=>new Date(r.approved_at)>since&&r.state!=='blocked').slice(0,6),shown=new Set(items.map(r=>r.target));
-  const marked=(outcomes?.items||[]).filter(o=>!shown.has(o.proposal_id)).slice(0,4);
-  box.replaceChildren();$('acted-label').hidden=!items.length&&!marked.length;$('acted-label').textContent='מה עשית · '+(items.length+marked.length);
-  const when=t=>new Date(t).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-  for(const r of items){const [cls,word]=ACT_STATE[r.state]||['idle',r.state],card=el('article','card');
-    card.append(el('span','pill '+cls,word),el('h3','',r.title+': '+(r.entity_name||'')));
-    card.append(el('p','fact',r.changes.map(c=>c.field+' '+c.from+' ← '+c.to).join(' · ')+' · '+when(r.approved_at)+(r.undone_by?' · בוטל':'')));
-    if(r.state!=='verified'&&r.detail)card.append(el('p','note',r.detail));
-    const res=!r.undone_by&&resultLine(byProposal[r.target]);if(res)card.append(el('p','',res));
-    if(r.state==='verified'&&!r.undone_by&&!r.undo_of){const u=el('button','btn','בטל');u.type='button';u.onclick=()=>openAction('undo:'+r.id);const a=el('div','actions');a.append(u);card.append(a)}
-    box.append(card)}
-  // Changes made in Meta and marked "ביצעתי" (or detected there): same card, one result line.
-  for(const o of marked){const card=el('article','card'),title=(o.headline.match(/"([^"]+)"/)||[])[1]||o.headline;
-    card.append(el('span','pill idle',o.source==='auto_detected'?'זוהה במטא':'סימנת ביצעתי'),el('h3','',(o.kind==='pause'?'השהית את ':'הגדלת את ')+title));
-    const res=resultLine(o);if(res)card.append(el('p','',res));
-    if(o.needs_answer){const a=el('div','actions'),yes=el('button','btn','זה היה לפי ההצעה'),no=el('button','btn ghost','לא');yes.type=no.type='button';
-      yes.onclick=()=>answerDetected(o.id,'yes');no.onclick=()=>answerDetected(o.id,'no');a.append(yes,no);card.append(a)}
-    box.append(card)}
+// BEGIN owner action history: read-only projection of existing records.
+let historyExperiments=null,historyFilter='all',historyReturn='today';
+function historyDay(value){
+  if(!value)return null;
+  const d=new Date(value);if(!Number.isFinite(d.getTime()))return null;
+  return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
 }
+function historyDayLabel(day,now=new Date()){
+  if(!day)return 'תאריך לא ידוע';
+  if(day===historyDay(now))return 'היום';
+  if(day===historyDay(new Date(new Date(historyDay(now)+'T12:00:00Z').getTime()-86400000)))return 'אתמול';
+  return new Date(day+'T12:00:00Z').toLocaleDateString('he-IL',{timeZone:'Asia/Jerusalem',weekday:'short',day:'2-digit',month:'2-digit'});
+}
+function historyTitle(kind,name,undo=false){
+  if(undo)return 'ביטלת פעולה קודמת: '+name;
+  return ({pause:'עצרת את המודעה ',scale:'הגדלת את התקציב בקבוצה ',drift:'כיבית שינויים אוטומטיים של מטא במודעה '}[kind]||'תועדה פעולה: ')+name;
+}
+function historyEntries(receipts,marks,dismissed,experiments){
+  const entries=[],byProposal=new Map(marks.map(o=>[o.proposal_id,o]));
+  for(const r of receipts){
+    const o=byProposal.get(r.target),kind=r.target?.split(':')[0];
+    entries.push({id:'receipt:'+r.id,type:'meta',at:r.approved_at,title:historyTitle(kind,r.entity_name||r.title||'שם לא ידוע',r.undo_of),
+      who:'דרך המסך',status:r.state==='verified'?'בוצע ובדקנו במטא ✓':(ACT_STATE[r.state]?.[1]||'לא בטוח שנקלט — כדאי לבדוק'),
+      done:r.state==='verified',result:r.undone_by?'הפעולה בוטלה':resultLine(o),receipt:r});
+  }
+  for(const o of marks){
+    // A verified receipt and detection of the same target on the same day are one action.
+    const matching=entries.find(e=>e.receipt?.target===o.proposal_id&&e.done&&historyDay(e.at)===historyDay(o.created_at||o.change_day));
+    if(matching){matching.who+=' · '+(o.source==='owner_marked'?'סימנת ״ביצעתי״':'זוהה במטא');matching.mark=o;continue}
+    entries.push({id:'mark:'+o.id,type:'meta',at:o.created_at||o.change_day,title:historyTitle(o.kind,(o.headline?.match(/"([^"]+)"/)||[])[1]||o.headline||'שם לא ידוע'),
+      who:o.source==='auto_detected'?'זוהה במטא · המבצע לא ידוע':o.source==='owner_marked'?'סימנת ״ביצעתי״':'דרך המסך',
+      status:o.verification==='confirmed'?'בוצע ובדקנו במטא ✓':'לא בטוח שנקלט — כדאי לבדוק',done:o.verification==='confirmed',result:resultLine(o),mark:o});
+  }
+  for(const i of dismissed)entries.push({id:'dismiss:'+i.proposal_id,type:'dismiss',at:i.dismissed_at,title:'הסתרת המלצה: '+(i.name||i.headline||'ללא שם'),who:'דרך המסך',status:'הוסתרה מהרשימה',item:i});
+  for(const x of experiments){const state=x.plan?.state;if(!['decided','inconclusive','interrupted','stopped_for_harm'].includes(state))continue;
+    entries.push({id:'experiment:'+x.id,type:'experiment',at:x.finished_at||x.ended_at||null,title:'ניסוי הסתיים: '+(x.plan.question||'ללא שם'),who:'רישום מקומי · המבצע לא ידוע',status:x.verdict||'הניסוי הסתיים',result:x.next_step});
+  }
+  return entries.sort((a,b)=>(Date.parse(b.at)||0)-(Date.parse(a.at)||0));
+}
+function historyWeek(entries,now=new Date()){
+  const day=historyDay(now),start=new Date(day+'T12:00:00Z');start.setUTCDate(start.getUTCDate()-start.getUTCDay());
+  const first=historyDay(start);
+  return entries.filter(e=>{const d=historyDay(e.at);return d&&d>=first&&d<=day});
+}
+function historyTodayLine(entries,now=new Date()){
+  const n=historyWeek(entries,now).filter(e=>e.type==='meta'&&e.done).length;
+  return n?'השבוע בוצעו '+n+' פעולות · היסטוריה ›':'';
+}
+function renderActed(){
+  const entries=historyEntries(acted?.receipts||[],outcomes?.items||[],report?.dismissed_items||[],historyExperiments||[]),box=$('acted');
+  const line=historyTodayLine(entries);$('acted-label').textContent=line;$('acted-label').hidden=!line;
+  const week=historyWeek(entries),done=week.filter(e=>e.type==='meta'&&e.done).length;
+  $('history-summary').textContent='השבוע: '+(acted===null||outcomes===null?'מספר הפעולות לא ידוע':done+' פעולות שאומתו במטא')+', '+(report===null?'מספר ההסתרות לא ידוע':week.filter(e=>e.type==='dismiss').length+' הסתרות')+'; '+(historyExperiments===null?'מספר הניסויים לא ידוע':week.filter(e=>e.type==='experiment').length+' ניסויים שהסתיימו בתאריך ידוע')+'. חיסכון כספי והשפעה על המכירות: לא ידועים מהתיעוד הזה. הסיכום מתייחס לתיעוד הזמין בלבד.';
+  $('history-filters').replaceChildren();
+  for(const [key,label] of [['all','הכל'],['meta','פעולות במטא'],['dismiss','הסתרות'],['experiment','ניסויים']]){const b=el('button','chip',label);b.type='button';b.setAttribute('aria-pressed',String(key===historyFilter));b.onclick=()=>{historyFilter=key;renderActed()};$('history-filters').append(b)}
+  box.replaceChildren();let last;
+  for(const e of entries.filter(e=>historyFilter==='all'||e.type===historyFilter)){
+    const day=historyDay(e.at);if(day!==last){box.append(el('h2','label',historyDayLabel(day)));last=day}
+    const row=el('article','card');row.append(el('h3','',e.title));
+    const time=e.at&&String(e.at).includes('T')?new Date(e.at).toLocaleTimeString('he-IL',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit'}):'שעה לא ידועה';
+    row.append(el('p','fact',time+' · '+e.who),el('p','',e.status));if(e.result)row.append(el('p','',e.result));
+    const r=e.receipt;
+    if(r?.state==='verified'&&!r.undone_by&&!r.undo_of){const b=el('button','btn','בטל');b.type='button';b.onclick=()=>openAction('undo:'+r.id);row.append(el('p','fact','ביטול יחזיר את ההגדרות הקודמות במטא, אחרי הצגת השינוי ואישור נוסף.'),b)}
+    if(e.item){const b=el('button','btn','החזר המלצה');b.onclick=()=>dismiss(e.item,true);row.append(b)}
+    if(e.mark?.needs_answer){const a=el('div','actions');for(const [answer,label] of [['yes','זה היה לפי ההצעה'],['no','לא']]){const b=el('button','btn',label);b.onclick=()=>answerDetected(e.mark.id,answer);a.append(b)}row.append(a)}
+    box.append(row);
+  }
+  if(!box.children.length)box.append(el('p','','אין רשומות להצגה במסנן הזה.'));
+}
+function openHistory(){historyReturn=activeTab==='history'?historyReturn:activeTab;$('menu-sheet').close();renderActed();go('history')}
+$('acted-label').onclick=openHistory;$('menu-history').onclick=openHistory;$('history-back').onclick=()=>go(historyReturn);
+// END owner action history
 // BEGIN experiments-ui: textContent via el keeps owner ideas inert.
 const experimentMoney=v=>v==null?'לא ידוע':'₪'+(v/100).toLocaleString('he-IL');
 function experimentProposal(item){
@@ -1307,6 +1369,7 @@ function experimentCard(item, proposed=false){
 }
 async function loadExperiments(){
   try{const [state,proposals]=await Promise.all([api('/api/experiments'),api('/api/experiments/candidates')]);
+    historyExperiments=state.experiments;renderActed();
     $('experiments').replaceChildren(...state.experiments.map(x=>experimentCard(x)),...proposals.candidates.map(x=>experimentCard(x,true)));
     if(!state.experiments.length&&!proposals.candidates.length)$('experiments').append(el('p','','עדיין אין ניסויים או הצעות. אפשר להוסיף רעיון.'));
   }catch(e){$('experiment-message').textContent='לא ניתן לטעון ניסויים: '+e.message}

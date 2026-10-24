@@ -78,6 +78,12 @@ class OwnerActionsTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_status_includes_all_retained_receipts_newest_first(self):
+        self.actions._write([{'id': str(i)} for i in range(45)])
+        self.assertEqual([r['id'] for r in self.actions.status()['receipts']],
+                         [str(i) for i in reversed(range(45))])
+        self.assertEqual(self.meta.writes, [])
+
     def test_preview_writes_nothing_and_shows_exact_change(self):
         view = self.actions.preview('pause:' + AD)
         self.assertEqual(view['changes'], [{'field': 'סטטוס', 'from': 'פעילה', 'to': 'מושהית'}])

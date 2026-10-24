@@ -120,7 +120,7 @@ class OwnerActions:
     def status(self):
         with self.lock:
             receipts = self._receipts()
-        return {'receipts': list(reversed(receipts[-30:])), 'provider_writes_need_owner_confirm': True}
+        return {'receipts': list(reversed(receipts)), 'provider_writes_need_owner_confirm': True}
 
     # ---- preview ----
     def preview(self, target):
