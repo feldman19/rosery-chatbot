@@ -159,6 +159,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     visibility=ProposalVisibility(data/'proposal-dismissals.json')
     drift=CreativeDrift(data/'creative-drift.sqlite3')
     history=AccountHistory(data,reader=read_account_history if start_live and workspace=='manager' else None)
+    # BEGIN real-sales: owner-only read; cache contains normalized orders, never URLs or identities.
+    ad_sales_cache={}
+    # END real-sales
     profit_settings=true_profit.ProfitSettings(data/'profit-settings.json')
     def profit_summary(snapshot=None,report=None):
         # --- true profit (Claude) ---
@@ -440,11 +443,11 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except Exception:
                     kickoff='החיבור נשמר. הפעלת קריאת החומרים לא הושלמה; ניתן לנסות אותה מהמערכת בלי להתחבר מחדש.'
                 return self.reply(200,'<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><title>ROSERY — Drive connected</title><h1>החיבור לדרייב אומת ונשמר מוצפן</h1><p>קריאה בלבד. לא פורסמו מודעות ולא שונו קבצים בדרייב.</p><p>'+kickoff+'</p><a href="/">חזרה למערכת</a></html>','text/html; charset=utf-8')
-            if workspace=='manager' and self.path=='/advanced' and (data/'rosery-pilot.json').exists():
-                page=(ROOT/'owner-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
-                return self.reply(200,page,'text/html; charset=utf-8')
+            if self.path.split('?',1)[0]=='/advanced':
+                # Owner 2026-10-24: the old full screen is retired; its address goes to the simple screen.
+                self.send_response(302);self.send_header('Location','/');self.send_header('Content-Length','0');self.end_headers();return
             if workspace=='manager' and self.path.split('?',1)[0]=='/':
-                # Simple owner screen first; the full workspace stays at /advanced.
+                # The simple owner screen is the only owner screen.
                 page=(ROOT/'simple-web.html').read_text(encoding='utf-8').replace('__SESSION__',session).replace('__VERSION__',screen_version())
                 return self.reply(200,page,'text/html; charset=utf-8')
             if self.path.split('?',1)[0] == '/' or (self.path == '/lab' and workspace == 'manager'):
@@ -505,7 +508,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except (ValueError,KeyError,OSError):return self.reply(404,{'error':'Not found'})
                 self.send_response(200);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(raw)))
                 self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw);return
-            if self.path not in ('/api/experiments', '/api/experiments/candidates', '/api/learning', '/api/daily-brief', '/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
+            if self.path not in ('/api/experiments', '/api/experiments/candidates', '/api/learning', '/api/daily-brief', '/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/ad-sales', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
                 return self.reply(404, {'error': 'Not found'})
             if not hmac.compare_digest(self.headers.get('X-Local-Session', ''), session):
                 return self.reply(403, {'error': 'Invalid local session'})
@@ -557,12 +560,21 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 return self.reply(200,claude_chat.status())
             if self.path == '/api/visual-workspace':
                 return self.reply(200,build_workspace(live.snapshot()))
+            # BEGIN real-sales
+            if self.path == '/api/ad-sales':
+                if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
+                from ad_sales import read_sales
+                source=read_sales(data)
+                ad_sales_cache.clear();ad_sales_cache.update(source)
+                report=management_report(live.snapshot(),ad_sales_data=source,ad_sales_settings=profit_settings.load())
+                return self.reply(200,{'source':report['ad_sales'],'window':report['windows']['14'],'live_action_allowed':False})
+            # END real-sales
             if self.path == '/api/management-report':
                 try:
                     source_proposal=launch_proposal.report(work_intake.latest())
                     operations=campaign_operations.status()
                     snapshot=live.snapshot()
-                    report=management_report(snapshot,proposal_report=source_proposal,operations_status=operations,change_history=load_saved_change_evidence(ROOT.parent))
+                    report=management_report(snapshot,proposal_report=source_proposal,operations_status=operations,change_history=load_saved_change_evidence(ROOT.parent),ad_sales_data=ad_sales_cache if workspace=='manager' else None,ad_sales_settings=profit_settings.load())
                     report['weekly_creative_context']=weekly_creative_context(report,build_workspace(snapshot),snapshot=snapshot)
                     report['owner_actions']=build_owner_action_proposals(report,operations,source_proposal)
                     dossier=load_rosery_dossier(include_owner_financials=workspace=='manager')

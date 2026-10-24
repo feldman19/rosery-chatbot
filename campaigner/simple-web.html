@@ -321,7 +321,7 @@ main{padding-bottom:calc(var(--tabs-height,96px) + 24px + env(safe-area-inset-bo
 </style>
 
 <header><div class="wrap header-nowrap"><span class="logo">ROSERY</span><button class="fresh" id="fresh" type="button" aria-label="רענן נתונים"><span class="dot" id="fresh-dot"></span><span id="fresh-text">טוען…</span></button><button class="menu-button" id="owner-menu" type="button" aria-label="הגדרות" aria-haspopup="dialog">&#9881;</button></div></header>
-<dialog role="dialog" aria-modal="true" id="menu-sheet" aria-labelledby="menu-title"><div class="sheet-head"><h2 id="menu-title">הגדרות</h2><button class="btn tertiary" id="menu-close" type="button">סגור</button></div><p>כאן משנים את התצוגה ופותחים את היסטוריית הפעולות.</p><label class="field" for="theme">תצוגה<select id="theme"><option value="light">בהיר</option><option value="dark">כהה</option><option value="auto">אוטומטי</option></select></label><button class="btn secondary" id="menu-history" type="button">היסטוריה</button><a class="btn secondary" href="/advanced">למסך המלא</a><p class="menu-version"></p></dialog>
+<dialog role="dialog" aria-modal="true" id="menu-sheet" aria-labelledby="menu-title"><div class="sheet-head"><h2 id="menu-title">הגדרות</h2><button class="btn tertiary" id="menu-close" type="button">סגור</button></div><p>כאן משנים את התצוגה ופותחים את היסטוריית הפעולות.</p><label class="field" for="theme">תצוגה<select id="theme"><option value="light">בהיר</option><option value="dark">כהה</option><option value="auto">אוטומטי</option></select></label><button class="btn secondary" id="menu-history" type="button">היסטוריה</button><p class="menu-version"></p></dialog>
 
 <div class="newver" id="newver" role="alert" hidden><span>יש גרסה חדשה של המסך.</span><button class="btn primary" type="button" id="newver-go">רענן עכשיו</button></div>
 <main class="wrap">
@@ -448,7 +448,6 @@ main{padding-bottom:calc(var(--tabs-height,96px) + 24px + env(safe-area-inset-bo
     </div><!-- END chat-threads -->
   </section>
 
-  <p class="foot"><a href="/advanced">למסך המלא</a></p>
   <div class="foot update" id="update">
     <p id="version" data-build="__VERSION__"></p>
     <p id="update-state" role="status"></p>

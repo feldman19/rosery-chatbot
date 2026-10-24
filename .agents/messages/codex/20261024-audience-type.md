@@ -1,0 +1,10 @@
+Follow-up on `codex/ux-pass`. Owner: decide retargeting vs prospecting from the data, never from names. Do not commit; Hebrew report; no Meta writes; no rules edits.
+
+Evidence (read live, 2026-10-24): "קטלוג נמכרים ביותר" sits in "קמפיין קטלוג" / ad set "קטלוג ללא הצעה", OUTCOME_SALES, targeting = broad (age 18–65, Israel, Advantage+ audience on, NO custom_audiences, NO product_audience_specs), 7-day frequency 2.83 (prospecting ad sets 2.0–3.5). Yet `rule_engine.RETARGETING` (name regex "catalog|קטלוג") classed it as retargeting and doubled its thresholds to 5.2.
+
+1. Read targeting for active ad sets (add `targeting` to the ad set fields in `meta_direct.read_active_ads`, GET only) and 7-day frequency per ad set (the insights read already in place, or one extra GET at ad set level with `frequency,reach`).
+2. Classify each ad set: retargeting when targeting INCLUDES custom audiences (website/engagement/customer lists) or `product_audience_specs` (catalog retargeting); prospecting when it has neither (exclusions do not make it retargeting); unknown when targeting was not read. Carry `audience_type`, the reason ("קהל רחב, בלי קהלים מותאמים") and frequency into the report rows.
+3. `rule_engine`: use `audience_type` when known; fall back to the name regex only when unknown, and say so in the decision ("לפי השם, כי הטירגוט לא נקרא"). The doubled thresholds apply only to retargeting.
+4. Card text (simple-web.html): one line "קהל: חדש (פרוספקטינג) · תדירות 2.8 בשבוע" or "קהל: ריטרגטינג · …"; the threshold shown is the decision's real one.
+5. New vs returning buyers: if the Shopify read can tell first-time vs returning customers for orders attributed to an ad (utm_content = ad name or ad id), add the share per ad set as a secondary signal; if it cannot, report exactly what is missing — do not guess.
+Tests for the classifier (broad, custom audience included, only exclusions, product audience, unknown) and the rule-engine fallback. Full suite (baseline here 6 failures, 19 errors).
