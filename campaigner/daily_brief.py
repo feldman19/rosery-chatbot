@@ -9,7 +9,7 @@ def _ils(value):
     return '₪' + format(round(value), ',') if isinstance(value, (int, float)) else '—'
 
 
-def build(report, receipts=()):
+def build(report, receipts=(), *, self_check=None):
     windows = (report or {}).get('windows') or {}
     m1 = (windows.get('1') or {}).get('metrics') or {}
     m7 = (windows.get('7') or {}).get('metrics') or {}
@@ -48,4 +48,6 @@ def build(report, receipts=()):
         lines.append('בוצע לאחרונה:')
         for r in done:
             lines.append('• ' + r.get('title', '') + ': ' + (r.get('entity_name') or ''))
+    from self_check import brief_line
+    lines.insert(0,brief_line(self_check))
     return '\n'.join(lines)

@@ -26,7 +26,7 @@ class DailyBriefTests(unittest.TestCase):
 
     def test_blocked_and_empty(self):
         self.assertIn('חסרים נתונים', build(report(status='blocked')))
-        self.assertTrue(build({}).startswith('בוקר טוב'))
+        self.assertTrue(build({}).split('\n',1)[1].startswith('בוקר טוב'))
 
 
 if __name__ == '__main__':

@@ -353,7 +353,16 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         if brief.get('inventory'):prepared_work.save('experiment',brief['version'],brief)
         for case in operator_report(snapshot)['cases']:
             if case['type']=='tracking_fix':prepared_work.save('tracking',case['fingerprint'],case)
-    live.on_cycle=analyze_cycle
+    # BEGIN self-check: read-only, independently of execution workers.
+    from self_check import SelfCheck
+    self_check=SelfCheck(data)
+    def checked_cycle(snapshot):
+        if workspace=='manager':
+            try:self_check.run_if_due(snapshot,lambda:management_report(snapshot))
+            except Exception:pass  # A local evidence failure must not stop refresh.
+        analyze_cycle(snapshot)
+    live.on_cycle=checked_cycle
+    # END self-check
     helper = KnowledgeAssistant()
     handoffs = HandoffQueue(str(data / 'questions.sqlite3'))
 
@@ -492,7 +501,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except (ValueError,KeyError,OSError):return self.reply(404,{'error':'Not found'})
                 self.send_response(200);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(raw)))
                 self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw);return
-            if self.path not in ('/api/experiments', '/api/experiments/candidates', '/api/learning', '/api/daily-brief', '/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
+            if self.path not in ('/api/self-check', '/api/experiments', '/api/experiments/candidates', '/api/learning', '/api/daily-brief', '/api/approve-execute', '/api/creative-launch', '/api/automation-shadow', '/api/outcomes', '/api/profit', '/api/state', '/api/evidence', '/api/workspace', '/api/diagnostics', '/api/pilot', '/api/registration', '/api/reviews', '/api/live', '/api/decisions', '/api/action-desk', '/api/decision-loop','/api/automation','/api/operator','/api/experiment','/api/meta-execution/status','/api/launch','/api/drive/oauth/status','/api/strategy','/api/work/status','/api/launch/proposal','/api/preparation-loop','/api/preparation-task','/api/campaign-operations','/api/management-report','/api/visual-workspace','/api/claude-chat','/api/decision-memory'):
                 return self.reply(404, {'error': 'Not found'})
             if not hmac.compare_digest(self.headers.get('X-Local-Session', ''), session):
                 return self.reply(403, {'error': 'Invalid local session'})
@@ -527,6 +536,11 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     return self.reply(200, review_history(ROOT))
                 except (ValueError, KeyError, TypeError, OSError):
                     return self.reply(503, {'error':'Review history invalid'})
+            # BEGIN self-check: existing owner session gate applies.
+            if self.path == '/api/self-check':
+                if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
+                return self.reply(200,self_check.latest())
+            # END self-check
             if self.path == '/api/live':
                 return self.reply(200,live.snapshot())
             if self.path == '/api/meta-execution/status':
@@ -588,7 +602,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 # Morning summary text, read-only; delivery to the phone is separate.
                 if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
                 from daily_brief import build as build_brief
-                try:return self.reply(200,{'text':build_brief(owner_action_report(),owner_actions.status()['receipts'])})
+                try:return self.reply(200,{'text':build_brief(owner_action_report(),owner_actions.status()['receipts'],self_check=self_check.latest())})
                 except Exception:return self.reply(503,{'error':'הסיכום אינו זמין כרגע.'})
             if self.path == '/api/approve-execute':
                 if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
@@ -1058,6 +1072,16 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     try:
         drive_flow=DriveOAuth(data,local_server.server_port)
         if start_live and workspace=='manager':
+            # BEGIN self-check: 07:30 Asia/Jerusalem, after a completed refresh.
+            def self_check_loop():
+                while not live.stop_event.wait(15):
+                    try:
+                        snapshot=live.snapshot()
+                        if not snapshot.get('refreshing'):
+                            self_check.run_if_due(snapshot,lambda:management_report(snapshot))
+                    except Exception:pass
+            threading.Thread(target=self_check_loop,daemon=True,name='rosery-self-check').start()
+            # END self-check
             live.start()
             automation_shadow.start()  # auto-mode-shadow: independent of execution workers
             def history_loop():
@@ -1078,7 +1102,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         report=owner_action_report()
                         try:learn(report)
                         except Exception:pass
-                        text=build_brief(report,owner_actions.status()['receipts'])
+                        text=build_brief(report,owner_actions.status()['receipts'],self_check=self_check.latest())
                         pending=data/'daily-brief.pending';pending.write_text(text,encoding='utf-8');pending.replace(data/'daily-brief.txt')
                     except Exception:pass
                     live.stop_event.wait(1800)
