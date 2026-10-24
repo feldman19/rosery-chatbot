@@ -643,9 +643,19 @@ function appendTodayContext(card,item){
   for(const {d,ad,contradicts} of contexts){
     const value=v=>Number.isFinite(v)?x(v):'לא ידוע';
     card.append(el('p','note','היום עד עכשיו · '+d.entity_name+' · הוצאה '+(Number.isFinite(ad?.spend)?ils(ad.spend):'לא ידועה')+' · רכישות '+(Number.isFinite(ad?.purchases)?String(ad.purchases):'לא ידוע')+' · ROAS '+value(ad?.roas)+' · מתעדכן'));
-    if(d.retargeting&&Number.isFinite(d.thresholds?.fail_below))card.append(el('p','note','זוהתה כמודעת ריטרגטינג/קטלוג לפי השם, ולכן הסף כפול ('+String(d.thresholds.fail_below)+')'));
+    appendAudienceContext(card,d);
     if(contradicts)card.append(el('p','note',item.action==='PAUSE'?'היום היא דווקא עובדת טוב (ROAS '+x(ad.roas)+'). אפשר לחכות למחר ולראות אם זה ממשיך':'היום היא מתחת לסף העצירה (ROAS '+x(ad.roas)+'). אפשר לחכות למחר ולראות אם זה ממשיך'));
   }
+}
+function audienceLine(d){
+  const label=d.audience_type==='prospecting'?'חדש (פרוספקטינג)':d.audience_type==='retargeting'?'ריטרגטינג':'לא ידוע';
+  return 'קהל: '+label+' · תדירות '+(Number.isFinite(d.frequency_7d)?d.frequency_7d.toFixed(1)+' בשבוע':'לא ידועה');
+}
+function appendAudienceContext(card,d){
+  card.append(el('p','audience-context note',audienceLine(d)));
+  if(d.audience_fallback)card.append(el('p','note','לפי השם, כי הטירגוט לא נקרא'));
+  if(d.retargeting&&Number.isFinite(d.thresholds?.fail_below))card.append(el('p','note','קהל ריטרגטינג — הסף כפול ('+String(d.thresholds.fail_below)+')'));
+  if(d.buyer_share?.reason)card.append(el('p','note',d.buyer_share.reason));
 }
 function pauseExplanation(roas,daily,thresholds){return (typeof roas!=='number'?'ההחזר אינו ידוע':'מכניסה ₪'+x(roas)+' על כל ₪1, '+(Number.isFinite(thresholds?.fail_below)?'מתחת לסף העצירה שלך ('+String(thresholds.fail_below)+')':'סף העצירה אינו ידוע'))+'. ההוצאה היומית שלה כ-'+ils(daily)+'.'}
 // UX pass: keep the decision summary visible; supporting evidence stays available on tap.
@@ -842,10 +852,11 @@ function renderAds(){
     const row=el('button','row');row.type='button';row.setAttribute('aria-expanded',String(open===d.entity_id));
     const main=el('div','row-main'),text=el('div','row-text'),side=el('div','row-side');
     text.append(el('span','row-name',d.entity_name),el('span','row-sub',ils(n.spend)+' · '+(n.purchases??'—')+' מכירות'));
+    text.append(el('span','row-sub',audienceLine(d)));
     side.append(el('span','ret num '+cls,typeof n.roas==='number'?x(n.roas)+'×':'—'),el('span','pill '+cls,word));
     main.append(text,side);row.append(main);row.onclick=()=>{open=open===d.entity_id?null:d.entity_id;renderAds()};list.append(row);
     if(open===d.entity_id){
-      const det=el('div','row-detail');det.append(el('p','',d.why));
+      const det=el('div','row-detail');det.append(el('p','',d.why));appendAudienceContext(det,d);
       if(d.adset_name)det.append(el('p','','קבוצה: '+d.adset_name));
       const sc=learning?.scores?.[d.entity_id];
       if(sc)det.append(el('p','fact','ציון משוקלל (מצב צל, לא משנה החלטות): '+Math.round(sc.score)+' · '+sc.label+' · '+sc.reasons.join(' · ')));

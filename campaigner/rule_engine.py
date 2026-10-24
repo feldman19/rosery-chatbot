@@ -82,7 +82,9 @@ def evaluate_ad(row, window, rulebook, *, attribution_click_only=False):
     funnel = row.get('funnel') or {}
     days = window.get('days') or param(rulebook, 'ad_min_full_days', 'ad_days')
     campaign_text = ' '.join(str(row.get(k) or '') for k in ('campaign_name', 'adset_name'))
-    retargeting = row.get('objective') == 'PRODUCT_CATALOG_SALES' or bool(RETARGETING.search(campaign_text))
+    audience_type = row.get('audience_type', 'unknown')
+    audience_fallback = audience_type not in ('prospecting', 'retargeting')
+    retargeting = bool(RETARGETING.search(campaign_text)) if audience_fallback else audience_type == 'retargeting'
     limits, applied = thresholds(rulebook, retargeting=retargeting, click_only_attribution=attribution_click_only)
     citations += applied
     roas = revenue / spend if spend and revenue is not None else (0.0 if spend and purchases == 0 else None)
@@ -96,8 +98,10 @@ def evaluate_ad(row, window, rulebook, *, attribution_click_only=False):
         'ההחלטה מבוססת על 3 ימים מלאים בלבד (ללא היום הנוכחי).']
     if not attribution_click_only:
         not_supported.append('הנתונים כוללים ייחוס צפייה (ברירת מחדל), לכן סף הכישלון הועלה ל-2.6.')
+    if audience_fallback:
+        not_supported.append('לפי השם, כי הטירגוט לא נקרא')
     if retargeting:
-        not_supported.append('זוהה ריטרגטינג/קטלוג לפי שם או יעד הקמפיין — הספים הוכפלו. לוודא שהזיהוי נכון.')
+        not_supported.append('סווג כריטרגטינג — הספים הוכפלו.')
     action, title, why = NO_DATA, 'חסרים נתונים', ''
     min_spend = param(rulebook, 'roas_ladder', 'min_spend')
     rescue = rulebook['rules']['rescue_signals']['params']
@@ -173,6 +177,9 @@ def evaluate_ad(row, window, rulebook, *, attribution_click_only=False):
             'campaign_name': row.get('campaign_name'), 'configured_active': row.get('configured_active'),
             'action': action, 'label': LABELS[action], 'title': title, 'why': why,
             'numbers': numbers, 'thresholds': limits, 'retargeting': retargeting,
+            'audience_type': audience_type, 'audience_reason': row.get('audience_reason'),
+            'audience_fallback': audience_fallback, 'frequency_7d': row.get('frequency_7d'),
+            'buyer_share': row.get('buyer_share'),
             'window': {'since': window.get('since'), 'until': window.get('until'), 'days': days},
             'data_supports': supports, 'data_does_not_support': not_supported,
             'rules': [cite(rulebook, rule) for rule in dict.fromkeys(citations)],

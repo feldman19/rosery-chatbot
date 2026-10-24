@@ -14,6 +14,7 @@ from datetime import datetime,date,timedelta,timezone
 from decimal import Decimal,InvalidOperation
 from zoneinfo import ZoneInfo,ZoneInfoNotFoundError
 import json
+from audience_classification import classify_audience, BUYER_SHARE_MISSING
 
 ACCOUNT='393059510164294';SHOP='21cc82-3.myshopify.com'
 PURCHASE=('offsite_conversion.fb_pixel_purchase','omni_purchase')
@@ -169,7 +170,12 @@ def _detail_inventory(data):
                     if previous and any(previous.get(k)!=row.get(k) for k in (('campaign_id','adset_id') if kind=='ads' else ('campaign_id',))):
                         target.pop(identity,None);continue
                     prior_stamp=_stamp(previous.get('_observed_at')) if previous else None
-                    if prior_stamp and prior_stamp>=stamp:continue
+                    if prior_stamp and prior_stamp>=stamp:
+                        # Inventory timestamps must not discard the separate audience read.
+                        if kind=='adsets':
+                            for key in ('targeting','audience_frequency_7d'):
+                                if key in row:previous[key]=row[key]
+                        continue
                     target[identity]={**row,'_observed_at':active['checked_at'],'_source_path':'sources.meta.data.active_ads.ads'+('.adset' if kind=='adsets' else '')}
     return sets,ads,data.get('checked_at')
 
@@ -316,6 +322,11 @@ def _drilldown(data,rows,campaign_inventory,reg_campaigns):
             if not entry['hierarchy_complete']:entry['parent_ids_observed']={'campaign_ids':parents,'adset_ids':set_ids}
             parent_set=current if kind=='adsets' else sets_inventory.get(set_id) or {}
             if parent_set.get('campaign_id')!=campaign_id:parent_set={}
+            entry.update(classify_audience(parent_set.get('targeting')))
+            frequency=parent_set.get('audience_frequency_7d') or {}
+            entry['frequency_7d']=_public(_number(frequency.get('frequency')))
+            entry['frequency_7d_window']={key:frequency.get(key) for key in ('since','until')}
+            entry['buyer_share']={'new_share':None,'returning_share':None,'reason':BUYER_SHARE_MISSING}
             entry.update(_configuration_blockers(parent_current,parent_set,current if kind=='ads' else None,parent_at,parent_set.get('_observed_at') if parent_set else None,current.get('_observed_at') if current and kind=='ads' else None))
             if kind=='adsets':
                 budget=_number(current.get('daily_budget'));lifetime=_number(current.get('lifetime_budget'));known=budget is not None and budget==budget.to_integral_value() and lifetime is not None

@@ -103,6 +103,7 @@ def read_reports(data_dir):
         except (ValueError,KeyError,TypeError,OSError):pass
     account_campaigns=read_campaign_inventory(token,deadline)
     active_ads=read_active_ads(token,deadline)
+    enrich_audience_frequency(token,active_ads,today,deadline)
     from placement_readback import enrich_placement_readback
     enrich_placement_readback(graph,token,ACCOUNT,active_ads.get('ads') or [],deadline)
     enrich_creative_images(token,[*(creative_inventory.get("ads") or []),*(active_ads.get("ads") or [])],deadline)
@@ -172,7 +173,7 @@ def read_active_ads(token,deadline=None):
     get_ads/effective_status follows Meta's official facebook-python-business-sdk.
     """
     deadline=deadline or time.monotonic()+45
-    params={'fields':'id,name,account_id,status,effective_status,updated_time,campaign{id,name,objective,status,effective_status,updated_time},adset{id,name,status,daily_budget,lifetime_budget,updated_time,optimization_goal,promoted_object,attribution_spec,effective_status},creative{id,thumbnail_url,image_url,body,title,object_story_spec,asset_feed_spec,url_tags,degrees_of_freedom_spec}','effective_status':json.dumps(['ACTIVE']),'limit':100}
+    params={'fields':'id,name,account_id,status,effective_status,updated_time,campaign{id,name,objective,status,effective_status,updated_time},adset{id,name,status,daily_budget,lifetime_budget,updated_time,optimization_goal,promoted_object,attribution_spec,targeting,effective_status},creative{id,thumbnail_url,image_url,body,title,object_story_spec,asset_feed_spec,url_tags,degrees_of_freedom_spec}','effective_status':json.dumps(['ACTIVE']),'limit':100}
     rows=[];seen=set();cursors=set()
     try:
         for _ in range(20):
@@ -295,3 +296,27 @@ def read_account_history(data_dir,min_creative_spend=200,max_creatives=1000):
             'windows':windows,'creatives':creatives,'creatives_requested':len(wanted),'creatives_failed':failed,
             'query_settings':{'time_increment':'all_days','use_unified_attribution_setting':True,'action_report_time':'default_unchanged'},
             'source':'direct_meta_api','live_action_allowed':False}
+
+
+def enrich_audience_frequency(token, active, today, deadline):
+    """Seven complete account-local days, aggregate ad-set frequency, GET only."""
+    if not active.get('ads'):return
+    since=(today-timedelta(days=7)).isoformat();until=(today-timedelta(days=1)).isoformat()
+    try:
+        rows=_all_pages(token,'act_'+ACCOUNT+'/insights',{
+            'level':'adset','fields':'adset_id,frequency,reach,date_start,date_stop',
+            'time_range':json.dumps({'since':since,'until':until}),
+            'time_increment':'all_days','limit':500},deadline)
+        by_id={}
+        for row in rows:
+            sid=row.get('adset_id')
+            if not sid or sid in by_id or row.get('date_start')!=since or row.get('date_stop')!=until:
+                raise ValueError('Frequency binding mismatch')
+            by_id[sid]=row
+        for ad in active.get('ads') or []:
+            adset=ad['adset'];row=by_id.get(adset['id']) or {}
+            adset['audience_frequency_7d']={
+                'frequency':row.get('frequency'),'reach':row.get('reach'),
+                'since':since,'until':until}
+    except (ValueError,KeyError,TypeError,OSError):
+        pass
