@@ -436,7 +436,13 @@ class CampaignOperations:
         selected=body.get('selected_asset_ids',[a['asset_id'] for a in ads if a['adset_key'] in chosen])
         for values,known in ((chosen,{g['key'] for g in groups}),(selected,{a['asset_id'] for a in ads if a['adset_key'] in chosen})):
             if not isinstance(values,list) or not values or any(not isinstance(x,str) for x in values) or len(set(values))!=len(values) or not set(values)<=known:raise OperationBlocked('Unknown or duplicate v2 selection')
+        from business_profile import BusinessProfile, creation_recipe
+        profile=BusinessProfile(self.directory)
+        if proposal.get('business_profile',profile.binding() if profile.binding()['version']==0 else None)!=profile.binding():raise OperationBlocked('Business profile changed; prepare a new proposal')
+        for ad in proposal['ads']:
+            profile.check_copy(ad['primary_text_options'] + ad['headline_options'] + [ad['description']])
         recipe=proposal.get('creation_recipe')
+        if recipe!=creation_recipe(profile):raise OperationBlocked('Creation recipe differs from owner profile')
         if not isinstance(recipe,dict) or set(recipe)!={'adset_fields','creative_fields','optimization_type'}:raise OperationBlocked('Explicit creation_recipe required; live PAUSED canary approval pending')
         if set(recipe['adset_fields'])-{'is_dynamic_creative','destination_type','bid_strategy'} or set(recipe['creative_fields'])-{'degrees_of_freedom_spec'}:raise OperationBlocked('Unsupported recipe fields')
         book=context['rulebook'];count_rule=book['rules']['ads_per_adset']['params']
@@ -446,6 +452,7 @@ class CampaignOperations:
             members=[a for a in ads if a['adset_key']==group['key'] and a['asset_id'] in selected]
             if not members:raise OperationBlocked('Empty selected adset')
             target=group['target'];setkey='set'+str(index)
+            if target['mode']=='new':profile.check_budget(group['budget_minor'])
             if target['mode']=='existing':
                 rule=book['rules'].get('existing_adset_reuse')
                 params=rule.get('params') if rule else None
@@ -544,6 +551,10 @@ class CampaignOperations:
                 if action=='set_budget':
                     amount=body.get('budget_minor');btype=body.get('budget_type','daily')
                     if kind not in ('campaign','adset') or type(amount) is not int or not 1<=amount<=10000000 or btype not in ('daily','lifetime'):raise OperationBlocked('Explicit bounded budget required')
+                    if kind=='adset' and btype=='daily':
+                        from business_profile import BusinessProfile
+                        try:BusinessProfile(self.directory).check_budget(amount,int(before['daily_budget']))
+                        except (ValueError,KeyError,TypeError) as error:raise OperationBlocked('Business profile budget limit or unknown prior budget') from error
                     opposite='lifetime_budget' if btype=='daily' else 'daily_budget'
                     if opposite not in before or str(before.get(opposite))!='0':raise OperationBlocked('Budget type conversion or missing budget coverage not supported')
                     params={btype+'_budget':amount};budget={'type':btype,'minor':amount,'currency':'ILS'}
@@ -563,6 +574,8 @@ class CampaignOperations:
         campaign=(before or {}).get('id') if proposal and proposal.get('schema_version')==2 else PARENT
         manifest.update(account_id=ACCOUNT,campaign_id=campaign,action=action,source_digest=source,files=files,steps=steps,scheduled_at=scheduled)
         # Deduplicate semantic intent BEFORE generated names/IDs, even after success.
+        from business_profile import BusinessProfile
+        manifest['business_profile']=BusinessProfile(self.directory).binding()
         intent=digest({'body':body,'source':source,'before':before})
         effective=self._creation_key({'action':action,'source_digest':source,'manifest':manifest,'files':files})
         with self.db() as db:
@@ -589,6 +602,9 @@ class CampaignOperations:
         return self._response(job)
 
     def _valid(self,job,check_time=True):
+        from business_profile import BusinessProfile
+        profile_binding=BusinessProfile(self.directory).binding()
+        if job['manifest'].get('business_profile',profile_binding if profile_binding['version']==0 else None)!=profile_binding:raise OperationBlocked('Business profile changed')
         if job['blocked_reasons']:raise OperationBlocked('Hard prerequisites remain blocked')
         now=self._now()
         if check_time and not self._stamp(job['created_at'])<=now<self._stamp(job['expires_at']):raise OperationBlocked('Operation expired')
@@ -599,6 +615,9 @@ class CampaignOperations:
             proposal=self._proposal()
             if check_time and not job.get('approved_at') and not self._stamp(proposal['prepared_at'])<=now<self._stamp(proposal['expires_at']):raise OperationBlocked('V2 proposal expired')
             if digest(load_rulebook())!=proposal['rules']['rulebook_sha256']:raise OperationBlocked('V2 rulebook changed')
+            from business_profile import BusinessProfile
+            profile=BusinessProfile(self.directory)
+            if proposal.get('business_profile',profile.binding() if profile.binding()['version']==0 else None)!=profile.binding():raise OperationBlocked('Business profile changed')
 
     def approve(self,operation_id,digest_value):
         with self.lock:

@@ -21,7 +21,7 @@ STAGES = {'analyzing': 'מנתח את התכנים (תמונות, פריימים
           'ready_for_owner': 'ההצעה מוכנה. נשארו קמפיין, תקציב ותשובות שלך',
           'blocked': 'נעצר', 'interrupted': 'נקטע'}
 DESTINATION = 'https://roseryjewelry.com/'
-# Owner rule "disable_text_improvements": every Advantage+ enhancement off; relevant comments stay on (2026-10-23).
+# Base recipe: every feature off, including inline comments; dated owner profile overrides are applied below.
 # Names are the ones Meta returned on the account's own creatives on 2026-10-23; a creative made without them
 # gets Meta's defaults (standard_enhancements was on in three of four).
 ENHANCEMENTS_OFF = (
@@ -38,7 +38,7 @@ ENHANCEMENTS_OFF = (
     'wa_mm_image_filtering').split()
 CREATION_RECIPE = {'adset_fields': {'destination_type': 'WEBSITE', 'bid_strategy': 'LOWEST_COST_WITHOUT_CAP'},
                    'creative_fields': {'degrees_of_freedom_spec': {'creative_features_spec': {
-                       **{f: {'enroll_status': 'OPT_OUT'} for f in ENHANCEMENTS_OFF}, 'inline_comment': {'enroll_status': 'OPT_IN'}}}},
+                       **{f: {'enroll_status': 'OPT_OUT'} for f in ENHANCEMENTS_OFF}, 'inline_comment': {'enroll_status': 'OPT_OUT'}}}},
                    'optimization_type': 'DEGREES_OF_FREEDOM'}
 COPY_RULES = ['full_copy_set', 'cta_shop_now', 'no_carousel', 'offer_in_headline']
 URL_TAGS = 'utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign={{campaign.id}}&utm_content={{ad.id}}&adset_id={{adset.id}}'
@@ -47,6 +47,8 @@ URL_TAGS = 'utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign=
 class CreativeLaunch:
     def __init__(self, directory, *, uploads, analyze, copy, plan, report, rulebook, clock=None):
         self.path = Path(directory) / 'creative-launch.json'
+        from business_profile import BusinessProfile
+        self.profile = BusinessProfile(directory)
         self.uploads, self.analyze, self.copy, self.plan = uploads, analyze, copy, plan
         self.report, self.rulebook = report, rulebook
         self.clock = clock or (lambda: datetime.now(timezone.utc))
@@ -132,6 +134,7 @@ class CreativeLaunch:
         needs the owner's approval of that manifest's digest.
         """
         from launch_proposal_schema import digest, validate_proposal_v2
+        from business_profile import creation_recipe
         if not isinstance(body, dict) or set(body) != {'campaign_id', 'budgets', 'genders', 'confirm_same_angle'}:
             raise ValueError('נדרשים קמפיין, תקציב וקהל לכל אד-סט חדש, ואישור זווית לאד-סט קיים')
         state = self.status()
@@ -189,7 +192,13 @@ class CreativeLaunch:
                              'citations': sorted(set(proposal['rules']['citations']) | set(COPY_RULES))}
         proposal.update(prepared_at=now.isoformat(), expires_at=(now + timedelta(minutes=15)).isoformat(),
                         request_revision=int(draft.get('request_revision', 1)) + 1,
-                        creation_recipe=CREATION_RECIPE)
+                        creation_recipe=creation_recipe(self.profile),
+                        business_profile=self.profile.binding(), profile_reasons=self.profile.reasons())
+        for group in groups:
+            if group['target']['mode'] == 'new':
+                self.profile.check_budget(group['budget_minor'])
+        for ad in proposal['ads']:
+            self.profile.check_copy(ad['primary_text_options'] + ad['headline_options'] + [ad['description']])
         validate_proposal_v2(proposal)
         binding = {'request_id': proposal['request_id'], 'request_revision': proposal['request_revision'], 'proposal_hash': digest(proposal)}
         confirmations = [{'adset_id': a, 'same_angle': True} for a in confirmed]

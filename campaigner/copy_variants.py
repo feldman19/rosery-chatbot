@@ -141,7 +141,7 @@ def _without_facts(text, facts):
     return text
 
 
-def _check(answer, rulebook, row, source_name):
+def _check(answer, rulebook, row, source_name, profile=None):
     if not isinstance(answer, dict) or set(answer) != {'brief', 'primary_text_options', 'headline_options'}:
         raise ValueError('יצירת הקופי לא החזירה מבנה תקין')
     brief = answer['brief']
@@ -154,6 +154,8 @@ def _check(answer, rulebook, row, source_name):
         if not isinstance(values, list) or len(values) != COUNT or len(set(values)) != COUNT or \
                 any(not isinstance(v, str) or not v.strip() or len(v) > limit for v in values):
             raise ValueError('נדרשים בדיוק 5 טקסטים ו-5 כותרות שונים')
+    if profile is not None:
+        profile.check_copy(answer['primary_text_options'] + answer['headline_options'])
     facts = store_facts(rulebook)
     # Owner rule offer_in_headline: offer language in the headline, not in the primary text.
     if any(f in t for f in facts for t in answer['primary_text_options']):
@@ -181,7 +183,7 @@ def _flags(review):
     return flagged
 
 
-def variants(row, rulebook, *, transcript=None, source_name=None, goal=None, voice_examples=None, runner=None, reviewer=None):
+def variants(row, rulebook, *, transcript=None, source_name=None, goal=None, voice_examples=None, runner=None, reviewer=None, profile=None):
     """5+5 with its brief. An injected runner without a reviewer skips the customer read (tests); the real path
     always runs it."""
     generate = runner or _run
@@ -189,7 +191,7 @@ def variants(row, rulebook, *, transcript=None, source_name=None, goal=None, voi
     feedback, flags, rounds = None, None, 0
     while True:
         answer = generate(prompt(row, rulebook, transcript, goal, voice_examples, feedback))
-        _check(answer, rulebook, row, source_name)
+        _check(answer, rulebook, row, source_name, profile)
         if not review:
             break
         flags = _flags(review(review_prompt(answer, row)))

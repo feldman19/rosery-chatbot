@@ -156,6 +156,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     decision_memory=DecisionMemory(data / "decision-memory.sqlite3")
     decision_memory.bind("rosery", "393059510164294")
     outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3',verified_changes=lambda:owner_actions.verified_changes())
+    # business-profile: local owner configuration; no provider access.
+    from business_profile import BusinessProfile
+    business_profile=BusinessProfile(data)
     visibility=ProposalVisibility(data/'proposal-dismissals.json')
     drift=CreativeDrift(data/'creative-drift.sqlite3')
     history=AccountHistory(data,reader=read_account_history if start_live and workspace=='manager' else None)
@@ -187,7 +190,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
     import copy_variants, launch_strategy
     creative_launch=CreativeLaunch(data,uploads=local_uploads,
         analyze=lambda assets,owner_brief:CreativeVision(data).analyze(assets,owner_brief=owner_brief,local_image_review_consent=True),
-        copy=lambda row,rules,**kw:copy_variants.variants(row,rules,voice_examples=history.voice_examples(),**kw),plan=launch_strategy.plan,report=lambda:management_report(live.snapshot()),rulebook=load_rulebook)
+        copy=lambda row,rules,**kw:copy_variants.variants(row,rules,voice_examples=history.voice_examples(),profile=business_profile,**kw),plan=launch_strategy.plan,report=lambda:management_report(live.snapshot()),rulebook=load_rulebook)
     # --- "אשר ובצע" (Claude): owner-approved pause / +20% budget / Advantage+ off; preview → confirm → readback ---
     from owner_actions import OwnerActions,ActionBlocked
     def owner_action_report():
@@ -197,6 +200,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         except ValueError:report['recommendations']=build_recommendations(report,None)
         try:report['creative_drift']=drift.check(((snapshot.get('sources') or {}).get('meta') or {}).get('data'),load_rulebook())
         except Exception:report['creative_drift']={'status':'unavailable','items':[]}
+        business_profile.annotate(report)
         return report
     owner_actions=OwnerActions(data,report=owner_action_report)
     # --- learning (Claude): Ad Score in shadow beside the rules + hypothesis journal with an evidence gate ---
@@ -407,6 +411,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         def do_GET(self):
             if not self.host_ok():
                 return self.reply(403, {'error': 'Invalid host'})
+            if self.path == '/api/business-profile':
+                if workspace!='manager' or not hmac.compare_digest(self.headers.get('X-Local-Session',''),session):return self.reply(403,{'error':'Owner-local only'})
+                return self.reply(200,business_profile.get())
             if self.path.startswith(('/api/launch/proposal/media/','/api/preparation-task/media/')):
                 from http.cookies import SimpleCookie
                 cookie=SimpleCookie()
@@ -584,6 +591,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         try:report['creative_drift']=drift.check(((snapshot.get('sources') or {}).get('meta') or {}).get('data'),load_rulebook())
                         except Exception:report['creative_drift']={'status':'unavailable','items':[],'unknown':[],'provider_writes':0,'live_action_allowed':False}
                     visibility.annotate(report,outcomes)
+                    business_profile.annotate(report)
                     return self.reply(200,report)
                 except (ValueError,KeyError,TypeError,OSError):return self.reply(503,{'error':'דוח הניהול אינו זמין כרגע. לא בוצע שינוי בקמפיינים.'})
             if self.path == '/api/learning':
@@ -703,6 +711,11 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 body = json.loads(self.rfile.read(size))
                 if not isinstance(body, dict):
                     raise ValueError('Object required')
+                # business-profile: uses the existing host/session/origin gate above.
+                if self.path in ('/api/business-profile','/api/business-profile/dont'):
+                    if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
+                    result=business_profile.dont(body) if self.path.endswith('/dont') else business_profile.update(body)
+                    return self.reply(200,result)
                 # BEGIN experiments-ui: behind the existing session/origin gate
                 if self.path.startswith('/api/experiments/'):
                     if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
@@ -851,8 +864,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     return self.reply(200,update_status())
                 if self.path == '/api/proposal-visibility':
                     if workspace!='manager':return self.reply(403,{'error':'Owner-local only'})
-                    if set(body)-{'proposal_id','restore'} or not isinstance(body.get('proposal_id'),str) or not isinstance(body.get('restore',False),bool):
+                    if set(body)-{'proposal_id','restore','dont'} or not isinstance(body.get('proposal_id'),str) or not isinstance(body.get('restore',False),bool):
                         return self.reply(400,{'error':'בקשת הסרה או שחזור אינה תקינה'})
+                    if 'dont' in body and body.get('restore') is True:return self.reply(400,{'error':'אין להוסיף כלל בעת שחזור'})
                     if body.get('restore') is True:
                         visibility.update({'proposal_id':body['proposal_id']},restore=True)
                         return self.reply(200,{'saved':True,'provider_writes':0})
@@ -863,6 +877,8 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                         item['proposal_id']='drift:'+item['ad_id'];items.append(item)
                     item=next((i for i in items if i.get('proposal_id')==body.get('proposal_id')),None)
                     if not item:return self.reply(404,{'error':'ההמלצה אינה זמינה. יש לרענן.'})
+                    if 'dont' in body:
+                        business_profile.dont(body['dont'])
                     visibility.update(item,restore=body.get('restore') is True)
                     return self.reply(200,{'saved':True,'provider_writes':0})
                 if self.path == '/api/creative-drift/keep':

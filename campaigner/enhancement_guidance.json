@@ -1,0 +1,422 @@
+{
+  "adapt_to_placement": {
+    "label": "התאמה למיקום",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "add_text_overlay": {
+    "label": "טקסט על התמונה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "ads_with_benefits": {
+    "label": "מודעות עם יתרונות",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "advantage_plus_creative": {
+    "label": "Advantage+ קריאייטיב",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "app_highlights": {
+    "label": "הדגשות אפליקציה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "audio": {
+    "label": "אודיו",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "biz_ai": {
+    "label": "בינה מלאכותית לעסק",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "carousel_to_video": {
+    "label": "קרוסלה לסרטון",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "catalog_feed_tag": {
+    "label": "תג פיד קטלוג",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "creative_stickers": {
+    "label": "מדבקות",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "cv_transformation": {
+    "label": "שינוי קריאייטיב",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "description_automation": {
+    "label": "תיאור אוטומטי",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "dha_optimization": {
+    "label": "מיטוב קריאייטיב דינמי",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "dynamic_partner_content": {
+    "label": "תוכן שותף דינמי",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "enable_ncs_testimonials": {
+    "label": "המלצות לקוחות",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "enhance_cta": {
+    "label": "שיפור כפתור הפעולה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "feed_caption_optimization": {
+    "label": "מיטוב כיתוב בפיד",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "generate_cta": {
+    "label": "כפתור פעולה שנוצר ב-AI",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "hide_price": {
+    "label": "הסתרת מחיר",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "ig_glados_feed": {
+    "label": "שיפורי פיד אינסטגרם",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "ig_video_native_subtitle": {
+    "label": "כתוביות באינסטגרם",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "image_animation": {
+    "label": "אנימציה לתמונה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "image_auto_crop": {
+    "label": "חיתוך תמונה אוטומטי",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "image_background_gen": {
+    "label": "רקע שנוצר ב-AI",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "image_brightness_and_contrast": {
+    "label": "בהירות וניגודיות",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "image_enhancement": {
+    "label": "שיפור תמונה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "image_templates": {
+    "label": "תבניות תמונה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "image_text_translation": {
+    "label": "תרגום טקסט בתמונה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "image_touchups": {
+    "label": "שיפורי תמונה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "image_uncrop": {
+    "label": "הרחבת תמונה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "local_store_extension": {
+    "label": "הרחבת חנות מקומית",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "media_liquidity_animated_image": {
+    "label": "הנפשת תמונה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "media_order": {
+    "label": "סדר מדיה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "media_type_automation": {
+    "label": "בחירת סוג מדיה אוטומטית",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "multi_photo_to_video": {
+    "label": "תמונות לווידאו",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "pac_recomposition": {
+    "label": "הרכבה מחדש",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "pac_relaxation": {
+    "label": "גמישות קריאייטיב",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "product_browsing": {
+    "label": "עיון במוצרים",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "product_extensions": {
+    "label": "הרחבות מוצר",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "product_metadata_automation": {
+    "label": "פרטי מוצר אוטומטיים",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "profile_card": {
+    "label": "כרטיס פרופיל",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "replace_media_text": {
+    "label": "החלפת טקסט במדיה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "reveal_details_over_time": {
+    "label": "חשיפת פרטים בהדרגה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "show_destination_blurbs": {
+    "label": "תיאור יעד",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "show_summary": {
+    "label": "סיכום אוטומטי",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "site_extensions": {
+    "label": "קישורים לאתר",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "standard_enhancements": {
+    "label": "שיפורים סטנדרטיים",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "standard_enhancements_catalog": {
+    "label": "שיפורים סטנדרטיים לקטלוג",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "text_optimizations": {
+    "label": "שיפורי טקסט",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "text_translation": {
+    "label": "תרגום טקסט",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "translate_voiceover": {
+    "label": "תרגום קריינות",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "video_auto_crop": {
+    "label": "חיתוך וידאו אוטומטי",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "video_filtering": {
+    "label": "פילטר לווידאו",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "video_highlight": {
+    "label": "היילייט מהווידאו",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "video_highlights": {
+    "label": "רגעי שיא בווידאו",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "video_to_image": {
+    "label": "וידאו לתמונה",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "video_uncrop": {
+    "label": "הרחבת וידאו",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "video_voiceover": {
+    "label": "קריינות וידאו",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "wa_mm_image_filtering": {
+    "label": "מסנני תמונה בוואטסאפ",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  },
+  "inline_comment": {
+    "label": "תגובות רלוונטיות",
+    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "verdict": "unknown",
+    "reason": "טרם הושלם מחקר",
+    "sources": []
+  }
+}

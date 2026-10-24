@@ -17,8 +17,8 @@ import uuid
 
 ACCOUNT = '393059510164294'
 RULE_ID = 'disable_text_improvements'
-# Owner decision 2026-10-23: "Relevant comments" stays on and is not flagged.
-ALLOWED_ON = frozenset({'inline_comment'})
+# The local owner profile now decides allowed features; default is off for all.
+ALLOWED_ON = frozenset()
 CREATIVE_KEPT = '__creative__'
 LABELS = {
     'standard_enhancements': 'שיפורים סטנדרטיים', 'product_browsing': 'עיון במוצרים',
@@ -47,7 +47,8 @@ KINDS = {'turned_on': 'נצפה מופעל אחרי שהיה כבוי', 'new_on'
 
 
 def label(feature):
-    return LABELS.get(feature, feature)
+    from business_profile import guidance
+    return LABELS.get(feature, guidance().get(feature, {}).get('label', feature))
 
 
 def _features(creative):
@@ -77,6 +78,9 @@ def ads_manager_url(ad_id):
 
 class CreativeDrift:
     def __init__(self, path):
+        from business_profile import BusinessProfile
+        from pathlib import Path
+        self.profile = BusinessProfile(Path(path).parent)
         self.path = str(path)
         with self._db() as db:
             db.execute('CREATE TABLE IF NOT EXISTS seen(ad_id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
@@ -117,6 +121,7 @@ class CreativeDrift:
                 db.execute('INSERT OR IGNORE INTO seen VALUES(?,?)', (ad_id, json.dumps(payload, sort_keys=True)))
 
     def check(self, data, rulebook, now=None):
+        from business_profile import feature_keys
         now = now or datetime.now(timezone.utc)
         stamp = now.isoformat()
         rule = None
@@ -124,7 +129,8 @@ class CreativeDrift:
             source = rulebook['rules'][RULE_ID]
             rule = {'rule_id': RULE_ID, 'source': source['source'], 'quote': source['source_excerpt']}
         base = {'live_action_allowed': False, 'provider_writes': 0, 'rule': rule, 'items': [], 'unknown': [],
-                'allowed_on': sorted(ALLOWED_ON)}
+                'allowed_on': [f for f in feature_keys() if self.profile.allowed(f)],
+                'profile_reasons': self.profile.reasons()}
         active = (data or {}).get('active_ads') if isinstance(data, dict) else None
         if not isinstance(active, dict) or active.get('verified') is not True or active.get('complete') is not True \
                 or active.get('account_id') != ACCOUNT or not isinstance(active.get('ads'), list):
@@ -179,7 +185,7 @@ class CreativeDrift:
             if features is None:
                 continue
             creative_id = creative.get('id')
-            on = [f for f, s in sorted(features.items()) if s == 'OPT_IN' and f not in ALLOWED_ON
+            on = [f for f, s in sorted(features.items()) if s == 'OPT_IN' and not self.profile.allowed(f)
                   and (ad_id, creative_id, f) not in kept]
             unclear = [f for f, s in sorted(features.items()) if s is None]
             replaced = [e for e in history.get(ad_id, []) if e['kind'] == 'creative_replaced' and e.get('after') == creative_id
@@ -191,7 +197,7 @@ class CreativeDrift:
                 if event.get('feature') in on and event.get('creative_id') == creative_id:
                     first[event['feature']] = event
             base['items'].append({
-                'ad_id': ad_id, 'name': ad.get('name') or ad_id, 'adset_name': (ad.get('adset') or {}).get('name'),
+                'ad_id': ad_id, 'name': ad.get('name') or ad_id, 'adset_name': (ad.get('adset') or {}).get('name'), 'adset_id': ad.get('adset_id') or (ad.get('adset') or {}).get('id'),
                 'creative_id': creative_id, 'link': ads_manager_url(ad_id),
                 'features': [{'feature': f, 'label': label(f), 'kind': (first.get(f) or {}).get('kind', 'on_at_first_read'),
                               'kind_label': KINDS[(first.get(f) or {}).get('kind', 'on_at_first_read')],
@@ -213,7 +219,7 @@ class CreativeDrift:
         if ad is None or features is None:
             raise ValueError('המודעה לא נמצאה ברשימה הנוכחית. רענן את המסך.')
         creative_id = (ad.get('creative') or {}).get('id')
-        on = [f for f, s in features.items() if s == 'OPT_IN' and f not in ALLOWED_ON] + [CREATIVE_KEPT]
+        on = [f for f, s in features.items() if s == 'OPT_IN' and not self.profile.allowed(f)] + [CREATIVE_KEPT]
         with self._db() as db:
             for feature in on:
                 db.execute('INSERT OR IGNORE INTO kept VALUES(?,?,?,?)', (ad_id, creative_id, feature, now.isoformat()))

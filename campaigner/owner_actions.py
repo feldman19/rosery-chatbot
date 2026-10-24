@@ -24,7 +24,7 @@ import threading
 import uuid
 from pathlib import Path
 
-from creative_drift import ALLOWED_ON, label as feature_label
+from creative_drift import label as feature_label
 
 PREVIEW_TTL = timedelta(minutes=10)
 MAX_STEP = 0.2
@@ -79,6 +79,8 @@ class OwnerActions:
             from meta_write_connection import load
             credentials = lambda: load(directory)
         self.credentials = credentials
+        from business_profile import BusinessProfile
+        self.profile = BusinessProfile(directory)
         self.clock = clock or (lambda: datetime.now(timezone.utc))
         self.lock = threading.RLock()
         self.previews = {}
@@ -126,6 +128,7 @@ class OwnerActions:
     def preview(self, target):
         if not isinstance(target, str):
             raise ActionBlocked('פעולה לא מוכרת')
+        profile_binding = self.profile.binding()
         kind, _, ref = target.partition(':')
         token = self.credentials()
         if kind == 'pause':
@@ -138,13 +141,17 @@ class OwnerActions:
             plan = self._plan_undo(token, ref)
         else:
             raise ActionBlocked('פעולה לא מוכרת')
+        if profile_binding != self.profile.binding():
+            raise ActionBlocked('ההגדרות שלך השתנו; נדרש אישור חדש')
+        plan['profile_binding'] = profile_binding
+        plan['profile_reasons'] = self.profile.reasons()
         now = self.clock()
         nonce = secrets.token_urlsafe(24)
         with self.lock:
             self.previews = {k: v for k, v in self.previews.items() if v['expires_at'] > now}
             self.previews[nonce] = {**plan, 'target': target, 'expires_at': now + PREVIEW_TTL}
         return {'confirm_token': nonce, 'expires_at': (now + PREVIEW_TTL).isoformat(), 'target': target,
-                **{k: plan[k] for k in ('title', 'changes', 'warnings', 'entity_name', 'undo_note')}}
+                **{k: plan[k] for k in ('title', 'changes', 'warnings', 'entity_name', 'undo_note', 'profile_reasons')}}
 
     def _proposal(self, proposal_id):
         report = self.report() or {}
@@ -171,6 +178,7 @@ class OwnerActions:
         after = (p.get('after') or {}).get('daily_budget_minor')
         if not isinstance(before, int) or not isinstance(after, int) or not before < after <= round(before * (1 + MAX_STEP)) + 1:
             raise ActionBlocked('ההגדלה חורגת מ-20% או שהתקציב לא ידוע. לא מבצעים.')
+        self.profile.check_budget(after, before)
         adset = self.transport.read(token, adset_id, ADSET_FIELDS)
         if str(adset.get('daily_budget')) != str(before):
             raise ActionBlocked('התקציב במטא השתנה מאז הניתוח (עכשיו ' + _ils(adset.get('daily_budget') or 0) + '). רענן ונסה שוב.')
@@ -192,10 +200,10 @@ class OwnerActions:
         if creative.get('product_set_id') or not isinstance(creative.get('object_story_spec'), dict) or feed is False:
             raise ActionBlocked('במודעת קטלוג או מודעה גמישה עם כמה תמונות/סרטונים אי אפשר עדיין לכבות מכאן. כבה במטא.')
         spec = (creative.get('degrees_of_freedom_spec') or {}).get('creative_features_spec') or {}
-        on = sorted(f for f, v in spec.items() if isinstance(v, dict) and v.get('enroll_status') == 'OPT_IN' and f not in ALLOWED_ON)
+        on = sorted(f for f, v in spec.items() if isinstance(v, dict) and v.get('enroll_status') == 'OPT_IN' and not self.profile.allowed(f))
         if not on:
             raise ActionBlocked('כל השיפורים כבר כבויים במודעה הזו.')
-        features = {f: ({'enroll_status': v.get('enroll_status')} if f in ALLOWED_ON and isinstance(v, dict) else {'enroll_status': 'OPT_OUT'})
+        features = {f: (dict(v) if self.profile.allowed(f) and isinstance(v, dict) else {'enroll_status': 'OPT_OUT'})
                     for f, v in spec.items()}
         new = {'name': ((creative.get('name') or 'creative') + ' | ללא שיפורים')[:200],
                'object_story_spec': creative['object_story_spec'],
@@ -205,6 +213,7 @@ class OwnerActions:
         if creative.get('url_tags'):
             new['url_tags'] = creative['url_tags']
         return {'kind': 'disable_enhancements', 'entity_id': ad_id, 'entity_name': ad.get('name') or item.get('name'),
+                'profile_binding': self.profile.binding(), 'profile_reasons': self.profile.reasons(),
                 'title': 'לכבות שיפורי Advantage+', 'expect': {'creative_id': creative['id']}, 'write': {'new_creative': new},
                 'changes': [{'field': feature_label(f), 'from': 'מופעל', 'to': 'כבוי'} for f in on],
                 'warnings': ['מטא לא מאפשרת לערוך קריאייטיב קיים, אז נוצר עותק זהה בלי השיפורים ומוחלף באותה מודעה. '
@@ -251,6 +260,8 @@ class OwnerActions:
             plan = self.previews.pop(nonce, None) if isinstance(nonce, str) else None
             if not plan or plan['expires_at'] <= now:
                 raise ActionBlocked('האישור פג או כבר נוצל. פתח שוב את התצוגה ואשר מחדש.')
+            if plan['profile_binding'] != self.profile.binding():
+                raise ActionBlocked('ההגדרות שלך השתנו; נדרש אישור חדש')
             if any(r['state'] == 'inflight' for r in self._receipts()):
                 raise ActionBlocked('פעולה אחרת עדיין מתבצעת. חכה שתסתיים.')
             receipt = {'id': 'act-' + uuid.uuid4().hex[:16], 'kind': plan['kind'], 'target': plan['target'],
@@ -339,7 +350,7 @@ class OwnerActions:
                 return False
             if 'new_creative' in w:
                 spec = (creative.get('degrees_of_freedom_spec') or {}).get('creative_features_spec') or {}
-                return not any(isinstance(v, dict) and v.get('enroll_status') == 'OPT_IN' and f not in ALLOWED_ON for f, v in spec.items())
+                return not any(isinstance(v, dict) and v.get('enroll_status') == 'OPT_IN' and not self.profile.allowed(f) for f, v in spec.items())
             return True
         except Exception:
             return False
