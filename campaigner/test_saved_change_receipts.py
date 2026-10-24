@@ -7,7 +7,11 @@ from management_report import _detail_inventory
 
 class SavedChangeReceiptsTests(unittest.TestCase):
     def test_saved_creative_receipts_are_bounded_not_complete_history(self):
-        events = load_saved_change_evidence(Path(__file__).resolve().parents[1])
+        root = Path(__file__).resolve().parents[1]
+        from change_history_evidence import LEDGER
+        if not all((root / p).is_file() for p in (LEDGER, BEFORE, AFTER)):
+            self.skipTest('needs the private 2026-10-19 repair receipts in outputs/ (not in git)')
+        events = load_saved_change_evidence(root)
         self.assertGreater(len(events), 0)
         for event in events:
             self.assertNotEqual(event['before_creative_id'], event['after_creative_id'])

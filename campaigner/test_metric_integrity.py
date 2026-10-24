@@ -8,6 +8,7 @@ from test_management_report import ManagementReportTests
 class SavedEvidenceTests(unittest.TestCase):
     def test_actual_saved_contradiction_is_blocked_without_inventing_context(self):
         path=Path(__file__).resolve().parents[1]/'outputs/rosery-daily-review-2026-10-21.json'
+        if not path.is_file():self.skipTest('needs the private daily review export in outputs/ (not in git)')
         evidence=json.loads(path.read_text(encoding='utf-8'))
         result=compare_saved(evidence['metaPurchaseDaily'],evidence['metaSpendDaily'])
         self.assertFalse(result['efficiency_allowed'])

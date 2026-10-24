@@ -14,6 +14,8 @@ class ImportedBusinessMethodTests(unittest.TestCase):
         self.root = Path(self.temp.name) / 'campaigner'
         self.root.mkdir()
         base = Path(__file__).resolve().parent
+        if not (base.parent / 'outputs' / FOLDER).is_dir() or not (base / 'businesses/rosery/profile.json').is_file():
+            self.skipTest('needs the private imported Claude-project export in outputs/ (not in git)')
         self.sources = self.root.parent / 'outputs' / FOLDER
         shutil.copytree(base.parent / 'outputs' / FOLDER, self.sources)
         (self.root / 'businesses/rosery').mkdir(parents=True)

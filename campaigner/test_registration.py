@@ -5,6 +5,7 @@ from registration import registration_report,answer_registration,ACCOUNT,CAMPAIG
 
 class RegistrationTests(unittest.TestCase):
     def setUp(self):
+        (Path(__file__).resolve().parents[1]/'work').mkdir(exist_ok=True)
         self.tmp=tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1]/'work',prefix='r');self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name)/'app';(self.root/'.local').mkdir(parents=True)
         (self.root.parent/'outputs').mkdir()

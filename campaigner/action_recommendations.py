@@ -142,7 +142,7 @@ def build_recommendations(report, dossier=None, *, now=None, rulebook=None):
             if not entity_update_known:
                 missing.append('entity_update_timestamp')
             # Even a valid updated_time does not name the changed field/event.
-            missing.extend(['verified_measurement_and_attribution_maturity','current_stock_and_offer'])
+            missing.extend(['relevant_budget_or_creative_change_time','verified_measurement_and_attribution_maturity','current_stock_and_offer'])
             missing.extend('economics:' + gap for gap in economics['missing'])
             state = {'status': row.get('status'), 'effective_status': row.get('effective_status'),
                      'daily_budget_minor': row.get('daily_budget_minor')}
