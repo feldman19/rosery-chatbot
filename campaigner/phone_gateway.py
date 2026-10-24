@@ -229,11 +229,12 @@ if __name__ == '__main__':
     parser.add_argument('--phone-ip', required=True, help="the owner's phone Tailscale address (100.x)")
     parser.add_argument('--data-dir', required=True)
     parser.add_argument('--port', type=int, default=8768)
+    parser.add_argument('--backend-port', type=int, default=8767, help='8770 = the read-only preview of a work-in-progress version')
     parser.add_argument('--new-code', action='store_true', help='make a new 6-digit code (signs out the phone)')
     args = parser.parse_args()
     access = PhoneAccess(Path(args.data_dir) / 'phone-gateway.json')
     if args.new_code or 'code' not in access.state:
         print('Phone sign-in code: ' + access.new_code(), flush=True)
-    server = make_gateway(args.bind_ip, args.phone_ip, access, port=args.port)
+    server = make_gateway(args.bind_ip, args.phone_ip, access, port=args.port, backend_port=args.backend_port)
     print(f'ROSERY on the phone: http://{args.bind_ip}:{args.port}', flush=True)
     server.serve_forever()
