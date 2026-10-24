@@ -440,11 +440,11 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except Exception:
                     kickoff='החיבור נשמר. הפעלת קריאת החומרים לא הושלמה; ניתן לנסות אותה מהמערכת בלי להתחבר מחדש.'
                 return self.reply(200,'<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><title>ROSERY — Drive connected</title><h1>החיבור לדרייב אומת ונשמר מוצפן</h1><p>קריאה בלבד. לא פורסמו מודעות ולא שונו קבצים בדרייב.</p><p>'+kickoff+'</p><a href="/">חזרה למערכת</a></html>','text/html; charset=utf-8')
-            if workspace=='manager' and self.path=='/advanced' and (data/'rosery-pilot.json').exists():
-                page=(ROOT/'owner-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
-                return self.reply(200,page,'text/html; charset=utf-8')
+            if self.path.split('?',1)[0]=='/advanced':
+                # Owner 2026-10-24: the old full screen is retired; its address goes to the simple screen.
+                self.send_response(302);self.send_header('Location','/');self.send_header('Content-Length','0');self.end_headers();return
             if workspace=='manager' and self.path.split('?',1)[0]=='/':
-                # Simple owner screen first; the full workspace stays at /advanced.
+                # The simple owner screen is the only owner screen.
                 page=(ROOT/'simple-web.html').read_text(encoding='utf-8').replace('__SESSION__',session).replace('__VERSION__',screen_version())
                 return self.reply(200,page,'text/html; charset=utf-8')
             if self.path.split('?',1)[0] == '/' or (self.path == '/lab' and workspace == 'manager'):
