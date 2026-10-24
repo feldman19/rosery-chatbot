@@ -16,6 +16,7 @@ import secrets
 import sqlite3
 from execution_preflight import prepare as preflight
 from meta_execution import MetaExecutor,FixedMetaTransport,ACCOUNT,CAMPAIGN
+from business import ACTIVE as BUSINESS
 
 
 def canonical(x):return json.dumps(x,sort_keys=True,separators=(',',':'),allow_nan=False)
@@ -65,11 +66,11 @@ class ExactApprovalBridge:
         if raw.get('id')!=CAMPAIGN or raw.get('account_id')!=ACCOUNT or raw.get('error'):raise ValueError('Fixed campaign identity not verified')
         value=raw.get('daily_budget')
         if not isinstance(value,(str,int)) or isinstance(value,bool) or not str(value).isdigit() or int(value)<=0 or str(raw.get('lifetime_budget','0')) not in ('0','None',''):raise ValueError('Daily campaign budget not verified')
-        return {'tenant_id':'rosery-local','account_id':ACCOUNT,'entity_id':CAMPAIGN,
-                'status':raw.get('status'),'budget_minor':int(value),'currency':'ILS','budget_type':'daily',
+        return {'tenant_id':BUSINESS.approval_tenant,'account_id':ACCOUNT,'entity_id':CAMPAIGN,
+                'status':raw.get('status'),'budget_minor':int(value),'currency':BUSINESS.currency,'budget_type':'daily',
                 'parent_active':raw.get('effective_status')=='ACTIVE','verified':True,
                 'checked_at':now.isoformat(),'valid_until':(now+timedelta(seconds=60)).isoformat()}
-    def _binding(self):return {'tenant_id':'rosery-local','account_id':ACCOUNT,'entity_id':CAMPAIGN,'platform':'meta','level':'campaign','currency':'ILS','budget_type':'daily'}
+    def _binding(self):return {'tenant_id':BUSINESS.approval_tenant,'account_id':ACCOUNT,'entity_id':CAMPAIGN,'platform':'meta','level':'campaign','currency':BUSINESS.currency,'budget_type':'daily'}
     def _public(self,p,control):
         generation=control['generation']
         valid=self._now()<datetime.fromisoformat(p['expires_at'])
@@ -78,7 +79,7 @@ class ExactApprovalBridge:
         operation_state=('unknown' if operation['state']=='dispatching' else operation['state']) if operation else None
         approval_status='approved' if approved else 'expired' if not valid else 'revoked' if p.get('approval') else 'prepared'
         return {'operation_id':p['operation_id'],'digest':p['digest'],'status':operation_state or approval_status,'approval_status':approval_status,'operation_state':operation_state,'approval_consumed':operation is not None,
-                'account_id':ACCOUNT,'campaign_id':CAMPAIGN,'currency':'ILS','before':p['candidate']['before'],'after':p['candidate']['after'],
+                'account_id':ACCOUNT,'campaign_id':CAMPAIGN,'currency':BUSINESS.currency,'before':p['candidate']['before'],'after':p['candidate']['after'],
                 'expires_at':p['expires_at'],'manual_intent':True,'is_recommendation':False,'exact_action_approved':approved,'execution_ready':approved and self.credential_verified and operation is None,
                 'provider_write_performed':True if operation_state=='verified' else None if operation_state=='unknown' else False,'local_identity_scope':'single local workstation; not multi-user authentication'}
     def _control(self):
@@ -87,7 +88,7 @@ class ExactApprovalBridge:
         with self.db() as db:
             control=self._load(db,'control');generation=control['generation'];proposals=[]
             for row in db.execute("SELECT id FROM envelopes WHERE id!='control'").fetchall():proposals.append(self._public(self._load(db,row['id']),control))
-        return {'account_id':ACCOUNT,'campaign_id':CAMPAIGN,'currency':'ILS','credential_configured':self.injected_loader or (self.directory/'meta-execution.dpapi').exists(),
+        return {'account_id':ACCOUNT,'campaign_id':CAMPAIGN,'currency':BUSINESS.currency,'credential_configured':self.injected_loader or (self.directory/'meta-execution.dpapi').exists(),
                 'credential_state':{'configured':self.injected_loader or (self.directory/'meta-execution.dpapi').exists(),'verified':self.credential_verified,'last_verified_at':self.last_verified_at,'verification_kind':'last successful host check; not live-poll verification'},'stop_generation':self._control()['generation'],'proposals':proposals,'default_action_authorized':False,
                 'live_action_allowed':False,'automatic_execution':False,'identity_scope':'local workstation, not authenticated multi-user roles'}
     def get(self,operation_id):

@@ -5,8 +5,9 @@ import hashlib
 import json
 import math
 from urllib.parse import urlsplit
+from business import ACTIVE as BUSINESS
 
-ACCOUNT = '393059510164294'
+ACCOUNT = BUSINESS.meta_account
 
 
 def _stamp(value):

@@ -14,8 +14,9 @@ from datetime import datetime,date,timedelta,timezone
 from decimal import Decimal,InvalidOperation
 from zoneinfo import ZoneInfo,ZoneInfoNotFoundError
 import json
+from business import ACTIVE as BUSINESS
 
-ACCOUNT='393059510164294';SHOP='21cc82-3.myshopify.com'
+ACCOUNT=BUSINESS.meta_account;SHOP=BUSINESS.shop
 PURCHASE=('offsite_conversion.fb_pixel_purchase','omni_purchase')
 REGISTRATION=('offsite_conversion.fb_pixel_complete_registration','omni_complete_registration','complete_registration')
 METRICS=('spend','landing_page_views','purchases','attributed_revenue','roas','registrations','cost_per_registration','store_orders','store_revenue')
@@ -386,8 +387,8 @@ def build_report(live_snapshot,proposal_report=None,operations_status=None,now=N
     now=now or datetime.now(timezone.utc)
     if not isinstance(now,datetime) or now.tzinfo is None:raise ValueError('Aware report clock required')
     snapshot=live_snapshot if isinstance(live_snapshot,dict) else {};sources=snapshot.get('sources') or {};meta=sources.get('meta') or {};shop=sources.get('shopify') or {};data=meta.get('data') or {};store=shop.get('data') or {}
-    notes=[];meta_identity=data.get('verified') is True and data.get('account_id')==ACCOUNT and data.get('currency')=='ILS';valid=meta_identity and data.get('complete') is True
-    currency='ILS';today=_date(data.get('today'))
+    notes=[];meta_identity=data.get('verified') is True and data.get('account_id')==ACCOUNT and data.get('currency')==BUSINESS.currency;valid=meta_identity and data.get('complete') is True
+    currency=BUSINESS.currency;today=_date(data.get('today'))
     try:actual_today=now.astimezone(ZoneInfo(data['timezone'])).date()
     except (KeyError,TypeError,ValueError,ZoneInfoNotFoundError):actual_today=None
     if actual_today and today!=actual_today:today=actual_today;valid=False;notes.append('נדרש רענון Meta לאחר החלפת יום בחשבון')

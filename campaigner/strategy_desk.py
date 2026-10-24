@@ -14,6 +14,7 @@ import sqlite3
 import unicodedata
 from zoneinfo import ZoneInfo,ZoneInfoNotFoundError
 from meta_direct import ACCOUNT
+from business import ACTIVE as BUSINESS
 
 
 def stamp(value):
@@ -102,7 +103,7 @@ class StrategyDesk:
             if ad.get('account_id')!=ACCOUNT or ad.get('effective_status')!='ACTIVE' or (ad.get('campaign') or {}).get('effective_status')!='ACTIVE' or (ad.get('adset') or {}).get('effective_status')!='ACTIVE':
                 result['unknowns'].append('Parent/child identity or active status is inconsistent');return result
         result.update(verified=True,active_ads_count=len(ads),source_observed_at=inventory['checked_at'],currency=data.get('currency') if isinstance(data.get('currency'),str) and re.fullmatch('[A-Z]{3}',data['currency']) else None)
-        if result['currency']!='ILS':result['unknowns'].append('Fixed ROSERY ILS monetary normalization is unavailable; no spend totals are inferred')
+        if result['currency']!=BUSINESS.currency:result['unknowns'].append('Fixed ROSERY ILS monetary normalization is unavailable; no spend totals are inferred')
         try:today=now.astimezone(ZoneInfo(data['timezone'])).date()
         except (KeyError,TypeError,ValueError,ZoneInfoNotFoundError):
             result['unknowns'].append('Account timezone is unknown; full-day metrics cannot be calculated');today=None
@@ -159,7 +160,7 @@ class StrategyDesk:
                 if value is not None:totals[key]+=value
         for key in keys:
             if seen[key] and (key not in ('spend_minor','impressions') or totals[key]==totals[key].to_integral_value()):result[key]=int(totals[key]) if key in ('spend_minor','impressions') else float(totals[key])
-        if data.get('currency')!='ILS':result['spend_minor']=None
+        if data.get('currency')!=BUSINESS.currency:result['spend_minor']=None
         return result
     def _number(self,value):
         if value is None or isinstance(value,bool):return None

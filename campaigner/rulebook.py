@@ -7,20 +7,22 @@ never grant execution authority.
 import hashlib
 import json
 from pathlib import Path
+from business import ACTIVE as BUSINESS
 
-ACCOUNT = '393059510164294'
-DIRECTORY = Path(__file__).resolve().parent / 'rules'
+ACCOUNT = BUSINESS.meta_account
+DIRECTORY = BUSINESS.rules_path
+SOURCE_REF = ('campaigner/' + BUSINESS.rules_dir + '/' + BUSINESS.rulebook_file) if not Path(BUSINESS.rules_dir).is_absolute() else str(BUSINESS.rules_path / BUSINESS.rulebook_file)
 USES = {'engine', 'creative_check', 'review', 'context'}
 
 
-def load_rulebook(directory=None, *, business_id='rosery', account_id=ACCOUNT):
+def load_rulebook(directory=None, *, business_id=BUSINESS.id, account_id=ACCOUNT):
     directory = Path(directory or DIRECTORY)
     result = {'status': 'unavailable', 'rules': {}, 'live_action_allowed': False}
-    if business_id != 'rosery' or account_id != ACCOUNT:
+    if business_id != BUSINESS.id or account_id != ACCOUNT:
         return {**result, 'reason': 'tenant_mismatch'}
     try:
-        book = json.loads((directory / 'rosery-rulebook.json').read_text(encoding='utf-8'))
-        if (book.get('business_id'), book.get('account_id'), book.get('version')) != ('rosery', ACCOUNT, 1):
+        book = json.loads((directory / BUSINESS.rulebook_file).read_text(encoding='utf-8'))
+        if (book.get('business_id'), book.get('account_id'), book.get('version')) != (BUSINESS.id, ACCOUNT, 1):
             raise ValueError('rulebook_scope_mismatch')
         texts = {}
         for name, metadata in book['sources'].items():
@@ -43,7 +45,7 @@ def load_rulebook(directory=None, *, business_id='rosery', account_id=ACCOUNT):
         return {**result, 'status': 'available', 'business_id': business_id, 'account_id': account_id,
                 'version': book['version'], 'owner': book.get('owner'), 'rules': rules,
                 'sources': {name: dict(meta) for name, meta in book['sources'].items()},
-                'source_ref': 'campaigner/rules/rosery-rulebook.json'}
+                'source_ref': SOURCE_REF}
     except (OSError, ValueError, KeyError, TypeError, UnicodeDecodeError) as error:
         return {**result, 'reason': 'missing_changed_or_invalid_rulebook', 'detail': str(error)[:200]}
 

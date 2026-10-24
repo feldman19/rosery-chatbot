@@ -6,8 +6,9 @@ not a prompt and is never included wholesale in the dossier.
 import hashlib
 import json
 from pathlib import Path
+from business import ACTIVE as BUSINESS
 
-ACCOUNT = '393059510164294'
+ACCOUNT = BUSINESS.meta_account
 FOLDER = 'claude-project-import-20261021'
 ALLOWED = {'masculine_copy', 'headline_no_emoji', 'no_unverified_superlatives',
            'avoid_prominent_material', 'shop_now_cta', 'offer_in_headline',
@@ -19,12 +20,12 @@ def load_imported_business_method(root, *, business_id, account_id):
     result = {'status': 'unavailable', 'preferences': [], 'conflicts': [],
               'live_action_allowed': False, 'approval_imported': False,
               'financial_thresholds_executable': False}
-    if business_id != 'rosery' or account_id != ACCOUNT:
+    if business_id != BUSINESS.id or account_id != ACCOUNT:
         return {**result, 'reason': 'tenant_mismatch'}
     directory = Path(root).parent / 'outputs' / FOLDER
     try:
         policy = json.loads((directory / 'curated-business-method.json').read_text(encoding='utf-8'))
-        if (policy.get('business_id'), policy.get('account_id'), policy.get('version')) != ('rosery', ACCOUNT, 1):
+        if (policy.get('business_id'), policy.get('account_id'), policy.get('version')) != (BUSINESS.id, ACCOUNT, 1):
             raise ValueError('policy_scope_mismatch')
         sources = policy['sources']
         if not isinstance(sources, dict) or not sources:
@@ -60,4 +61,4 @@ def load_imported_business_method(root, *, business_id, account_id):
 def load_imported_method(root=None):
     """ROSERY-only convenience entrypoint; never use for another tenant."""
     return load_imported_business_method(root or Path(__file__).resolve().parent,
-                                        business_id='rosery', account_id=ACCOUNT)
+                                        business_id=BUSINESS.id, account_id=ACCOUNT)

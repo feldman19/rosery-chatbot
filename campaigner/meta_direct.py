@@ -8,11 +8,12 @@ from datetime import datetime, timezone, timedelta
 from urllib.parse import urlencode
 from connections import NoRedirect
 from shopify_direct import crypt
+from business import ACTIVE as BUSINESS
 
-APP_ID='1101281589359409'
-ACCOUNT='393059510164294'
-LAUNCH='120253309360290730'
-SALES_RESTART='120246379886090730'
+APP_ID=BUSINESS.meta_app_id
+ACCOUNT=BUSINESS.meta_account
+LAUNCH=BUSINESS.meta_launch_campaign
+SALES_RESTART=BUSINESS.meta_sales_campaign
 VERSION='v26.0'
 QUERY_SETTINGS={'time_increment':'1','use_unified_attribution_setting':True,'action_report_time':'default_unchanged'}
 

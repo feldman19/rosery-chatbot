@@ -9,6 +9,7 @@ import re
 import json,hashlib,hmac
 from meta_direct import graph,APP_ID as READER_APP_ID,ACCOUNT
 from shopify_direct import crypt
+from business import ACTIVE as BUSINESS
 
 def bind_executor_app(directory,app_id):
     """Host installation step only; never accept an app binding from browser JSON."""
@@ -38,7 +39,7 @@ def verify(token,expected_app_id):
     granted={p['permission'] for p in permissions if p.get('status')=='granted'}
     if not {'ads_read','ads_management'}<=granted or granted-{'ads_read','ads_management','public_profile'}:raise ValueError('Unexpected write scopes')
     account=graph(token,'act_'+ACCOUNT,{'fields':'account_id,currency'})
-    if account.get('account_id')!=ACCOUNT or account.get('currency')!='ILS':raise ValueError('Wrong account or currency')
+    if account.get('account_id')!=ACCOUNT or account.get('currency')!=BUSINESS.currency:raise ValueError('Wrong account or currency')
     return {'verified':True,'account_id':ACCOUNT,'app_id':expected_app_id,'scopes':sorted(granted),
             'campaign_action_authorized':False,'allowed_product_operations':['pause_campaign','set_campaign_daily_budget']}
 

@@ -1,5 +1,6 @@
 """Offline per-order bridge; conditional arithmetic is never an ad spend target."""
 from economics_evidence import current_recorded_economics
+from business import ACTIVE as BUSINESS
 
 METHOD_SOURCES = [
  'https://help.shopify.com/en/manual/reports-and-analytics/shopify-reports/report-types/default-reports/sales-report',
@@ -65,7 +66,7 @@ def configured_variable_costs(dossier, sales_per_order, residual):
                            'Configured amounts deducted unchanged; expense VAT basis unknown'],
            'missing': ['actual_courier_invoices', 'gateway_mix_and_settlement_fees',
                        'historical_rate_applicability', 'expense_vat_basis', 'return_exchange_handling']}
-    if saved.get('shop') != '21cc82-3.myshopify.com' or not saved.get('observed_date'):
+    if saved.get('shop') != BUSINESS.shop or not saved.get('observed_date'):
         return out
     from math import isfinite
     def amount(x):

@@ -74,6 +74,7 @@ from drive_direct import status as drive_status
 from strategy_desk import StrategyDesk
 from urllib.parse import urlsplit,parse_qs,unquote_to_bytes
 from shopify_direct import configure as configure_shopify, read_reports as read_shopify_reports, status as shopify_status, SetupError
+from business import ACTIVE as BUSINESS
 
 ROOT = Path(__file__).resolve().parent
 
@@ -150,11 +151,14 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         raise ValueError('Invalid local workspace')
     data = Path(data_dir or ROOT / '.local')
     data.mkdir(parents=True, exist_ok=True)
+    # One business per data folder: never run this business on another business's data (business.py).
+    import business as business_config
+    business_config.check_data_folder(data, BUSINESS)
     experiment_store=ExperimentStore(data)  # experiments-ui: local state only
     live=LiveReports(data)
     claude_chat=ClaudeChat(data)
     decision_memory=DecisionMemory(data / "decision-memory.sqlite3")
-    decision_memory.bind("rosery", "393059510164294")
+    decision_memory.bind(BUSINESS.id, BUSINESS.meta_account)
     outcomes=OutcomeTracker(data/'outcome-tracking.sqlite3',verified_changes=lambda:owner_actions.verified_changes())
     visibility=ProposalVisibility(data/'proposal-dismissals.json')
     drift=CreativeDrift(data/'creative-drift.sqlite3')
@@ -549,7 +553,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except (ValueError,OSError):return self.reply(503,{'error':'לא ניתן לאמת את יומן הביצוע. לא בוצע שינוי.'})
             if self.path == '/api/decision-memory':
                 try:
-                    return self.reply(200,decision_memory.context('rosery','393059510164294',live.snapshot()))
+                    return self.reply(200,decision_memory.context(BUSINESS.id,BUSINESS.meta_account,live.snapshot()))
                 except (ValueError, OSError):
                     return self.reply(503,{'error':'לא ניתן לאמת את הראיות השמורות; לא נוצרה המלצה.'})
             if self.path == '/api/claude-chat':
@@ -727,13 +731,13 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     if self.path == '/api/decision-memory/query':
                         if set(body)!={'question','ad_id'}:raise ValueError('Exact question/ad fields required')
                         if body['ad_id'] is not None and (not isinstance(body['ad_id'],str) or not body['ad_id'].isdigit() or len(body['ad_id'])>100):raise ValueError('Invalid ad ID')
-                        return self.reply(200,decision_memory.context('rosery','393059510164294',live.snapshot(),body['question'],body['ad_id']))
+                        return self.reply(200,decision_memory.context(BUSINESS.id,BUSINESS.meta_account,live.snapshot(),body['question'],body['ad_id']))
                     if self.path == '/api/decision-memory/decision':
                         if set(body)!={'hypothesis','evidence_refs','action','evaluation_plan'}:raise ValueError('Exact decision fields required')
-                        return self.reply(200,decision_memory.record_decision('rosery','393059510164294',**body))
+                        return self.reply(200,decision_memory.record_decision(BUSINESS.id,BUSINESS.meta_account,**body))
                     if self.path == '/api/decision-memory/observation':
                         if set(body)!={'decision_id','evidence_refs','design','note'}:raise ValueError('Exact observation fields required')
-                        return self.reply(200,decision_memory.record_observation('rosery','393059510164294',**body))
+                        return self.reply(200,decision_memory.record_observation(BUSINESS.id,BUSINESS.meta_account,**body))
                     return self.reply(404,{'error':'Not found'})
                 if self.path == '/api/tasks':
                     return self.reply(200, tasks.create(body))
@@ -770,7 +774,7 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     # Only explicit ad content and timestamps. No credentials, customer
                     # records, browser history, raw chat or private economics are sent.
                     chosen={k:selected.get(k) for k in ('id','name','campaign_name','adset_name','status','effective_status','primary_text','headline','description','text_options')} if selected else None
-                    context={'business':'ROSERY, Israeli jewelry and apparel brand','account_id':view.get('account_id'),'checked_at':view.get('checked_at'),'selected_ad':chosen,'available_ads':len(view.get('ads',[])),'image_provided':False}
+                    context={'business':BUSINESS.name+', '+BUSINESS.description,'account_id':view.get('account_id'),'checked_at':view.get('checked_at'),'selected_ad':chosen,'available_ads':len(view.get('ads',[])),'image_provided':False}
                     try:chat_report=management_report(live.snapshot())
                     except (ValueError,KeyError,TypeError,OSError):chat_report={}
                     context['account_metrics']=owner_chat_metrics(chat_report)

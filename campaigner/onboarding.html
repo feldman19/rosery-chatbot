@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>הקמת עסק חדש</title>
+<style>
+:root{--bg:#f5f4ef;--surface:#fff;--ink:#121a16;--muted:#59665f;--line:#e6e4dc;--brand:#0f3d2e;--brand-soft:#e4ede8;--note:#7f5500;--note-soft:#fbf1dc;--bad:#b3261e;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0a0e0c;--surface:#131916;--ink:#ecf1ee;--muted:#a8b4ae;--line:#232c27;--brand:#6fd8a0;--brand-soft:#17231e;--note:#f2c46b;--note-soft:#30260f;--bad:#ff8a7a;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,"Segoe UI",Arial,sans-serif}
+main{max-width:640px;margin:0 auto;padding:24px 16px 64px;display:grid;gap:16px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:0}
+p{margin:0}.muted{color:var(--muted)}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+ol.steps li{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+ol.steps li.done{color:var(--ink)}ol.steps li.done::before{content:"✓ ";color:var(--brand)}
+ol.steps li.now{border-color:var(--brand);background:var(--brand-soft);color:var(--ink);font-weight:700}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px}
+label{display:grid;gap:6px;font-weight:600}
+input,select,textarea{font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-height:48px}
+textarea{min-height:90px}
+.hint{font-weight:400;color:var(--muted);font-size:15px}
+button{font:inherit;font-weight:700;min-height:48px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--brand);border-color:var(--brand);color:var(--bg)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--note);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.note{background:var(--note-soft);color:var(--ink);border-radius:12px;padding:10px 12px}
+.error{color:var(--bad);font-weight:600}
+ul.rules{margin:0;padding-inline-start:20px;display:grid;gap:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title" tabindex="-1">הקמת עסק חדש</h1>
+  <p class="muted">כמה שלבים קצרים. שום דבר לא משתנה בחשבון המודעות או בחנות, והמערכת רק קוראת עד שתאשר משהו.</p>
+  <ol class="steps" id="steps" aria-label="השלבים"></ol>
+  <section class="card" id="step" aria-labelledby="step-title" aria-live="polite"></section>
+  <p class="error" id="error" role="alert" hidden></p>
+</main>
+<script>
+const token='__SESSION__',$=id=>document.getElementById(id);
+const el=(tag,attrs={},...kids)=>{const n=document.createElement(tag);for(const [k,v] of Object.entries(attrs))k==='text'?n.textContent=v:n.setAttribute(k,v);n.append(...kids);return n};
+async function api(path,body){
+  const r=await fetch(path,body===undefined?{headers:{'X-Local-Session':token}}:{method:'POST',headers:{'X-Local-Session':token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const v=await r.json().catch(()=>({}));if(!r.ok)throw Error(v.error||'משהו לא הצליח. נסה שוב.');return v;
+}
+function showError(text){$('error').hidden=!text;$('error').textContent=text||''}
+function field(label,input,hint){const l=el('label',{},label);if(hint)l.append(el('span',{class:'hint',text:hint}));l.append(input);return l}
+function input(id,attrs={}){return el('input',{id,...attrs})}
+function select(id,options,chosen){const s=el('select',{id});for(const [v,t] of options){const o=el('option',{value:v,text:t});if(v===chosen)o.selected=true;s.append(o)}return s}
+function lines(id){return ($(id).value||'').split('\n').map(x=>x.trim()).filter(Boolean)}
+function numberOrNull(id){const v=$(id).value.trim();return v===''?null:Number(v)}
+async function send(path,body){showError('');try{render(await api(path,body))}catch(e){showError(e.message)}}
+function render(st){
+  const steps=$('steps');steps.replaceChildren();
+  for(const s of st.steps){const li=el('li',{class:s.state,text:s.title});if(s.state==='now')li.setAttribute('aria-current','step');steps.append(li)}
+  const box=$('step');box.replaceChildren(el('h2',{id:'step-title',tabindex:'-1',text:st.title}),el('p',{class:'muted',text:st.help}));
+  const go=(text,fn)=>{const b=el('button',{class:'primary',type:'button',text});b.onclick=fn;return b};
+  const a=st.answers||{};
+  if(st.step==='business'){
+    box.append(field('שם העסק',input('name',{value:a.name||'',maxlength:'80'})),
+      field('מה העסק מוכר?',input('sell',{value:a.what_you_sell||'',maxlength:'200'}),'במשפט אחד, למשל: תכשיטים ובגדים לגברים'),
+      field('מטבע',select('currency',[['ILS','שקל (₪)'],['USD','דולר ($)'],['EUR','אירו (€)']],a.currency||'ILS')),
+      field('שעון',select('tz',[['Asia/Jerusalem','ישראל'],['Europe/London','לונדון'],['America/New_York','ניו יורק']],a.timezone||'Asia/Jerusalem')),
+      field('שפת המסך',select('lang',[['he','עברית'],['en','English']],a.language||'he')),
+      go('המשך',()=>send('/api/onboarding/business',{name:$('name').value,what_you_sell:$('sell').value,currency:$('currency').value,timezone:$('tz').value,language:$('lang').value,country:$('tz').value==='Asia/Jerusalem'?'IL':$('tz').value==='Europe/London'?'GB':'US'})));
+  }else if(st.step==='meta_connect'){
+    box.append(el('p',{class:'note',text:st.meta?.connected?'מטא מחובר. אפשר להמשיך.':'מטא עוד לא מחובר. פותחים במחשב של העסק את מסך החיבורים, מתחברים, וחוזרים לכאן.'}),
+      go('בדוק שוב והמשך',()=>send('/api/onboarding/meta-connect',{})));
+  }else if(st.step==='meta_account'){
+    if(st.accounts?.error){box.append(el('p',{class:'note',text:st.accounts.error}))}
+    else{const s=select('account',(st.accounts||[]).map(x=>[x.id,x.name+' · '+x.currency]));box.append(field('חשבון המודעות',s),go('המשך',()=>send('/api/onboarding/meta-account',{account_id:s.value})))}
+  }else if(st.step==='meta_campaign'){
+    if(st.campaigns?.error){box.append(el('p',{class:'note',text:st.campaigns.error}))}
+    else{const s=select('campaign',[['','אין עדיין קמפיין מכירות'],...(st.campaigns||[]).map(x=>[x.id,x.name])]);
+      box.append(field('קמפיין המכירות',s),go('המשך',()=>send('/api/onboarding/meta-campaign',{campaign_id:s.value||null})))}
+  }else if(st.step==='shopify'){
+    box.append(field('כתובת החנות',input('shop',{placeholder:'name.myshopify.com',dir:'ltr',inputmode:'url'}),'הכתובת הפנימית של שופיפיי, שמסתיימת ב-myshopify.com'),
+      el('div',{class:'row'},go('המשך',()=>send('/api/onboarding/shopify',{domain:$('shop').value})),
+        (()=>{const b=el('button',{type:'button',text:'אין לי חנות שופיפיי'});b.onclick=()=>send('/api/onboarding/shopify',{domain:null});return b})()));
+  }else if(st.step==='questionnaire'){
+    box.append(field('כמה שווה הזמנה ממוצעת? (במטבע העסק)',input('aov',{type:'number',min:'1',step:'1',inputmode:'decimal'})),
+      field('מה הרווח הגולמי, באחוזים?',input('margin',{type:'number',min:'5',max:'95',step:'1',inputmode:'decimal'}),'מה נשאר מכל מכירה אחרי עלות המוצר. למשל 60'),
+      field('איך פונים ללקוח בטקסטים?',select('form',[['masculine','בלשון זכר'],['feminine','בלשון נקבה'],['plural','בלשון רבים']],'masculine')),
+      field('עובדות על החנות שמותר לכתוב במודעות',el('textarea',{id:'facts'}),'כל עובדה בשורה, בדיוק כפי שתרצה שייכתב. למשל: משלוח חינם מעל ₪300'),
+      field('משלוח חינם מעל כמה?',input('free',{type:'number',min:'0',step:'1'}),'השאר ריק אם אין'),
+      field('כמה ימים להחזרה?',input('returns',{type:'number',min:'0',step:'1'}),'השאר ריק אם אין'),
+      field('מה אסור לכתוב אף פעם?',el('textarea',{id:'never'}),'כל דבר בשורה'),
+      go('המשך',()=>send('/api/onboarding/questionnaire',{aov:Number($('aov').value),gross_margin:Number($('margin').value)/100,copy_form:$('form').value,
+        store_facts:lines('facts'),never_write:lines('never'),free_shipping_from:numberOrNull('free'),returns_days:numberOrNull('returns')})));
+  }else if(st.step==='review'){
+    const r=st.review||{},t=r.thresholds||{};
+    for(const d of r.derived||[])box.append(el('p',{text:d}));
+    const edits=[['fail_below','לעצור מודעה מתחת להחזר של'],['hold_up_to','להחזיק עד החזר של'],['winner_above','מנצחת מעל החזר של'],['min_spend','לשפוט מודעה רק אחרי הוצאה של'],['min_daily_spend','מתחת להוצאה יומית של, המודעה עוד לא נבדקה']];
+    for(const [k,l] of edits)box.append(field(l,input('t-'+k,{type:'number',value:String(t[k]),step:'any'})));
+    const list=el('ul',{class:'rules'});for(const rule of r.rules||[])list.append(el('li',{text:rule.text}));
+    const det=el('details',{},el('summary',{text:'כל הכללים ('+(r.rules||[]).length+')'}),list);box.append(det);
+    const overrides=()=>Object.fromEntries(edits.map(([k])=>[k,Number($('t-'+k).value)]));
+    box.append(el('div',{class:'row'},(()=>{const b=el('button',{type:'button',text:'עדכן את התצוגה'});b.onclick=async()=>{showError('');try{const v=await api('/api/onboarding/review',{overrides:overrides()});render({...st,review:v})}catch(e){showError(e.message)}};return b})(),
+      go('אשר ושמור את העסק',()=>send('/api/onboarding/approve',{overrides:overrides()}))));
+  }else if(st.step==='done'){
+    box.append(el('p',{class:'note',text:'העסק נשמר בתיקייה שלו, עם ספר כללים משלו. אפשר לסגור את החלון.'}));
+  }
+  $('step-title').focus?.();
+}
+api('/api/onboarding').then(render).catch(e=>showError(e.message));
+</script>
+</body>
+</html>

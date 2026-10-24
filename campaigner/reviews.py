@@ -3,6 +3,7 @@ import hashlib
 import json
 from datetime import date
 from pathlib import Path
+from business import ACTIVE as BUSINESS
 
 
 def review_history(root):
@@ -14,7 +15,7 @@ def review_history(root):
             continue
         raw = path.read_bytes()
         d = json.loads(raw)
-        if d.get('account') != '393059510164294' or d.get('shop') != '21cc82-3.myshopify.com' or d.get('readOnly') is not True:
+        if d.get('account') != BUSINESS.meta_account or d.get('shop') != BUSINESS.shop or d.get('readOnly') is not True:
             raise ValueError('Review binding mismatch')
         reviewed = date.fromisoformat(d['checkedDate'])
         until = date.fromisoformat(d['fullDaysUntil'])
@@ -23,7 +24,7 @@ def review_history(root):
         launch = d['launch']
         if d.get('decision', {}).get('actionsExecuted') != []:
             raise ValueError('Unsupported execution history')
-        if launch['id'] != '120253309360290730':
+        if launch['id'] != BUSINESS.meta_launch_campaign:
             raise ValueError('Campaign mismatch')
         daily = launch['yesterday']
         entries.append({'date': reviewed.isoformat(), 'period_end': until.isoformat(),

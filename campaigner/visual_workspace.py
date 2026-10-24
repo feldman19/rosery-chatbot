@@ -1,7 +1,8 @@
 """Read-only public projection of already collected Meta creative data."""
 from urllib.parse import urlsplit
 from datetime import datetime,timezone
-ACCOUNT='393059510164294'
+from business import ACTIVE as BUSINESS
+ACCOUNT=BUSINESS.meta_account
 
 def placement_summary(ad):
     raw=ad.get('placement_readback');creative=(ad.get('creative') or {}).get('id')

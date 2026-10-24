@@ -14,8 +14,9 @@ from datetime import datetime, timezone
 import json
 import sqlite3
 import uuid
+from business import ACTIVE as BUSINESS
 
-ACCOUNT = '393059510164294'
+ACCOUNT = BUSINESS.meta_account
 RULE_ID = 'disable_text_improvements'
 # Owner decision 2026-10-23: "Relevant comments" stays on and is not flagged.
 ALLOWED_ON = frozenset({'inline_comment'})

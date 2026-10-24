@@ -21,9 +21,10 @@ from datetime import datetime,timezone
 from pathlib import Path
 from urllib.parse import urlencode
 from connections import NoRedirect
+from business import ACTIVE as BUSINESS
 
-ACCOUNT='393059510164294'
-CAMPAIGN='120253309360290730'
+ACCOUNT=BUSINESS.meta_account
+CAMPAIGN=BUSINESS.meta_launch_campaign
 ENDPOINT='https://graph.facebook.com/v26.0/'+CAMPAIGN
 
 

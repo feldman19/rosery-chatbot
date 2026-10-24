@@ -9,8 +9,9 @@ from datetime import datetime, timezone
 from decimal import Decimal
 import hashlib
 import json
+from business import ACTIVE as BUSINESS
 
-ACCOUNT='393059510164294'
+ACCOUNT=BUSINESS.meta_account
 MEANINGS={
  'avoidable_spend':'future_total_affected_spend_continue_minus_pause',
  'foregone_contribution':'future_net_contribution_before_ads_continue_minus_pause',
@@ -80,7 +81,7 @@ def evaluate_pause(report,row,economics,prospective=None,*,now=None,budget_conte
  for key,meaning in MEANINGS.items():
   term=scenario.get(key)
   if not isinstance(term,dict):missing.append(key);continue
-  if (term.get('scope')!=scope or term.get('horizon')!=horizon or term.get('currency')!='ILS'
+  if (term.get('scope')!=scope or term.get('horizon')!=horizon or term.get('currency')!=BUSINESS.currency
       or term.get('meaning')!=meaning or not term.get('source_ref') or not term.get('assumptions')):
    missing.append(key+':meaning_scope_or_provenance');continue
   try:

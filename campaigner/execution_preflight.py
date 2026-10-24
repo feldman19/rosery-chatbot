@@ -7,8 +7,9 @@ import hashlib
 import json
 import re
 from datetime import datetime,timezone
+from business import ACTIVE as BUSINESS
 
-ACCOUNT='393059510164294'
+ACCOUNT=BUSINESS.meta_account
 FIELDS=('status','budget_minor','currency','budget_type')
 
 

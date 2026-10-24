@@ -5,6 +5,7 @@ import json,secrets,time,hmac,re,threading,hashlib,urllib.request,urllib.error
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from http.cookies import SimpleCookie,CookieError
+from business import ACTIVE as BUSINESS
 
 ROOT=Path(__file__).resolve().parent
 class MobileAccess:
@@ -108,7 +109,7 @@ def make_server(directory=None,port=8768,access=None,backend=None):
    if self.path=='/':return self.reply(200,(ROOT/'mobile-web.html').read_bytes(),'text/html; charset=utf-8')
    if not access.valid(self.headers.get('Cookie')):return self.reply(401,{'error':'Sign in required'})
    try:
-    if self.path=='/api/remote-capabilities':return self.reply(200,{'can_manage_campaigns':execution_enabled(),'approval_required':True,'account_id':'393059510164294'})
+    if self.path=='/api/remote-capabilities':return self.reply(200,{'can_manage_campaigns':execution_enabled(),'approval_required':True,'account_id':BUSINESS.meta_account})
     if self.path=='/api/campaign-operations':
      if not execution_enabled():return self.reply(403,{'error':'Campaign management is not authorized remotely'})
      raw,_=backend.request('/api/campaign-operations');return self.reply(200,raw)

@@ -4,8 +4,9 @@ import os
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+from business import ACTIVE as BUSINESS
 
-SHOP='21cc82-3.myshopify.com'
+SHOP=BUSINESS.shop
 QUERY='query { shop { myshopifyDomain currencyCode } currentAppInstallation { accessScopes { handle } } }'
 
 
@@ -19,7 +20,7 @@ def connection_status(environ=None, opener=None):
     result={'checked_at':datetime.now(timezone.utc).isoformat(), 'live_action_allowed':False,
             'credential_storage':'process_environment_only', 'independent_collection':False}
     result['meta']={'state':'requires_configuration' if env.get('META_ACCESS_TOKEN') else 'missing_credential',
-                    'verified':False, 'account_id':'393059510164294',
+                    'verified':False, 'account_id':BUSINESS.meta_account,
                     'note':'Meta direct provider is not implemented; chat connector is separate'}
     candidates=[env[k] for k in ('SHOPIFY_ADMIN_TOKEN','SHOPIFY_TOKEN') if env.get(k)]
     if not candidates:

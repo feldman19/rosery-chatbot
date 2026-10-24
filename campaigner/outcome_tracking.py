@@ -15,6 +15,7 @@ import sqlite3
 import uuid
 
 from management_report import ACCOUNT, _aggregate, _coverage, _meta_rows, _public, _stamp
+from business import ACTIVE as BUSINESS
 
 WINDOW_DAYS = 3
 SETTLE_DAYS = 7
@@ -477,7 +478,7 @@ class ProposalVisibility:
                 first = min((f['since'] for f in item.get('features', []) if f.get('since')), default=None)
             item['first_offered'] = first
             try:
-                zone = ZoneInfo('Asia/Jerusalem')
+                zone = ZoneInfo(BUSINESS.timezone)
                 if len(first) == 10:
                     offered_day = date.fromisoformat(first)
                 else:

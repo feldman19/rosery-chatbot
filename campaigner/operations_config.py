@@ -7,9 +7,10 @@ text variants are not claimed by this recipe.
 """
 import copy
 import re
+from business import ACTIVE as BUSINESS
 
-ACCOUNT = '393059510164294'
-CAMPAIGN = '120246379886090730'
+ACCOUNT = BUSINESS.meta_account
+CAMPAIGN = BUSINESS.meta_sales_campaign
 
 
 def operation_proposal(report):
@@ -40,7 +41,7 @@ def operation_proposal(report):
     budget = authority.get('per_new_adset_daily_minor')
     start = authority.get('restart_at')
     if not owner_budget_entry and (authority.get('existing_campaign_id') != CAMPAIGN or
-            authority.get('currency') != 'ILS' or type(budget) is not int or
+            authority.get('currency') != BUSINESS.currency or type(budget) is not int or
             not 1 <= budget <= 200000 or not isinstance(start, str)):
         # The service will show a missing-config blocker, not invent a budget.
         return result
