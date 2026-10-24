@@ -382,7 +382,7 @@ def _daily(data,store,today,valid,currency):
                      'funnel':funnel,'ads':ads,'ads_with_spend':len(ads),'notes':notes})
     return days
 
-def build_report(live_snapshot,proposal_report=None,operations_status=None,now=None,change_history=None):
+def build_report(live_snapshot,proposal_report=None,operations_status=None,now=None,change_history=None,ad_sales_data=None,ad_sales_settings=None):
     now=now or datetime.now(timezone.utc)
     if not isinstance(now,datetime) or now.tzinfo is None:raise ValueError('Aware report clock required')
     snapshot=live_snapshot if isinstance(live_snapshot,dict) else {};sources=snapshot.get('sources') or {};meta=sources.get('meta') or {};shop=sources.get('shopify') or {};data=meta.get('data') or {};store=shop.get('data') or {}
@@ -404,7 +404,7 @@ def build_report(live_snapshot,proposal_report=None,operations_status=None,now=N
     source_states={'meta':meta_state,'shopify':shop_state}
     freshness='stale' if meta_identity and store_valid and ('stale' in source_states.values() or snapshot.get('collection_active') is False) else 'fresh' if all(state=='fresh' for state in source_states.values()) and snapshot.get('collection_active') is not False else 'partial' if meta_identity or store_valid else 'unavailable'
     inventory,inventory_at=_inventory(data);reg_campaigns=_registration_campaigns(data);windows={}
-    for days in (1,3,7):
+    for days in (1,3,7,14):
         start=today-timedelta(days=days);end=today-timedelta(days=1);wnotes=[];metrics={key:None for key in METRICS};campaigns=[];drilldown={'adsets':[],'ads':[]};observed_results=None;metrics_source='ad_insights';metrics_sources={}
         rows,reason=_meta_rows(data,start,end) if valid and _coverage(data,start,end) else (None,'דיווח Meta אינו מכסה את כל הימים המלאים בחלון')
         if rows is None:wnotes.append(reason)
@@ -454,4 +454,6 @@ def build_report(live_snapshot,proposal_report=None,operations_status=None,now=N
     from economics_observation import recorded_economics
     report['recorded_economics'] = recorded_economics(snapshot, now=now)
     report["guidance"] = build_guidance(report, operations)
+    from ad_sales import attach_report
+    attach_report(report, ad_sales_data, ad_sales_settings, data.get('timezone'))
     return report
