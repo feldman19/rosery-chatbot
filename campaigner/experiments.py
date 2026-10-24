@@ -6,7 +6,8 @@ import random
 
 
 LIMITS = 'ייחוס מטא אינו מוכיח מכירות תוספתיות או סיבתיות; חפיפת קהלים ושינויים חיצוניים עלולים להשפיע.'
-TRANSITIONS = {'planned': {'prepared'}, 'prepared': {'running'},
+# Step 3 hook (meta_experiment_actions.py): a prepared test may be cancelled before it starts.
+TRANSITIONS = {'planned': {'prepared'}, 'prepared': {'running', 'interrupted'},
                'running': {'decided', 'inconclusive', 'interrupted', 'stopped_for_harm'}}
 
 
@@ -38,6 +39,8 @@ class Plan:
     max_days: int = 21
     what_it_will_not_prove: str = LIMITS
     state: str = 'planned'
+    meta_study_id: str = ''  # step 3 hook: Meta's ad study id once the owner-approved test is created
+
 
     def __post_init__(self):
         date.fromisoformat(self.start_date)
@@ -51,6 +54,8 @@ class Plan:
             raise ValueError('מצב ניסוי אינו תקין')
         if set(self.a.asset_ids) & set(self.b.asset_ids):
             raise ValueError('נכסים חייבים להיות שונים בין הזרועות')
+        if not isinstance(self.meta_study_id, str) or self.meta_study_id and not self.meta_study_id.isdigit():
+            raise ValueError('מזהה הניסוי במטא אינו תקין')
 
     @property
     def total_cost_minor(self):
