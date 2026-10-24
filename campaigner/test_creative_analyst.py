@@ -208,6 +208,10 @@ class CliRunnerTests(unittest.TestCase):
         script = Path(folder, 'claude')
         script.write_text('#!' + sys.executable + '\nimport json, sys\nsys.stdin.read()\n' + body, encoding='utf-8')
         script.chmod(0o755)
+        if os.name == 'nt':  # Windows ignores shebangs; a .cmd wrapper runs the same fake CLI
+            wrapper = Path(folder, 'claude.cmd')
+            wrapper.write_text(f'@"{sys.executable}" "{script}" %*\r\n', encoding='utf-8')
+            return str(wrapper)
         return str(script)
 
     def run_fake(self, body):
