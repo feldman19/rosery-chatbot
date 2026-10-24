@@ -326,8 +326,8 @@ main{padding-top:16px;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px
     <h2 class="label" id="todo-label">מה לעשות היום</h2>
     <p class="caption" id="todo-help">ההמלצות מתבססות תמיד על 3 הימים המלאים האחרונים, בלי קשר לתקופה שבחרת למעלה.</p>
     <div class="cards" id="todo"><div class="skeleton"></div></div>
-    <h2 class="label" id="drift-label" hidden>שיפורי Advantage+ מופעלים לבדיקה</h2>
-    <p class="caption" id="drift-help" hidden>Advantage+ הם שיפורים אוטומטיים של מטא לתמונה ולטקסט. לפי החוקים שלך הם אמורים להיות כבויים, אז כדאי לבדוק כל מודעה כאן.</p>
+    <h2 class="label" id="drift-label" hidden>שינויים אוטומטיים במודעות</h2>
+    <p class="caption" id="drift-help" hidden>מטא הפעילה שינויים אוטומטיים בתמונה ובטקסט. לפי החוקים שלך הם אמורים להיות כבויים, אז כדאי לבדוק כל מודעה כאן.</p>
     <div class="cards" id="drift"></div>
     <h2 class="label" id="acted-label" hidden>מה עשית</h2>
     <div class="cards" id="acted"></div>
@@ -452,7 +452,7 @@ const $=id=>document.getElementById(id);
 // crypto.randomUUID is missing there, getRandomValues is not. A version-4 UUID from it works everywhere.
 function newId(){const b=crypto.getRandomValues(new Uint8Array(16));b[6]=b[6]&15|64;b[8]=b[8]&63|128;
   const h=[...b].map(v=>v.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20)}
-function ownerText(value){return String(value).replace(/(^|\s)1 מכירות/g,'$1מכירה אחת').replace(/(^|\s)1 מודע(?:ה|ות)/g,'$1מודעה אחת').replace(/SHOP_NOW/g,'קנה עכשיו').replace(/CTR/g,'שיעור הקלקות').replace(/ROAS/g,'החזר על הפרסום').replace(/₪[\d,.]+/g,m=>'\u2066'+m+'\u2069')}
+function ownerText(value){return String(value).replace(/(^|\s)1 מכירות/g,'$1מכירה אחת').replace(/(^|\s)1 מודע(?:ה|ות)/g,'$1מודעה אחת').replace(/SHOP_NOW/g,'קנה עכשיו').replace(/CTR/gi,'כמה לחצו').replace(/ROAS/gi,'כמה חזר על כל ₪1').replace(/Advantage\+/gi,'שינויים אוטומטיים שמטא עושה במודעה').replace(/אד-סט/g,'קבוצת מודעות').replace(/קריאייטיבים/g,'תמונות וסרטונים').replace(/קריאייטיב/g,'מודעה').replace(/ריטרגטינג/g,'אנשים שכבר היו באתר').replace(/פרוספקטינג/g,'קהל חדש').replace(/₪[\d,.]+/g,m=>'\u2066'+m+'\u2069')}
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=ownerText(text);return n};
 const ils=v=>typeof v==='number'?'₪'+Math.round(v).toLocaleString('he-IL'):'—';
 const x=v=>typeof v==='number'?v.toFixed(2):'—';
@@ -475,8 +475,8 @@ async function dismiss(item,restore=false){
 function actionWord(id){return id?.startsWith('pause:')?'עצור מודעה':id?.startsWith('scale:')?'הגדל תקציב':id?.startsWith('drift:')?'כבה שיפורים':'אשר שינוי'}
 function actionTitle(item){
  if(item.proposal_id?.startsWith('pause:'))return 'לעצור את כל המודעה';
- if(item.proposal_id?.startsWith('drift:'))return 'לכבות רק את שיפורי Advantage+';
- if(item.proposal_id?.startsWith('scale:')){const m=item.headline.match(/₪([\d,]+)\D+₪([\d,]+)/);return 'להגדיל תקציב יומי של האד-סט ב-20%'+(m?': ₪'+m[1]+' → ₪'+m[2]:'')}
+ if(item.proposal_id?.startsWith('drift:'))return 'לכבות רק את השינויים האוטומטיים במודעה';
+ if(item.proposal_id?.startsWith('scale:'))return 'קבוצת המודעות מוכרת טוב — אפשר לשקול להגדיל תקציב';
  return item.headline;
 }
 function waiting(card,item){
@@ -661,21 +661,19 @@ function pauseExplanation(roas,daily,thresholds){return (typeof roas!=='number'?
 // UX pass: keep the decision summary visible; supporting evidence stays available on tap.
 function compactCard(card){
   const detail=el('details','why card-details'),body=el('div');detail.append(el('summary','','פרטים'),body);
-  let keyLine=!!card.querySelector('.change,.key-metric'),facts=0;
+  const summary=card.querySelector('.owner-summary,.key-metric,.change');
   for(const node of [...card.children]){
-    if(node.matches('p.note,.change,.key-metric'))continue;
-    if(node.matches('.fact')){if(facts++<2){node.classList.add('fact-chip');continue}}
-    else if(node.matches('p:not(.btn-help),.change')&&!keyLine){keyLine=true;continue}
+    if(node===summary)continue;
     if(node.matches('p,.fact,.change,details'))body.append(node);
   }
-  if(body.childElementCount)card.insertBefore(detail,card.querySelector('.actions,button'));
+  if(body.childElementCount)card.insertBefore(detail,[...card.children].find(n=>n.matches('.actions,button'))||null);
   return card;
 }
 function actionCard(item){
   const d=item.proposal_id&&item.proposal_id.startsWith('pause:')?decisionFor(item.proposal_id.slice(6)):null;
   const card=el('article','card'),[cls,word]=item.action==='PAUSE'?['stop','עצור מודעה']:item.action==='SCALE'?['grow','הגדל תקציב']:item.action==='ALERT'?['idle','לתשומת לב']:['watch','לשים עין'];
   card.append(el('span','pill '+cls,word));
-  const title=(item.headline.match(/"([^"]+)"/)||[])[1]||item.headline;card.append(el('h3','',actionTitle(item)),el('p','fact',title));waiting(card,item);if(item.action==='PAUSE')card.append(el('p','','המודעה תפסיק לרוץ. אפשר להפעיל מחדש.'));
+  const title=(item.headline.match(/"([^"]+)"/)||[])[1]||item.headline;card.append(el('h3','',item.action==='PAUSE'?'המודעה מתחת לרף שקבעת':actionTitle(item)),el('p','fact',title));waiting(card,item);if(item.action==='PAUSE')card.append(el('p','','המודעה תפסיק לרוץ. אפשר להפעיל מחדש.'));
   if(item.action==='PAUSE'&&d){
     const f=el('div','fact');f.append(factPart('הוציאה',ils(d.numbers.spend)),factPart('מכירות',String(d.numbers.purchases??'—')),factPart('החזר על ₪1','₪'+x(d.numbers.roas)));card.append(f,el('p','key-metric',typeof d.numbers.roas==='number'?'החזר על ₪1: ₪'+x(d.numbers.roas):'ההחזר אינו ידוע'));
     card.append(el('p','',pauseExplanation(d.numbers.roas,item.saving_per_day,d.thresholds)));
@@ -700,6 +698,13 @@ function actionCard(item){
   else if(item.link){part('לביצוע במטא','פותח את מנהל המודעות.');if(item.kind==='approve'&&item.proposal_id)part('ביצעתי','רושם שעשית את זה, כדי שנבדוק אחר כך מה קרה.')}
   part('הסר מהרשימה','מסתיר את ההמלצה מהמסך. שום דבר לא משתנה.');
   for(const b of a.querySelectorAll('button,a'))b.setAttribute('aria-describedby',hid);
+  if(todayContradicts(item)){
+    const context=todayContext(item).find(c=>c.contradicts);
+    const note=el('p','owner-summary',item.action==='PAUSE'?'היום היא דווקא מוכרת טוב. כל שקל החזיר ₪'+x(context.ad.roas)+'. כדאי לחכות למחר לפני שעוצרים.':'היום המכירות נחלשו. כדאי לחכות למחר לפני שמגדילים.');
+    card.prepend(note);
+    const wait=el('button','btn primary','לחכות');wait.type='button';wait.onclick=()=>{card.remove();toast('נחכה. ההצעה תיבדק שוב ברענון הבא. שום דבר לא השתנה במטא.')};
+    for(const button of a.querySelectorAll('.primary'))button.classList.remove('primary');a.prepend(wait);
+  }
   card.append(a,help);return compactCard(card);
 }
 // Local record only: says the owner made the change in Meta. Nothing is sent to Meta.
@@ -713,7 +718,8 @@ async function answerDetected(id,answer){
 }
 // Enhancements Meta has on against the owner's rule. Turning off happens in Ads Manager.
 function driftCard(item,rule){
-  const card=el('article','card');card.append(el('span','pill stop','כבה שיפורים'),el('h3','',actionTitle(item)),el('p','fact',item.name));waiting(card,item);card.append(el('p','','המודעה ממשיכה לרוץ; רק השיפורים האלה נכבים: '+item.features.map(f=>f.label).join(', ')));
+  const card=el('article','card');card.append(el('span','pill stop','כבה שיפורים'),el('h3','','מטא שינתה הגדרות במודעה בלי אישור שלך'),el('p','fact',item.name));waiting(card,item);card.append(el('p','','המודעה ממשיכה לרוץ; רק השיפורים האלה נכבים: '+item.features.map(f=>f.label).join(', ')));
+  card.append(el('p','owner-summary','לפי החוק שלך זה צריך להיות כבוי. הופעלו '+item.features.length+' שינויים: '+item.features.slice(0,3).map(f=>f.label).join(', ')));
   if(item.adset_name)card.append(el('p','fact','קבוצה: '+item.adset_name));
   const when=s=>s?' · מאז '+new Date(s).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
   if(item.features.length){
@@ -736,12 +742,19 @@ function driftCard(item,rule){
   l.setAttribute('aria-describedby',hid);keep.setAttribute('aria-describedby',hid);
   card.append(a,help);return compactCard(card);
 }
-let showAllDrift=false;
 function renderDrift(){
   const d=report?.creative_drift,box=$('drift');box.replaceChildren();
   const items=d?.status==='ready'?d.items.filter(i=>!i.dismissed):[];$('drift-label').hidden=!items.length&&!(d?.unknown||[]).length;$('drift-help').hidden=$('drift-label').hidden;$('drift-label').textContent='שיפורים בניגוד לחוק · '+items.length;
-  for(const i of showAllDrift?items:items.slice(0,3))box.append(driftCard(i,d.rule));
-  if(items.length>3){const more=el('button','link',showAllDrift?'הצג פחות':'עוד '+(items.length-3)+' מודעות עם שיפורים מופעלים');more.type='button';more.onclick=()=>{showAllDrift=!showAllDrift;renderDrift()};box.append(more)}
+  const groups=new Map();
+  for(const item of items){const key=JSON.stringify(item.features.map(f=>f.field||f.label).sort());if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item)}
+  for(const group of groups.values()){
+    if(group.length===1){box.append(driftCard(group[0],d.rule));continue}
+    const card=el('article','card');card.append(el('h3','',group.length+' מודעות עם אותו שינוי'),el('p','','מטא הפעילה שינויים אוטומטיים. לפי החוק שלך הם צריכים להיות כבויים.'));
+    const details=el('details','why');details.append(el('summary','','פרטים'));
+    for(const item of group)details.append(driftCard(item,d.rule));
+    const review=el('button','btn primary','לבדיקה ולכיבוי בכל מודעה');review.type='button';review.onclick=()=>{details.open=true};card.append(review,details);box.append(card);
+  }
+
   if((d?.unknown||[]).length)box.append(el('p','note','לא הצלחנו לקרוא את הגדרות השיפורים ב-'+d.unknown.length+' מודעות. זה לא אומר שהן כבויות.'));
 }
 // --- true profit (Claude): contribution after costs, shown next to Meta's ROAS, never merged ---
@@ -757,12 +770,12 @@ function renderProfit(){
   card.append(chips);
   const meta=report?.windows?.[profitWindow]?.metrics;
   const s=el('div','stats');
-  for(const [v,l] of [[typeof w.contribution_per_shekel==='number'?'₪'+x(w.contribution_per_shekel):'—','תרומה לכל ₪1 פרסום'],[ils(w.contribution),'תרומה אחרי עלויות'],[ils(w.after_ads),'אחרי הוצאת מטא']]){const d=el('div','stat');d.append(el('b','num',v),el('span','',l));s.append(d)}
-  card.append(s);
+  for(const [v,l] of [[typeof w.contribution_per_shekel==='number'?'₪'+x(w.contribution_per_shekel):'לא ידוע','נשאר לכל ₪1 פרסום, לפני עלות הפרסום'],[ils(w.contribution),'נשאר אחרי עלויות המוצרים'],[ils(w.after_ads),'נשאר גם אחרי עלות הפרסום']]){const d=el('div','stat');d.append(el('b','num',v),el('span','',l));s.append(d)}
+  card.append(el('p','owner-summary',typeof w.net_profit==='number'?'אחרי העלויות שנרשמו נשארו '+ils(w.net_profit)+'. אפשר לבדוק מה נכלל בחישוב.':'עדיין אי אפשר לדעת מה הרווח הנקי. צריך להשלים את העלויות שבפרטים.'));
   // Net profit is its own figure, never the contribution relabelled.
   if(typeof w.net_profit==='number')card.append(el('p','change','רווח נקי (אחרי מטא והוצאות קבועות): '+ils(w.net_profit)));
   if(profitWindow==='7'&&meta&&typeof meta.roas==='number')card.append(el('p','fact','לשם השוואה, ROAS לפי מטא: '+x(meta.roas)+' (הכנסה מיוחסת, לפני עלויות)'));
-  const det=el('details','why');det.append(el('summary','','פירוט'));const inner=el('div');
+  const det=el('details','why');det.append(el('summary','','פרטים'));const inner=el('div');inner.append(s);
   inner.append(el('p','','הכנסה בלי מע"מ: '+ils(w.revenue_ex_vat)+' · עלות סחורה: '+ils(w.cogs_ex_vat)+' · רווח גולמי: '+pct(w.gross_margin)));
   const basis=w.revenue_basis||{};
   inner.append(el('p','','הכנסה זו היא מכירות מוצרים נטו אחרי הנחות והחזרות, ללא משלוח. מכירות החנות כוללות גם משלוח ומסים.'));
@@ -774,7 +787,7 @@ function renderProfit(){
   for(const m of w.missing||[])inner.append(el('p','note','חסר לחישוב: '+m));
   if((profit.products||[]).length){inner.append(el('p','fact','המוצרים הכי רווחיים (90 יום, רווח גולמי):'));for(const p of profit.products.slice(0,5))inner.append(el('p','',p.product+' · '+ils(p.sales_ex_vat)+' מכירות · '+pct(p.gross_margin)))}
   for(const l of profit.limits||[])inner.append(el('p','note',l));
-  det.append(inner);card.append(det);box.append(card);box.append(profitSettings());
+  det.append(inner);card.append(det);box.append(compactCard(card));box.append(profitSettings());
 }
 function profitSettings(){
   const st=JSON.parse(JSON.stringify(profit?.settings||{mode:'simple',vat_rate:0.18,sales_include_vat:true,cogs_include_vat:false,fields:[]}));
@@ -821,7 +834,10 @@ function renderToday(){
   $('badge').hidden=!approve;$('badge').textContent=String(approve);
   if(!today){$('hello-sub').textContent='אין עדיין נתונים. לחץ על "רענן" למעלה.';return}
   if(today.status==='blocked'){$('hello-sub').textContent='לא הצלחתי לבדוק היום — חסרים נתונים.';todo.append(emptyState('!','צריך לרענן נתונים','לחץ על הנקודה למעלה כדי למשוך נתונים חדשים ממטא.'));return}
-  $('hello-sub').textContent=approve?(approve+' דברים מחכים לך היום'):'הכל רץ כמו שצריך';
+  const yesterday=(report.daily||[]).filter(d=>!d.partial).slice(-1)[0]?.metrics;
+  const revenue=yesterday?.store_revenue,pauses=items.filter(i=>i.action==='PAUSE').length;
+  const changed=report?.creative_drift?.status==='ready'?report.creative_drift.items.filter(i=>!i.dismissed).length:null;
+  $('hello-sub').textContent='בשורה אחת: מכירות אתמול '+(Number.isFinite(revenue)?ils(revenue):'לא ידועות')+'. '+pauses+' הצעות לעצירת מודעות; '+(changed===null?'לא ידוע בכמה מודעות מטא שינתה הגדרות':changed+' מודעות עם שינויים אוטומטיים של מטא')+'.';
   $('todo-label').hidden=!items.length;$('todo-label').textContent='מה לעשות היום · '+items.length;
   if(!items.length&&!approve){const c=today.counts||{};todo.append(emptyState('✓','אין מה לשנות היום',(c.SUCCESS||0)+(c.HOLD||0)+' מודעות רצות טוב, '+((c.KEEP_TESTING||0)+(c.UNTESTED||0))+' עדיין בבדיקה.'))}
   for(const i of [...items].sort((a,b)=>Number(todayContradicts(a))-Number(todayContradicts(b))))todo.append(actionCard(i));
@@ -1255,6 +1271,7 @@ function experimentProposal(item){
 function experimentCard(item, proposed=false){
   const c=el('div','card'),p=item.plan||item,proposal=proposed?experimentProposal(p):null;
   c.append(el('span','pill idle',proposed?'הצעה':'ניסוי'));
+  c.append(el('p','owner-summary',(p.question||'מה כדאי לבדוק בחנות?')+' '+(proposal?'עלות מרבית מוצעת: '+experimentMoney(proposal.total)+'. '+(proposal.missing.length?'חסרים חומרים או נתונים — ראו פרטים.':'אפשר לעיין בתכנון לפני שמחליטים.'):'אפשר לעיין בתוצאות שנאספו בפרטים.')));
   if(proposal?.missing.length){
     c.append(el('h3','','רעיון לבדיקה'),el('p','',p.question),el('p','',item.why),el('p','note','חסרים: '+proposal.missing.join(', ')));
     if(proposal.cpa!==null)c.append(el('p','fact','מחיר רכישה בחשבון (7 ימים): '+ils(proposal.cpa)));
@@ -1264,15 +1281,15 @@ function experimentCard(item, proposed=false){
   c.append(el('p','',p.question));
   if(proposed){
     c.append(el('p','',item.why));
-    c.append(el('p','','זרוע א: '+(p.a_kind||'טרם הוגדרה')+' · זרוע ב: '+(p.b_kind||'טרם הוגדרה')));
-    c.append(el('p','','הצעת תקציב: '+experimentMoney(proposal.daily)+' ליום לכל זרוע · '+experimentMoney(2*proposal.daily)+' ליום יחד · סך הכול: '+experimentMoney(proposal.total)+' לעד '+proposal.days+' ימים'));
+    c.append(el('p','','צד א: '+(p.a_kind||'טרם הוגדרה')+' · צד ב: '+(p.b_kind||'טרם הוגדרה')));
+    c.append(el('p','','הצעת תקציב: '+experimentMoney(proposal.daily)+' ליום לכל צד · '+experimentMoney(2*proposal.daily)+' ליום יחד · סך הכול: '+experimentMoney(proposal.total)+' לעד '+proposal.days+' ימים'));
     c.append(el('p','','מחיר רכישה בחשבון (7 ימים): '+ils(proposal.cpa)));
     if(p.refusal_reason)c.append(el('p','',p.refusal_reason));
     const prepare=el('button','','אשר והכן במצב מושהה');prepare.disabled=true;c.append(prepare,el('p','',p.meta_note));
     const dismiss=el('button','btn tertiary','הסר הצעה');dismiss.onclick=()=>experimentAction('/api/experiments/dismiss',{id:item.id});c.append(dismiss);
   }else{
-    c.append(el('p','','זרוע א: '+p.a.label+' · זרוע ב: '+p.b.label));
-    c.append(el('p','','ליום לכל זרוע: '+experimentMoney(p.daily_budget_minor)+' · סך הכול: '+experimentMoney(2*p.daily_budget_minor*p.max_days)+' · עד '+p.max_days+' ימים'));
+    c.append(el('p','','צד א: '+p.a.label+' · צד ב: '+p.b.label));
+    c.append(el('p','','ליום לכל צד: '+experimentMoney(p.daily_budget_minor)+' · סך הכול: '+experimentMoney(2*p.daily_budget_minor*p.max_days)+' · עד '+p.max_days+' ימים'));
     for(const [key,label] of [['A','א'],['B','ב']]){const t=item.totals[key];c.append(el('p','','זרוע '+label+': הוצאה '+experimentMoney(t.spend_minor)+' · רכישות '+(t.purchases??'לא ידוע')))}
     c.append(el('p','','המספרים הם סכום הדיווחים המקומיים השמורים; ייתכן שחסרים ימים. אין רענון ממטא בשלב זה.'));
     c.append(el('p','',item.probability_words));
@@ -1305,7 +1322,7 @@ const H_STATE={testing:'watch',supported:'grow',not_supported:'stop'};
 function renderLearning(){
   const box=$('learn'),items=learning?.hypotheses||[];box.replaceChildren();$('learn-label').hidden=!items.length;
   for(const h of items){const card=el('article','card'),ev=h.evidence||{},sh=learning.shadow||{};
-    card.append(el('span','pill '+(H_STATE[h.status]||'idle'),h.status_label),el('h3','',h.statement),el('p','fact','איך בודקים: '+h.test));
+    card.append(el('span','pill '+(H_STATE[h.status]||'idle'),h.status_label),el('h3','','מה אנחנו בודקים'),el('p','fact',h.statement),el('p','fact','איך בודקים: '+h.test));
     const judged=(ev.for||0)+(ev.against||0);
     const today=h.id==='ctr_weight_not_needed'?(sh.variant||{}).today_disagreements:sh.today_disagreements;
     card.append(el('p','',judged?('עד עכשיו: '+(h.for_label||'הציון צדק')+' ב-'+ev.for+', '+(h.against_label||'החוקים צדקו')+' ב-'+ev.against+(ev.not_judgeable?' · '+ev.not_judgeable+' לא ניתן לבדוק (המודעה נעצרה)':'')+'. צריך לפחות '+ev.needed+' מקרים ותוצאה שמקרה לא מסביר.')
@@ -1321,7 +1338,10 @@ function renderLearning(){
     const chk=el('button','btn',out.state==='running'?'בודק מול מקורות…':out.state==='failed'?'נסה שוב':'בדוק מול מקורות חיצוניים');chk.type='button';chk.disabled=out.state==='running';
     chk.onclick=async()=>{chk.disabled=true;try{await api('/api/learning/outside-check',{hypothesis_id:h.id});toast('הבדיקה התחילה. זה לוקח כמה דקות.');setTimeout(loadLearning,60000)}catch(e){toast(e.message);chk.disabled=false}};
     const a=el('div','actions');a.append(chk);card.append(a);
-    box.append(card)}
+    const question=h.id==='ctr_weight_not_needed'?'בודקים אם אפשר לבחור מודעות טובות גם בלי להסתמך על כמה אנשים לחצו.':h.id==='ad_score_beats_3day_roas'?'בודקים אם דרך חדשה לדרג מודעות מזהה מוקדם יותר מה יעבוד.':'בודקים רעיון נוסף לשיפור בחירת המודעות.';
+    const state=h.status==='supported'?'הנתונים שנאספו תומכים ברעיון; ההמלצות עדיין לא משתנות.':h.status==='not_supported'?'הנתונים שנאספו אינם תומכים ברעיון.':'עוד אין מספיק נתונים להכרעה. מועד התוצאה תלוי בנתונים שיצטברו.';
+    card.prepend(el('p','owner-summary',question+' '+state));
+    box.append(compactCard(card))}
 }
 // --- updates (Claude): the runner on the computer pulls new versions; the screen says so and offers a refresh ---
 const commitId=value=>{const match=String(value||'').trim().match(/^(?:גרסה )?([0-9a-f]{7,40})(?:$| · )/i);return match?match[1].toLowerCase():null};

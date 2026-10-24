@@ -513,7 +513,8 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
             if self.path in ('/api/experiments', '/api/experiments/candidates'):
                 if workspace!='manager':return self.reply(403,{'error':'זמין לבעלים בלבד'})
                 if self.path.endswith('/candidates'):
-                    return self.reply(200,{'candidates':experiment_store.candidates(hypotheses.list())})
+                    # Owner experiments ask business questions; internal model tests stay in learning.
+                    return self.reply(200,{'candidates':experiment_store.candidates([])})
                 return self.reply(200,{'experiments':experiment_store.list(),'live_action_allowed':False})
             # END experiments-ui
             # BEGIN auto-mode-shadow

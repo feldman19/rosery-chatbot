@@ -44,7 +44,7 @@ class OwnerScreenTests(unittest.TestCase):
         harness = r"""
 const assert=require('node:assert/strict');
 class N {constructor(tag,text=''){this.tag=tag;this.textContent=text;this.children=[];this.hidden=false}
- append(...args){this.children.push(...args)} replaceChildren(){this.children=[]}}
+ prepend(...args){this.children.unshift(...args)} append(...args){this.children.push(...args)} replaceChildren(){this.children=[]}}
 const el=(tag,cls='',text='')=>new N(tag,text);
 const document={createElement:tag=>new N(tag),createTextNode:text=>new N('#text',text),querySelector:()=>({value:'men'})};
 const nodes={};const $=id=>nodes[id]||(nodes[id]=new N('div'));
@@ -52,7 +52,7 @@ const x=n=>String(n),ils=n=>'₪'+n;
 const greeting=()=>'',dismissed=()=>[],emptyState=()=>new N('div'),actionCard=()=>new N('article');
 let outcomes=null,report={creative_drift:{status:'ready',items:[{},{}]},recommendations:{today:{items:[],status:'ready'}}};
 let launchState={draft:{adsets:[{key:'a',target:{mode:'new'}},{key:'b',target:{mode:'new'}}],ads:[{adset_key:'a'},{adset_key:'b'}]}};
-const H_STATE={};let learning={hypotheses:[{id:'x',outside:{summary:'משפט ראשון. More internal jargon.'},evidence:{},sources:[]}],shadow:{days:1}};
+const compactCard=card=>card;const H_STATE={};let learning={hypotheses:[{id:'x',outside:{summary:'משפט ראשון. More internal jargon.'},evidence:{},sources:[]}],shadow:{days:1}};
 const text=n=>n.textContent+n.children.map(c=>typeof c==='string'?c:text(c)).join('');
 let localStorage={getItem:()=>null};
 const answer=new N('div');safeAnswer(answer,'**שלום**\n<img src=x onerror=alert(1)>');
@@ -76,7 +76,7 @@ assert.ok(launchBlockReason('ads_per_adset: live plus proposed count outside rul
 assert.ok(launchBlockReason('Proposal expired').includes('ההצעה פגה'));
 assert.ok(launchBlockReason('Campaign budget conflicts with adset budget').includes('מתנגש'));
 assert.ok(launchBlockReason('No active ad set of that gender in the campaign to copy targeting from').includes('אין בקמפיין'));
-renderToday();assert.equal($('badge').textContent,'2');assert.ok(text($('hello-sub')).includes('2 דברים'));
+renderToday();assert.equal($('badge').textContent,'2');assert.ok(text($('hello-sub')).includes('2 מודעות עם שינויים אוטומטיים'));
 renderLearning();const card=$('learn').children[0];
 assert.ok(text(card).includes('יום אחד'));assert.ok(!text(card).includes('1 ימים'));
 assert.ok(card.children.some(c=>c.tag==='p'&&text(c).includes('משפט ראשון.')));

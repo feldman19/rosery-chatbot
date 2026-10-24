@@ -171,7 +171,7 @@ class CreativeDriftHttpTests(unittest.TestCase):
         self.assertEqual(self.post({'ad_id': '123'})[0], 409)
 
     def test_simple_screen_has_drift_section(self):
-        self.assertIn('שיפורי Advantage+ מופעלים לבדיקה', self.page)
+        self.assertIn('שינויים אוטומטיים במודעות', self.page)
         self.assertNotIn('מטא שינתה משהו בלי אישור', self.page)
         self.assertIn('כבה שיפורים', self.page)
 
