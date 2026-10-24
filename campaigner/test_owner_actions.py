@@ -158,6 +158,7 @@ class OwnerActionsTests(unittest.TestCase):
         self.assertEqual(self.make().status()['receipts'][0]['state'], 'unknown')
 
     def test_enhancements_off_copies_creative_keeps_comments_and_undo_restores(self):
+        self.actions.profile.update({'settings': {'inline_comment': 'allowed'}})
         view = self.actions.preview('drift:' + AD)
         self.assertEqual([c['field'] for c in view['changes']], ['אנימציה לתמונה'])
         receipt = self.actions.confirm(view['confirm_token'])

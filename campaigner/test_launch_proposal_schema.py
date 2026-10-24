@@ -124,7 +124,8 @@ class V2ExecutionTests(unittest.TestCase):
         self.provider = V2Provider()
         self.now = datetime(2026, 10, 23, 10, tzinfo=timezone.utc)
         self.proposal = make_valid_proposal_v2()
-        self.proposal['creation_recipe']={'adset_fields':{},'creative_fields':{'degrees_of_freedom_spec':{'creative_features_spec':{'standard_enhancements':{'enroll_status':'OPT_OUT'},'inline_comment':{'enroll_status':'OPT_IN'}}}},'optimization_type':'DEGREES_OF_FREEDOM'}
+        from business_profile import BusinessProfile, creation_recipe
+        self.proposal['creation_recipe']=creation_recipe(BusinessProfile(self.temp.name))
         self.proposal['strategy']['campaign_id'] = self.provider.campaign
         # A complete five-ad new group, mixed image/video, no forced story pair.
         self.proposal['adsets'] = self.proposal['adsets'][:1]

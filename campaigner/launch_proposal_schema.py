@@ -49,7 +49,7 @@ def stamp(value):
 
 def validate_proposal_v2(obj):
     """Return the original validated object; raise ValueError with refusal label."""
-    _closed(obj, 'schema_version id request_id request_revision prepared_at expires_at summary strategy rules adsets ads required_format creation_status owner_questions blockers', 'proposal', ('activation_available', 'state', 'prepared_by', 'creation_recipe'))
+    _closed(obj, 'schema_version id request_id request_revision prepared_at expires_at summary strategy rules adsets ads required_format creation_status owner_questions blockers', 'proposal', ('activation_available', 'state', 'prepared_by', 'creation_recipe', 'business_profile', 'profile_reasons'))
     if 'creation_recipe' in obj:
         recipe=obj['creation_recipe']
         _closed(recipe,'adset_fields creative_fields optimization_type','creation_recipe')
@@ -64,7 +64,8 @@ def validate_proposal_v2(obj):
             _closed(spec,'creative_features_spec','degrees_of_freedom_spec')
             features=spec['creative_features_spec']
             if not isinstance(features,dict):raise ValueError('creation_recipe: features must be object')
-            if features.get('standard_enhancements')!={'enroll_status':'OPT_OUT'} or features.get('inline_comment')!={'enroll_status':'OPT_IN'}:raise ValueError('creation_recipe: standard enhancements must opt out and inline comments must opt in')
+            from business_profile import validate_features
+            validate_features(features)
             for feature,setting in features.items():
                 if not isinstance(feature,str) or not feature:raise ValueError('creation_recipe: invalid feature')
                 _closed(setting,'enroll_status','creative feature')

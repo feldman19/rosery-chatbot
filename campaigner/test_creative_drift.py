@@ -53,6 +53,7 @@ class CreativeDriftTests(unittest.TestCase):
         self.assertIsNone(self.drift.check(data(row), self.rules, T2)['items'][0]['thumbnail_url'])
 
     def test_all_off_is_clean_and_relevant_comments_are_allowed(self):
+        self.drift.profile.update({'settings': {'inline_comment': 'allowed'}})
         result = self.drift.check(data(ad('1', spec(inline_comment='OPT_IN'))), self.rules, T1)
         self.assertEqual((result['status'], result['items']), ('ready', []))
         self.assertEqual(result['allowed_on'], ['inline_comment'])

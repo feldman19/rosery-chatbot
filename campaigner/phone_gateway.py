@@ -25,10 +25,10 @@ from pathlib import Path
 TAILNET = ipaddress.ip_network('100.64.0.0/10')
 COOKIE = 'rosery_phone'
 SESSION_SECONDS = 30 * 86400
-GET_ROUTES = {'/api/experiments', '/api/experiments/candidates', '/', '/api/management-report', '/api/outcomes', '/api/profit', '/api/creative-launch', '/api/automation-shadow',
+GET_ROUTES = {'/api/business-profile', '/api/experiments', '/api/experiments/candidates', '/', '/api/management-report', '/api/outcomes', '/api/profit', '/api/creative-launch', '/api/automation-shadow',
               '/api/approve-execute', '/api/claude-chat', '/api/daily-brief', '/api/campaign-operations', '/api/learning',
               '/api/update-status'}
-POST_ROUTES = {'/api/experiments/idea', '/api/experiments/dismiss', '/api/experiments/stop', '/api/claude-chat/threads', '/api/claude-chat/thread', '/api/claude-chat/create', '/api/claude-chat/update', '/api/approve-execute/preview', '/api/approve-execute/confirm', '/api/outcomes/mark', '/api/outcomes/answer',
+POST_ROUTES = {'/api/business-profile', '/api/business-profile/dont', '/api/experiments/idea', '/api/experiments/dismiss', '/api/experiments/stop', '/api/claude-chat/threads', '/api/claude-chat/thread', '/api/claude-chat/create', '/api/claude-chat/update', '/api/approve-execute/preview', '/api/approve-execute/confirm', '/api/outcomes/mark', '/api/outcomes/answer',
                '/api/creative-drift/keep', '/api/claude-chat', '/api/profit/settings', '/api/live/refresh',
                '/api/creative-launch/start', '/api/creative-launch/finalize', '/api/learning/outside-check', '/api/campaign-operations/preview',
                '/api/campaign-operations/approve', '/api/campaign-operations/execute', '/api/local-uploads', '/api/automation-shadow/policy', '/api/automation-shadow/stop',

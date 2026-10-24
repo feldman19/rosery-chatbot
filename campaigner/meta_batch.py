@@ -67,6 +67,10 @@ def validate_creation_v2(edge,params,campaign_id):
         if media=='images':
             if set(rows[0])!={'hash'} or not isinstance(rows[0]['hash'],str) or not re.fullmatch('[A-Za-z0-9]{8,128}',rows[0]['hash']):raise BatchRejected('Resolved image hash required')
         elif set(rows[0])!={'video_id','thumbnail_hash'} or not _id(rows[0]['video_id']) or not isinstance(rows[0]['thumbnail_hash'],str) or not re.fullmatch('[A-Za-z0-9]{8,128}',rows[0]['thumbnail_hash']):raise BatchRejected('Resolved video and thumbnail required')
+    if edge=='adcreatives' and 'degrees_of_freedom_spec' in params:
+        from business_profile import validate_features
+        try:validate_features(params['degrees_of_freedom_spec']['creative_features_spec'])
+        except (ValueError,KeyError,TypeError) as error:raise BatchRejected(str(error)) from error
     if len(_json(params))>65536:raise BatchRejected('Bounded v2 payload required')
     return params
 
