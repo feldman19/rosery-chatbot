@@ -121,5 +121,17 @@ class ExperimentTests(unittest.TestCase):
         self.assertEqual([x['question'] for x in ranked], ['4', '3', '2'])
 
 
+class RuledOutCandidatesTests(unittest.TestCase):
+    def test_dimensions_and_values_the_rules_fix_are_not_proposed(self):
+        history = {'windows': {'all': {'patterns': {'dimensions': [
+            {'dimension': 'כפתור פעולה', 'values': [{'value': 'SHOP_NOW', 'enough_data': True}, {'value': 'BOOK_TRAVEL', 'enough_data': False}]},
+            {'dimension': 'פורמט', 'values': [{'value': 'וידאו', 'enough_data': True}, {'value': 'קרוסלה', 'enough_data': False},
+                                              {'value': 'תמונה', 'enough_data': False}]}]}}}}
+        from experiments import rank_candidates
+        questions = [p['question'] for p in rank_candidates([], history, [], {}, account_cpa=78)]
+        self.assertFalse(any('BOOK_TRAVEL' in q or 'קרוסלה' in q for q in questions))
+        self.assertTrue(any('תמונה' in q for q in questions))
+
+
 if __name__ == '__main__':
     unittest.main()

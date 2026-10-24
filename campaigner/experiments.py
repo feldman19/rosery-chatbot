@@ -113,6 +113,10 @@ def evaluate(plan, daily, as_of):
     return result
 
 
+FIXED_BY_RULES = {'כפתור פעולה'}
+RULED_OUT_VALUES = {'קרוסלה', 'קטלוג'}
+
+
 def rank_candidates(hypotheses, account_history, owner_ideas, creatives, account_cpa=None):
     """Creatives map creative-kind to asset IDs; CPA is ILS, costs are agorot.
 
@@ -124,7 +128,11 @@ def rank_candidates(hypotheses, account_history, owner_ideas, creatives, account
     candidates.extend(dict(x) if isinstance(x, dict) else {'question': x} for x in owner_ideas)
     window = account_history.get('windows', {}).get('all', {})
     for dimension in window.get('patterns', {}).get('dimensions', []):
-        values = dimension.get('values', [])
+        # The owner's rules already fix these, so testing them would only test a rule break:
+        # CTA is always SHOP_NOW (cta_shop_now), no carousels (no_carousel), catalog only for retargeting.
+        if dimension.get('dimension') in FIXED_BY_RULES:
+            continue
+        values = [v for v in dimension.get('values', []) if v.get('value') not in RULED_OUT_VALUES]
         if len(values) >= 2 and any(not v.get('enough_data') for v in values):
             candidates.append({'question': f"האם {values[1]['value']} משיג יותר רכישות לשקל לעומת {values[0]['value']}?",
                                'variable': dimension['dimension'], 'a_kind': str(values[0]['value']),
