@@ -92,6 +92,18 @@ def screen_version():
     except OSError:
         changed = None
     return ' · '.join(x for x in (('גרסה ' + commit) if commit else None, ('המסך עודכן ' + changed) if changed else None) if x) or 'גרסה לא ידועה'
+def screen_update_newer(page_commit, current_version):
+    """Only a proven descendant can prompt the owner to reload."""
+    import subprocess
+    current=re.search(r'(?:^|גרסה )([0-9a-f]{7,40})(?:$| · )',current_version or '')
+    if not re.fullmatch(r'[0-9a-f]{7,40}',page_commit or '') or not current:return False
+    head=current.group(1)
+    if head.startswith(page_commit) or page_commit.startswith(head):return False
+    try:
+        return subprocess.run(['git','merge-base','--is-ancestor',page_commit,head],cwd=ROOT,capture_output=True,timeout=5).returncode==0
+    except (OSError,subprocess.SubprocessError):return False
+
+
 TENANT, ACTOR, ACCOUNT, ENTITY = 'demo-rosery', 'local-owner', 'demo-meta', 'demo-launch'
 
 
@@ -277,10 +289,11 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
         with active_uploads_lock:
             if active_uploads[0]:reasons.append('קבצים עולים עכשיו למחשב')
         return reasons
-    def update_status():
+    def update_status(page_commit=None):
         try:status=json.loads((data/'update-status.json').read_text(encoding='utf-8'))
         except (OSError,ValueError):status={'state':'no_runner'}
-        return {**(status if isinstance(status,dict) else {'state':'no_runner'}),'version':screen_version(),'busy':busy_reasons(),'provider_writes':0}
+        version=screen_version()
+        return {**(status if isinstance(status,dict) else {'state':'no_runner'}),'version':version,'newer_than_page':screen_update_newer(page_commit,version),'busy':busy_reasons(),'provider_writes':0}
     strategy_desk=StrategyDesk(data,dossier=load_rosery_dossier(),
         dossier_loader=(lambda:load_rosery_dossier(include_owner_financials=True)) if workspace=='manager' else None)
     if strategy_desk.latest() is None:
@@ -427,11 +440,11 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 except Exception:
                     kickoff='החיבור נשמר. הפעלת קריאת החומרים לא הושלמה; ניתן לנסות אותה מהמערכת בלי להתחבר מחדש.'
                 return self.reply(200,'<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><title>ROSERY — Drive connected</title><h1>החיבור לדרייב אומת ונשמר מוצפן</h1><p>קריאה בלבד. לא פורסמו מודעות ולא שונו קבצים בדרייב.</p><p>'+kickoff+'</p><a href="/">חזרה למערכת</a></html>','text/html; charset=utf-8')
-            if workspace=='manager' and self.path=='/advanced' and (data/'rosery-pilot.json').exists():
-                page=(ROOT/'owner-web.html').read_text(encoding='utf-8').replace('__SESSION__',session)
-                return self.reply(200,page,'text/html; charset=utf-8')
+            if self.path.split('?',1)[0]=='/advanced':
+                # Owner 2026-10-24: the old full screen is retired; its address goes to the simple screen.
+                self.send_response(302);self.send_header('Location','/');self.send_header('Content-Length','0');self.end_headers();return
             if workspace=='manager' and self.path.split('?',1)[0]=='/':
-                # Simple owner screen first; the full workspace stays at /advanced.
+                # The simple owner screen is the only owner screen.
                 page=(ROOT/'simple-web.html').read_text(encoding='utf-8').replace('__SESSION__',session).replace('__VERSION__',screen_version())
                 return self.reply(200,page,'text/html; charset=utf-8')
             if self.path.split('?',1)[0] == '/' or (self.path == '/lab' and workspace == 'manager'):
@@ -447,9 +460,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                 expected=os.environ.get('ROSERY_SUPERVISOR_TOKEN','')
                 if len(expected)<32 or not hmac.compare_digest(self.headers.get('X-Supervisor-Token',''),expected):return self.reply(403,{'error':'Runner only'})
                 return self.reply(200,{'busy':busy_reasons()})
-            if self.path == '/api/update-status':
+            if urlsplit(self.path).path == '/api/update-status':
                 if workspace!='manager' or not hmac.compare_digest(self.headers.get('X-Local-Session',''),session):return self.reply(403,{'error':'Invalid local session'})
-                return self.reply(200,update_status())
+                return self.reply(200,update_status(parse_qs(urlsplit(self.path).query).get('page_commit',[None])[0]))
             if self.path.startswith('/api/creative-launch/video/'):
                 from http.cookies import SimpleCookie
                 cookie=SimpleCookie()
@@ -810,8 +823,9 @@ def make_server(port=8766, data_dir=None, workspace='employee', start_live=False
                     if not hypothesis:return self.reply(404,{'error':'השערה לא נמצאה'})
                     if (hypothesis.get('outside') or {}).get('state')=='running':return self.reply(409,{'error':'הבדיקה כבר רצה'})
                     def run_outside(h=hypothesis):
-                        from outside_check import research
-                        try:hypotheses.set_outside(h['id'],'done',research(h))
+                        try:
+                            from outside_check import research
+                            hypotheses.set_outside(h['id'],'done',research(h))
                         except Exception as error:hypotheses.set_outside(h['id'],'failed',detail=str(error)[:300])
                     hypotheses.set_outside(hypothesis['id'],'running')
                     threading.Thread(target=run_outside,daemon=True,name='outside-check').start()

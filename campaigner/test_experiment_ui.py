@@ -66,20 +66,32 @@ class StoreTests(unittest.TestCase):
     def test_javascript_cards_with_unknown_zero_and_owner_markup(self):
         page=Path(__file__).with_name('simple-web.html').read_text(encoding='utf-8')
         block=page.split('// BEGIN experiments-ui')[1].split('// END experiments-ui')[0]
+        compact=page.split('function compactCard(card){',1)[1].split('function actionCard(',1)[0]
         script="""
 const assert=require('assert');
 let report=null;
 const ils=v=>'₪'+Math.round(v);
-function el(tag,cls,text){return {tag,text,children:[],append(...x){this.children.push(...x)}}}
+function el(tag,cls='',text){return {tag,cls,text,children:[],parent:null,
+ get childElementCount(){return this.children.length},
+ classList:{add(){}},
+ append(...nodes){for(const n of nodes){if(n.parent)n.parent.children.splice(n.parent.children.indexOf(n),1);n.parent=this;this.children.push(n)}},
+ matches(selector){return selector.split(',').some(s=>{
+   if(s==='p:not(.btn-help)')return this.tag==='p'&&!this.cls.split(' ').includes('btn-help');
+   const [t,c]=s.split('.');return (!t||t===this.tag)&&(!c||this.cls.split(' ').includes(c))})},
+ querySelectorAll(selector){return selector===':scope > button'?this.children.filter(n=>n.tag==='button'):all(this).filter(n=>n!==this&&n.matches(selector))},
+ querySelector(selector){return this.querySelectorAll(selector)[0]||null},
+ insertBefore(n,ref){if(n.parent)n.parent.children.splice(n.parent.children.indexOf(n),1);n.parent=this;const i=ref?this.children.indexOf(ref):this.children.length;assert(i>=0);this.children.splice(i,0,n)}
+}}
+function all(n){return [n,...n.children.flatMap(all)]}
 const $=()=>({});
-"""+"//"+block+"""
+"""+"function compactCard(card){"+compact+"//"+block+"""
 assert.equal(experimentMoney(null),'לא ידוע');assert.equal(experimentMoney(0),'₪0');
 const idea='<img src=x onerror=alert(1)>';
 const proposed=experimentCard({question:idea,max_days:21,meta_note:'חיבור בהמשך'},true);
-assert(proposed.children.some(c=>c.text===idea));
-assert(proposed.children.some(c=>c.text==='רעיון לבדיקה'));
-assert(!proposed.children.some(c=>(c.text||'').includes('ליום לכל זרוע')));
-assert(!proposed.children.some(c=>(c.text||'').includes('אשר והכן')));
+assert(all(proposed).some(c=>c.text===idea));
+assert(all(proposed).some(c=>c.text==='רעיון לבדיקה'));
+assert(!all(proposed).some(c=>(c.text||'').includes('ליום לכל זרוע')));
+assert(!all(proposed).some(c=>(c.text||'').includes('אשר והכן')));
 const assets={A:['a','b','c','d','e'],B:['f','g','h','i','j']};
 const candidate={a_kind:'תמונה',b_kind:'וידאו',asset_ids:assets,max_days:21};
 for(const metrics of [{spend:null,purchases:10},{spend:100,purchases:null},{spend:100,purchases:0},{spend:-1,purchases:10},{spend:'100',purchases:10}]){
@@ -91,14 +103,17 @@ assert.equal(experimentProposal({...candidate,daily_budget_minor:15000,max_days:
 assert(experimentProposal({...candidate,asset_ids:{A:assets.A,B:assets.A}}).missing.length>0);
 assert(experimentProposal({...candidate,asset_ids:{A:['a','a','a','a','a'],B:assets.B}}).missing.length>0);
 const prepared=experimentCard(candidate,true);
-assert(prepared.children.some(c=>c.text==='אשר והכן במצב מושהה'&&c.disabled));
-assert(prepared.children.some(c=>(c.text||'').includes('מחיר רכישה בחשבון (7 ימים): ₪90')));
-assert(prepared.children.some(c=>(c.text||'').includes('הצעת תקציב: ₪100')));
+assert(prepared.children.some(n=>n.tag==='details'&&!n.open));
+assert(prepared.children.some(n=>n.tag==='button'&&n.disabled));
+assert(prepared.children.filter(n=>n.tag==='p').length<=2);
+assert(all(prepared).some(c=>c.text==='אשר והכן במצב מושהה'&&c.disabled));
+assert(all(prepared).some(c=>(c.text||'').includes('מחיר רכישה בחשבון (7 ימים): ₪90')));
+assert(all(prepared).some(c=>(c.text||'').includes('הצעת תקציב: ₪100')));
 report.windows['7'].metrics.spend=0;assert.equal(experimentProposal(candidate).cpa,0);
 const running=experimentCard({plan:{state:'running',question:'שאלה',a:{label:'א'},b:{label:'ב'},max_days:21,daily_budget_minor:100},totals:{A:{spend_minor:null,purchases:null},B:{spend_minor:0,purchases:0}},probability_words:'לא ידוע',days_left:3});
-assert(running.children.some(c=>c.text==='עצור ניסוי'));
+assert(all(running).some(c=>c.text==='עצור ניסוי'));
 const result=experimentCard({plan:{state:'inconclusive',a:{label:'א'},b:{label:'ב'}},totals:{A:{},B:{}},verdict:'לא הוכרע',result:{lift_interval_90:[-.2,.4]},next_step:'לבדוק'});
-assert(result.children.some(c=>(c.text||'').includes('90%')));
+assert(all(result).some(c=>(c.text||'').includes('90%')));
 """
         done=subprocess.run(['node','-e',script],capture_output=True,text=True)
         self.assertEqual(done.returncode,0,done.stderr)

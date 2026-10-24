@@ -32,7 +32,7 @@ class OwnerScreenTests(unittest.TestCase):
 
     def test_safe_markdown_pause_counts_and_budget(self):
         html = Path(__file__).with_name('simple-web.html').read_text(encoding='utf-8')
-        names = ('safeAnswer', 'pauseExplanation', 'isolate', 'lastLaunchBudget', 'launchBudgetMinor',
+        names = ('todayContext', 'todayContradicts', 'actionDecisions', 'safeAnswer', 'pauseExplanation', 'isolate', 'lastLaunchBudget', 'launchBudgetMinor',
                  'launchBlockReason', 'launchCounts', 'renderToday', 'renderLearning')
         functions = []
         for name in names:
@@ -60,13 +60,14 @@ assert.equal(answer.children[1].tag,'strong');
 assert.equal(answer.children.some(c=>c.tag==='img'),false);
 assert.ok(text(answer).includes('<img src=x onerror=alert(1)>'));
 assert.ok(!text(answer).includes('**'));
-assert.ok(pauseExplanation(1.59,90).includes('מתחת לסף העצירה'));
-assert.ok(!pauseExplanation(1.59,90).includes('מוציאה יותר'));
-assert.ok(pauseExplanation(0.5,90).includes('מוציאה יותר'));
+assert.ok(pauseExplanation(1.59,90,{fail_below:5.2}).includes('מתחת לסף העצירה'));
+assert.ok(!pauseExplanation(1.59,90,{fail_below:5.2}).includes('מוציאה יותר'));
+assert.ok(pauseExplanation(0.5,90,{fail_below:5.2}).includes('מתחת לסף העצירה שלך (5.2)'));
+assert.ok(pauseExplanation(1.59,90,{}).includes('סף העצירה אינו ידוע'));
 assert.equal(isolate('20.10–22.10'),'\u206620.10–22.10\u2069');
-assert.equal(lastLaunchBudget(),100);
-localStorage.getItem=()=> '150';assert.equal(lastLaunchBudget(),150);
-localStorage.getItem=()=> 'NaN';assert.equal(lastLaunchBudget(),100);
+assert.equal(lastLaunchBudget(),'');
+localStorage.getItem=()=> '150';assert.equal(lastLaunchBudget(),'');
+localStorage.getItem=()=> 'NaN';assert.equal(lastLaunchBudget(),'');
 assert.equal(launchBudgetMinor(''),null);assert.equal(launchBudgetMinor(' '),null);
 assert.equal(launchBudgetMinor('0'),null);assert.equal(launchBudgetMinor('2001'),null);
 assert.equal(launchBudgetMinor('NaN'),null);assert.equal(launchBudgetMinor('100'),10000);
@@ -78,8 +79,8 @@ assert.ok(launchBlockReason('No active ad set of that gender in the campaign to 
 renderToday();assert.equal($('badge').textContent,'2');assert.ok(text($('hello-sub')).includes('2 דברים'));
 renderLearning();const card=$('learn').children[0];
 assert.ok(text(card).includes('יום אחד'));assert.ok(!text(card).includes('1 ימים'));
-assert.ok(card.children.some(c=>c.tag==='details'&&text(c).includes('More internal jargon.')));
-assert.ok(!card.children.filter(c=>c.tag==='p').some(c=>text(c).includes('More internal jargon.')));
+assert.ok(card.children.some(c=>c.tag==='p'&&text(c).includes('משפט ראשון.')));
+assert.ok(card.children.filter(c=>c.tag==='p').some(c=>text(c).includes('More internal jargon.')));
 """
         result = subprocess.run(['node', '-e', '\n'.join(functions)+'\n'+harness],
                                 encoding='utf-8', capture_output=True)

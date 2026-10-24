@@ -351,9 +351,25 @@ def _daily(data,store,today,valid,currency):
         day=today-timedelta(days=back);notes=[];metrics={key:None for key in ('spend','purchases','attributed_revenue','roas','landing_page_views')}
         funnel={key:None for key in ('link_clicks','impressions','link_ctr','add_to_cart','initiate_checkout')};ads=[]
         rows,reason=_meta_rows(data,day,day) if valid and _coverage(data,day,day) else (None,'הנתונים ממטא ליום הזה לא נקראו במלואם')
-        if rows is None:notes.append(reason)
+        if rows is None:
+            notes.append(reason)
+            # A partial, identity-bound read can still carry observed spend.
+            # It is a lower bound, never an account total or a ROAS denominator.
+            if data.get('verified') is True and data.get('account_id')==ACCOUNT and data.get('currency')==currency and data.get('today')==today.isoformat():
+                observed,_=_meta_rows(data,day,day)
+                known=[_number(row.get('spend')) for row in observed or [] if _number(row.get('spend')) is not None]
+                if known:metrics['spend_lower_bound']=_public(_sum(known))
         else:
             metrics.update({key:_public(value) for key,value in _aggregate(rows).items() if key in metrics});funnel=_funnel(rows)
+            # Action-only rows are not evidence of missing account delivery when
+            # the independent delivery stream is verified complete.
+            from insights_split import split_evidence_valid
+            if data.get('metric_collection')=='split_delivery_actions_v1' and split_evidence_valid(data,'ad'):
+                delivery=[row for row in rows if (row.get('metric_sources') or {}).get('delivery_present') is True]
+                metrics['spend']=_public(_sum([_number(row.get('spend')) for row in delivery]))
+                metrics['roas']=_public(_ratio(_number(metrics['attributed_revenue']),_number(metrics['spend'])))
+            known=[_number(row.get('spend')) for row in rows if _number(row.get('spend')) is not None]
+            if metrics['spend'] is None and known:metrics['spend_lower_bound']=_public(_sum(known))
             grouped={}
             for row in rows:grouped.setdefault(row['ad_id'],[]).append(row)
             for identity,own in grouped.items():
@@ -363,7 +379,7 @@ def _daily(data,store,today,valid,currency):
         orders,sales,sreason=_store(store,day,day,currency)
         if sreason:notes.append(sreason)
         days.append({'date':day.isoformat(),'partial':back==0,'metrics':{**metrics,'store_orders':_public(orders),'store_revenue':_public(sales)},
-                     'funnel':funnel,'ads':ads[:10],'ads_with_spend':len(ads),'notes':notes})
+                     'funnel':funnel,'ads':ads,'ads_with_spend':len(ads),'notes':notes})
     return days
 
 def build_report(live_snapshot,proposal_report=None,operations_status=None,now=None,change_history=None):

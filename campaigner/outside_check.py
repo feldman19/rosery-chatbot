@@ -49,7 +49,7 @@ def _clean(answer):
         url = urlsplit(f.get('url') or '') if isinstance(f, dict) else None
         if not url or url.scheme != 'https' or not url.hostname or f.get('relation') not in VERDICTS:
             continue  # a claim without a real link is dropped, not shown
-        findings.append({k: str(f[k])[:600] for k in ('claim', 'source', 'url', 'relation', 'note')})
+        findings.append({k: str(f.get(k) or '')[:600] for k in ('claim', 'source', 'url', 'relation', 'note')})
     return {'findings': findings, 'summary': str(answer.get('summary') or '')[:1200], 'kind': 'outside_context_not_proof'}
 
 
@@ -67,7 +67,15 @@ def _run(text):
             '--max-turns', '25', '--json-schema', json.dumps(schema(), separators=(',', ':'))]
     with tempfile.TemporaryDirectory(prefix='outside-check-') as cwd:
         done = subprocess.run(args, input=text, text=True, encoding='utf-8', capture_output=True, timeout=600, cwd=cwd, env=env)
+    # Expose a bounded diagnosis, never raw CLI output (which may contain private data).
     if done.returncode:
-        raise ValueError('המחקר החיצוני נכשל')
-    result = json.loads(done.stdout)
-    return result.get('structured_output') if isinstance(result, dict) else None
+        diagnostic=(done.stderr or '').lower()
+        reason='נדרש חיבור מחדש ל-Claude Code' if any(x in diagnostic for x in ('not logged in','authentication','oauth','login')) else 'מגבלת שימוש ב-Claude Code' if any(x in diagnostic for x in ('rate limit','usage limit','quota')) else 'תהליך Claude Code הסתיים בקוד '+str(done.returncode)
+        raise ValueError('המחקר החיצוני נכשל: '+reason)
+    try:result = json.loads(done.stdout)
+    except (TypeError,ValueError):raise ValueError('המחקר לא החזיר תשובה תקינה') from None
+    if isinstance(result,dict) and result.get('is_error'):
+        raise ValueError('המחקר נעצר ב-Claude Code: '+str(result.get('subtype') or 'unknown')[:80])
+    if not isinstance(result,dict) or not isinstance(result.get('structured_output'),dict):
+        raise ValueError('המחקר הסתיים ללא ממצאים מובנים; נסה שוב')
+    return result['structured_output']
