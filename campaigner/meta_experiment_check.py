@@ -35,10 +35,18 @@ def _error(error):
     return 'מטא סירבה' + (f' (קוד {code})' if code is not None else '') if details else 'לא הצלחתי לקרוא'
 
 
-def check(get, now=None):
-    """get(path, params) -> dict, GET only. Returns {'ready', 'items', 'missing', 'text'} in Hebrew."""
+def check(get, now=None, executor_app=None):
+    """get(path, params) -> dict, GET only. Returns {'ready', 'items', 'missing', 'text'} in Hebrew.
+    executor_app: optional check that the credential is the bound executor app's; when it fails nothing else is read."""
     now = now or datetime.now(timezone.utc)
     items, missing = [], []
+    if executor_app is not None:
+        try:
+            executor_app()
+        except Exception:
+            text = 'בדיקה לפני ניסוי ראשון (קריאה בלבד, שום דבר לא השתנה):\n✗ החיבור לביצוע לא שייך לאפליקציית הביצוע שהוגדרה במחשב הזה, ולכן לא בדקתי יותר.'
+            return {'ready': False, 'items': [{'check': 'אפליקציית הביצוע', 'ok': False, 'detail': text.splitlines()[-1][2:]}],
+                    'missing': [text.splitlines()[-1][2:]], 'text': text, 'live_action_allowed': False}
 
     def read(path, params):
         if not _allowed(path):
@@ -122,12 +130,25 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='GET-only Meta experiment readiness check')
     parser.add_argument('--data-dir', required=True)
     args = parser.parse_args(argv)
-    # The stored write credential is decrypted here without its scope check on purpose: that check rejects a
-    # token that also has business_management, which is exactly what this report must be able to say.
-    # The token is only passed to GET requests and is never printed.
+    # The stored write credential is decrypted here without its *scope* check on purpose: that check rejects a
+    # token that also has business_management, which is exactly what this report must be able to say. Every other
+    # guard of meta_write_connection.load stays: the token's format, and that it belongs to the separate executor
+    # app bound on this computer (a GET). The token is only passed to GET requests and is never printed.
     from shopify_direct import crypt
-    token = crypt((Path(args.data_dir) / 'meta-execution.dpapi').read_bytes(), True).decode()
-    print(check(GraphGet(token))['text'])
+    import meta_write_connection
+    from meta_direct import graph
+    folder = Path(args.data_dir)
+    token = crypt((folder / 'meta-execution.dpapi').read_bytes(), True).decode()
+    print(check(GraphGet(token), executor_app=lambda: _executor_app_ok(token, folder, graph, meta_write_connection._app_id))['text'])
+
+
+def _executor_app_ok(token, folder, graph, bound_app):
+    """True only for a well-formed token of the executor app bound on this computer; raises otherwise."""
+    if not isinstance(token, str) or not re.fullmatch(r'[A-Za-z0-9_-]{30,4096}', token):
+        raise ValueError('Invalid write credential')
+    if graph(token, 'app', {'fields': 'id'}).get('id') != bound_app(folder):
+        raise ValueError('Wrong application')
+    return True
 
 
 if __name__ == '__main__':

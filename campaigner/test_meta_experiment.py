@@ -370,6 +370,26 @@ class CheckTests(unittest.TestCase):
         self.assertIn('קוד 200', text)
         self.assertGreaterEqual(len(out['missing']), 3)
 
+    def test_a_credential_of_another_app_stops_before_any_read(self):
+        get, calls = self.reader()
+        def wrong_app():
+            raise ValueError('Wrong application')
+        out = check(get, NOW, executor_app=wrong_app)
+        self.assertEqual((out['ready'], calls), (False, []))
+        self.assertIn('אפליקציית הביצוע', out['text'])
+        get, calls = self.reader()
+        self.assertTrue(check(get, NOW, executor_app=lambda: True)['ready'])
+
+    def test_executor_app_guard_checks_format_and_binding(self):
+        from meta_experiment_check import _executor_app_ok
+        token = 'a' * 40
+        graph = lambda t, path, params=None: {'id': '777'}
+        self.assertTrue(_executor_app_ok(token, 'x', graph, lambda folder: '777'))
+        with self.assertRaises(ValueError):
+            _executor_app_ok(token, 'x', graph, lambda folder: '888')
+        with self.assertRaises(ValueError):
+            _executor_app_ok('short', 'x', graph, lambda folder: '777')
+
     def test_graph_get_is_get_only_and_allowlisted(self):
         class Base:
             def __init__(self):
