@@ -79,7 +79,7 @@ def _catalog_refusal(error, plan):
     details = getattr(error, 'details', {}) or {}
     text = ' '.join(str(details.get(k, '')) for k in ('message', 'error_user_msg', 'error_user_title'))
     features = creative.get('degrees_of_freedom_spec', {}).get('creative_features_spec', {})
-    refused = [feature_label(f) for f, v in features.items() if f not in ALLOWED_ON and f in text]
+    refused = [feature_label(f) for f, v in features.items() if isinstance(v, dict) and v.get('enroll_status') == 'OPT_OUT' and f in text]
     if not refused or not any(word in text.lower() for word in ('opt_out', 'opt out', 'enroll', 'disable')):
         return None
     return 'מטא לא מאפשרת לכבות את ' + ', '.join(refused) + ' במודעת קטלוג'
