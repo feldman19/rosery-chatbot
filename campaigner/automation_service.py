@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from connections import SHOP
 from meta_direct import ACCOUNT, LAUNCH
 from strategy import evaluate
+from business import ACTIVE as BUSINESS
 
 
 def report(snapshot, now=None,orders=None):
@@ -22,10 +23,10 @@ def report(snapshot, now=None,orders=None):
         try:return not source.get('error') and 0<=(now-datetime.fromisoformat(source['last_success_at'])).total_seconds()<=720
         except (TypeError,ValueError,KeyError):return False
     reports_ok=(fresh(meta) and fresh(shop) and data.get('verified') is True and data.get('complete') is True
-                and data.get('account_id')==ACCOUNT and data.get('currency')=='ILS'
-                and store.get('verified') is True and store.get('shop')==SHOP and store.get('currency')=='ILS')
+                and data.get('account_id')==ACCOUNT and data.get('currency')==BUSINESS.currency
+                and store.get('verified') is True and store.get('shop')==SHOP and store.get('currency')==BUSINESS.currency)
     scope_ok=(inventory.get('verified') is True and campaign.get('id')==LAUNCH and campaign.get('account_id')==ACCOUNT)
-    profile={'tenant_id':'rosery','account_id':ACCOUNT,'entity_id':LAUNCH,'currency':'ILS','timezone':data.get('timezone')}
+    profile={'tenant_id':BUSINESS.id,'account_id':ACCOUNT,'entity_id':LAUNCH,'currency':BUSINESS.currency,'timezone':data.get('timezone')}
     raw_budget=campaign.get('daily_budget')
     budget=int(raw_budget) if isinstance(raw_budget,(str,int)) and str(raw_budget).isdigit() else None
     entity={**profile,'status':campaign.get('status'),'budget_minor':budget,'budget_type':'daily' if budget is not None else None,

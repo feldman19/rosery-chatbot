@@ -2,6 +2,7 @@
 import hashlib
 import json
 from pause_evaluation import evaluate_pause, stamp
+from business import ACTIVE as BUSINESS
 
 
 def pause_assessment(report,row,economics,dossier,*,now):
@@ -26,7 +27,7 @@ def pause_assessment(report,row,economics,dossier,*,now):
               or (value.get('change_cost') or {}).get('excludes_foregone_contribution_costs') is not True):
             issue='redistribution_substitution_or_double_count_basis_unresolved'
         else:scenario=value;source={k:record[k] for k in ('source_ref','source_digest','observed_at','valid_until','review_kind')}
-    if report.get('currency')!='ILS':issue='report_currency_not_ils';scenario=None
+    if report.get('currency')!=BUSINESS.currency:issue='report_currency_not_ils';scenario=None
     result=evaluate_pause(report,row,economics,scenario,now=now)
     if issue:result['missing']=list(dict.fromkeys([issue]+result['missing']))
     result['policy_status']='implemented_scenario_only'

@@ -24,6 +24,7 @@ from urllib.parse import urlsplit
 from campaign_operations_transport import CampaignTransport,ProviderRejected,ACCOUNT,PARENT
 from image_validation import decode_image
 from launch_blueprint import build_blueprint,attach_probe,execution_workflow
+from business import ACTIVE as BUSINESS
 
 PAGE='170018166205299';INSTAGRAM='17841461774110293';PIXEL='723893636602228'
 ID=re.compile(r'^[0-9]{5,30}$');ASSET=re.compile(r'^[A-Za-z0-9_-]{10,150}$')
@@ -174,19 +175,19 @@ class CampaignOperations:
         entities={PARENT:{'entity_type':'campaign','entity_id':PARENT,'name':'ROSERY sales campaign — fresh preview required','status':None,'observed_at':None}}
         for job in jobs:
             if isinstance(job.get('before'),dict) and job['before'].get('id'):
-                raw=job['before'];kind=job['manifest'].get('entity_type','campaign');entities[raw['id']]={'entity_type':kind,'entity_id':raw['id'],'name':raw.get('name',raw['id']),'status':raw.get('status'),'observed_at':job['created_at'],'currency':'ILS'}
+                raw=job['before'];kind=job['manifest'].get('entity_type','campaign');entities[raw['id']]={'entity_type':kind,'entity_id':raw['id'],'name':raw.get('name',raw['id']),'status':raw.get('status'),'observed_at':job['created_at'],'currency':BUSINESS.currency}
                 descendants=raw.get('descendants') or {}
                 if descendants.get('complete') is True:
                     for child in descendants.get('adsets',[]):
                         if child.get('account_id')==ACCOUNT and child.get('campaign_id')==PARENT:
                             entities[child['id']]={'entity_type':'adset','entity_id':child['id'],
                                 'name':child.get('name',child['id']),'status':child.get('status'),
-                                'observed_at':job['created_at'],'currency':'ILS',
+                                'observed_at':job['created_at'],'currency':BUSINESS.currency,
                                 'budget_minor':child.get('daily_budget',child.get('lifetime_budget')),
                                 'requires_fresh_preview':True}
             for step in job['steps']:
                 if step['state']=='verified' and step['kind'] in ('adsets','ads'):
-                    raw=step['result']['verified_fields'];identity=step['result']['id'];entities[identity]={'entity_type':'adset' if step['kind']=='adsets' else 'ad','entity_id':identity,'name':raw.get('name',identity),'status':raw.get('status'),'observed_at':job.get('finished_at',job['created_at']),'currency':'ILS','budget_minor':raw.get('daily_budget',raw.get('lifetime_budget'))}
+                    raw=step['result']['verified_fields'];identity=step['result']['id'];entities[identity]={'entity_type':'adset' if step['kind']=='adsets' else 'ad','entity_id':identity,'name':raw.get('name',identity),'status':raw.get('status'),'observed_at':job.get('finished_at',job['created_at']),'currency':BUSINESS.currency,'budget_minor':raw.get('daily_budget',raw.get('lifetime_budget'))}
         try:
             source=self._proposal()
             if source.get('schema_version')==2:
@@ -196,7 +197,7 @@ class CampaignOperations:
                     cached=(self.monotonic(),self._v2_campaigns(token),self._now().isoformat());self._campaign_cache=cached
                 for row in cached[1]:
                     entities[row['id']]={'entity_type':'campaign','entity_id':row['id'],'name':row.get('name',row['id']),
-                                         'status':row.get('status'),'observed_at':cached[2],'currency':'ILS','requires_fresh_preview':True}
+                                         'status':row.get('status'),'observed_at':cached[2],'currency':BUSINESS.currency,'requires_fresh_preview':True}
             blueprint=attach_probe(build_blueprint(source),self.directory,self.key)
             workflow=execution_workflow(blueprint,source.get('required_format'))
             workflow['owner_budget_entry']=(source.get('operation_config') or {}).get('owner_budget_entry') is True
@@ -224,7 +225,7 @@ class CampaignOperations:
         return raw,{'id':identity,'name':str(row.get('source_name') or identity)[:160],'source_kind':source_kind,'sha256':sha,'mime':mime,'size':len(raw),'dimensions':dimensions}
     def _account(self,token):
         raw=self.transport.read(token,'act_'+ACCOUNT,'account_id,currency')
-        if raw.get('account_id')!=ACCOUNT or raw.get('currency')!='ILS':raise OperationBlocked('Fixed account/currency not verified')
+        if raw.get('account_id')!=ACCOUNT or raw.get('currency')!=BUSINESS.currency:raise OperationBlocked('Fixed account/currency not verified')
     def _entity(self,token,kind,identity):
         if kind not in ('campaign','adset','ad') or not isinstance(identity,str) or not ID.fullmatch(identity):raise OperationBlocked('Invalid entity')
         fields='id,account_id,name,status,effective_status,daily_budget,lifetime_budget,objective' if kind=='campaign' else 'id,account_id,name,status,effective_status,campaign_id,daily_budget,lifetime_budget' if kind=='adset' else 'id,account_id,name,status,effective_status,campaign_id,adset_id,creative{id}'
@@ -558,7 +559,7 @@ class CampaignOperations:
                         except (ValueError,KeyError,TypeError) as error:raise OperationBlocked('Business profile budget limit or unknown prior budget') from error
                     opposite='lifetime_budget' if btype=='daily' else 'daily_budget'
                     if opposite not in before or str(before.get(opposite))!='0':raise OperationBlocked('Budget type conversion or missing budget coverage not supported')
-                    params={btype+'_budget':amount};budget={'type':btype,'minor':amount,'currency':'ILS'}
+                    params={btype+'_budget':amount};budget={'type':btype,'minor':amount,'currency':BUSINESS.currency}
                 else:params={'status':'PAUSED' if action=='pause' else 'ACTIVE'}
                 after={**before,**params};manifest={'entity_type':kind,'entity_id':entity,'before':before,'changes':params};steps=[self._step('mutation','update',params,params,node=entity,entity_type=kind)]
         except OperationBlocked as error:

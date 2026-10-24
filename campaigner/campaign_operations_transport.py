@@ -15,9 +15,10 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlencode,parse_qsl
 from connections import NoRedirect
+from business import ACTIVE as BUSINESS
 
-ACCOUNT='393059510164294'
-PARENT='120246379886090730'
+ACCOUNT=BUSINESS.meta_account
+PARENT=BUSINESS.meta_sales_campaign
 ORIGIN='https://graph.facebook.com/v26.0/'
 
 class ProviderRejected(ValueError):

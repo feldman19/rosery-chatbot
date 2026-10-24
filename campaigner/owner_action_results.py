@@ -2,6 +2,7 @@
 import hashlib
 import json
 from datetime import datetime, timezone
+from business import ACTIVE as BUSINESS
 
 
 def run_analysis(report, card):
@@ -41,7 +42,7 @@ def run_analysis(report, card):
                 'finding': 'דיווח רכישות חסר' if purchases is None else
                            'אין רכישות מיוחסות בתקופה' if purchases == 0 else
                            'יש רכישות מיוחסות — עלות מוצגת',
-                'meta_url': 'https://adsmanager.facebook.com/adsmanager/manage/ads?act=393059510164294&selected_ad_ids='+row['id']})
+                'meta_url': 'https://adsmanager.facebook.com/adsmanager/manage/ads?act='+BUSINESS.meta_account+'&selected_ad_ids='+row['id']})
         rows.sort(key=lambda x: -(x['spend'] or 0))
         periods.append({'days': int(days), 'since': window.get('since'), 'until': window.get('until'), 'ads': rows})
     last = next((w['ads'] for w in periods if w['days'] == 1), [])

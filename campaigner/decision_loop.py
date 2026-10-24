@@ -10,6 +10,7 @@ import sqlite3
 from decisions import build_report
 from meta_direct import ACCOUNT, LAUNCH
 from decision_history import project_observation
+from business import ACTIVE as BUSINESS
 
 
 def encode(value):
@@ -78,7 +79,7 @@ class DecisionLoop:
             age = (now - datetime.fromisoformat(source['last_success_at'])).total_seconds()
             valid = (not source.get('error') and 0 <= age <= 720 and data.get('verified') is True
                      and data.get('complete') is True and data.get('account_id') == ACCOUNT
-                     and data.get('currency') == 'ILS' and data.get('today') == local_day
+                     and data.get('currency') == BUSINESS.currency and data.get('today') == local_day
                      and data['since'] <= local_day <= data['until'])
         except (KeyError, TypeError, ValueError): valid = False
         if not valid: return self.read()

@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from meta_direct import ACCOUNT,LAUNCH
 from connections import SHOP
+from business import ACTIVE as BUSINESS
 
 
 def context(data_dir,values=None):
@@ -26,7 +27,7 @@ def build_report(snapshot,settings,now=None):
     source=snapshot.get('sources',{}).get('meta',{});data=source.get('data') or {}
     try:fresh=0<=(now-datetime.fromisoformat(source['last_success_at'])).total_seconds()<=720 and not source.get('error')
     except (ValueError,TypeError,KeyError):fresh=False
-    valid=data.get('account_id')==ACCOUNT and data.get('currency')=='ILS' and data.get('complete') is True and data.get('verified') is True
+    valid=data.get('account_id')==ACCOUNT and data.get('currency')==BUSINESS.currency and data.get('complete') is True and data.get('verified') is True
     inventory=data.get('inventory') or {};campaign=inventory.get('campaign') or {}
     inventory_ok=valid and inventory.get('verified') is True and campaign.get('id')==LAUNCH and campaign.get('account_id')==ACCOUNT
     windows=[]
@@ -65,7 +66,7 @@ def derive_economics(snapshot,now=None):
             'source':'Shopify aggregate sales, last 28 complete days','verified_profit':False}
     required={'orders','net_sales','shipping_charges','cost_of_goods_sold','net_sales_with_cost_recorded','net_sales_without_cost_recorded'}
     if not rows or not required.issubset(rows[0]) or any(rows[0][k] in (None,'') for k in required):return result
-    if data.get('shop')!=SHOP or data.get('currency')!='ILS':
+    if data.get('shop')!=SHOP or data.get('currency')!=BUSINESS.currency:
         result['missing'].append('זהות חנות ומטבע תואמים');return result
     try:
         age=((now or datetime.now(timezone.utc))-datetime.fromisoformat(source['last_success_at'])).total_seconds()

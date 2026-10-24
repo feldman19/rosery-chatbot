@@ -23,11 +23,12 @@ from datetime import datetime
 import re
 
 from cohort import HostContext, LINKAGES, person_hmac
+from business import ACTIVE as BUSINESS
 
 
-TENANT = 'rosery'
-SHOP = '21cc82-3.myshopify.com'
-ACCOUNT = '393059510164294'
+TENANT = BUSINESS.id
+SHOP = BUSINESS.shop
+ACCOUNT = BUSINESS.meta_account
 ALLOWED_FIELDS = frozenset({'id', 'email', 'registered_at', 'ad_id', 'linkage'})
 OPAQUE_ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}')
 
@@ -49,7 +50,7 @@ def normalize_registrations(rows, *, context: HostContext, source_id: str, tenan
     """
     if not isinstance(context, HostContext) or not isinstance(context.verified_source_ids, frozenset):
         raise ValueError('trusted HostContext is required')
-    if (context.tenant, context.shop, context.account, context.currency) != (TENANT, SHOP, ACCOUNT, 'ILS'):
+    if (context.tenant, context.shop, context.account, context.currency) != (TENANT, SHOP, ACCOUNT, BUSINESS.currency):
         raise ValueError('registration adapter scope mismatch')
     cutoff = _time(context.as_of)
     if cutoff is None:

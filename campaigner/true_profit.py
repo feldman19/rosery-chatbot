@@ -14,8 +14,9 @@ from decimal import Decimal, InvalidOperation
 import json
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from business import ACTIVE as BUSINESS
 
-STORE_TZ = 'Asia/Jerusalem'
+STORE_TZ = BUSINESS.timezone
 
 FIELD_TYPES = {'per_order': 'לכל הזמנה', 'percent_of_revenue': 'אחוז מההכנסה', 'per_unit': 'לכל יחידה',
                'monthly_fixed': 'קבוע חודשי'}

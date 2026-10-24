@@ -7,18 +7,19 @@ import json
 from pathlib import Path
 from economics_evidence import summarize_economics, current_recorded_economics
 from imported_business_method import load_imported_business_method
+from business import ACTIVE as BUSINESS
 
 def load_rosery_dossier(root=None, *, include_owner_financials=False):
     root=Path(root) if root else Path(__file__).resolve().parent
-    p=root/'businesses/rosery/profile.json'
+    p=root/'businesses'/BUSINESS.id/'profile.json'
     try:
         profile=json.loads(p.read_text(encoding='utf-8'))
-        if profile.get('business_id')!='rosery' or profile.get('shop')!='21cc82-3.myshopify.com' or profile.get('meta_account')!='393059510164294':raise ValueError('Tenant mismatch')
+        if profile.get('business_id')!=BUSINESS.id or profile.get('shop')!=BUSINESS.shop or profile.get('meta_account')!=BUSINESS.meta_account:raise ValueError('Tenant mismatch')
         known=list(profile['known']);missing=list(profile['missing'])
-        result={'business_id':'rosery','known':known,'missing':missing,'profile_source':'businesses/rosery/profile.json','review_depth':profile['review_depth'],'live_action_allowed':False}
+        result={'business_id':BUSINESS.id,'known':known,'missing':missing,'profile_source':'businesses/'+BUSINESS.id+'/profile.json','review_depth':profile['review_depth'],'live_action_allowed':False}
     except (OSError,ValueError,KeyError,TypeError):
         return {'known':[],'missing':['תיק העסק המרכזי חסר או אינו תואם לרוסרי'],'live_action_allowed':False}
-    result['business_method']=load_imported_business_method(root,business_id='rosery',account_id=profile['meta_account'])
+    result['business_method']=load_imported_business_method(root,business_id=BUSINESS.id,account_id=profile['meta_account'])
     if not include_owner_financials:return result
     evidence={}
     for key,name in profile['evidence_files'].items():

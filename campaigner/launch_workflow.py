@@ -17,6 +17,7 @@ import sqlite3
 import unicodedata
 from urllib.parse import urlsplit,parse_qsl,urlencode,urlunsplit
 from meta_direct import ACCOUNT,LAUNCH
+from business import ACTIVE as BUSINESS
 
 SALES_OBJECTIVES={'SALES','OUTCOME_SALES','PRODUCT_CATALOG_SALES'}
 
@@ -98,7 +99,7 @@ class LaunchWorkflow:
         source=(snapshot.get('sources') or {}).get('meta') or {};data=source.get('data') or {};inventory=data.get('account_campaigns') or {}
         source_at=_stamp(source.get('last_success_at'));inventory_at=_stamp(inventory.get('checked_at'))
         fresh=lambda t:t is not None and 0<=(now-t).total_seconds()<=720
-        verified=(fresh(source_at) and fresh(inventory_at) and not source.get('error') and data.get('verified') is True and data.get('account_id')==ACCOUNT and data.get('currency')=='ILS' and inventory.get('verified') is True and inventory.get('complete') is True and inventory.get('account_id')==ACCOUNT)
+        verified=(fresh(source_at) and fresh(inventory_at) and not source.get('error') and data.get('verified') is True and data.get('account_id')==ACCOUNT and data.get('currency')==BUSINESS.currency and inventory.get('verified') is True and inventory.get('complete') is True and inventory.get('account_id')==ACCOUNT)
         campaigns=inventory.get('campaigns')
         if not isinstance(campaigns,list):verified=False;campaigns=[]
         ids=[r.get('id') for r in campaigns if isinstance(r,dict)]
@@ -111,7 +112,7 @@ class LaunchWorkflow:
                     excluded.append({'id':row['id'],'objective':objective,'reason':'Registration launch or objective does not establish a sales campaign'})
                     continue
                 candidates.append({k:row.get(k) for k in ('id','name','objective','status','effective_status','daily_budget','lifetime_budget','updated_time')})
-                candidates[-1].update(currency='ILS',observed_at=inventory.get('checked_at'),source='direct_meta_inventory',is_recommendation=False,
+                candidates[-1].update(currency=BUSINESS.currency,observed_at=inventory.get('checked_at'),source='direct_meta_inventory',is_recommendation=False,
                     goal_verified_by_objective=objective in SALES_OBJECTIVES,requires_purchase_event_check=True,selected=False,
                     metrics=self._metrics(data,row['id']),promotion_review={'required':any(flag in str(row.get('name','')) for flag in ('30%','חג')),'basis':'Campaign name only; old sale text in creative has not been inspected'})
         count=len(candidates)

@@ -13,9 +13,11 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from business import ACTIVE as BUSINESS
+
 
 def israel_now():
-    return datetime.now(timezone.utc).astimezone(ZoneInfo('Asia/Jerusalem'))
+    return datetime.now(timezone.utc).astimezone(ZoneInfo(BUSINESS.timezone))
 
 
 def number(value):
@@ -115,7 +117,7 @@ class SelfCheck:
 
     def run_if_due(self, snapshot, report):
         with self.lock:
-            now=self.clock();local=now.astimezone(ZoneInfo('Asia/Jerusalem'))
+            now=self.clock();local=now.astimezone(ZoneInfo(BUSINESS.timezone))
             morning=local.hour*60+local.minute>=450 and self.morning_day!=local.date()
             if not snapshot.get('last_cycle_at') or (self.started and not morning):return None
             result=self.run(snapshot,report() if callable(report) else report,now=now)
@@ -134,7 +136,7 @@ class SelfCheck:
                 'meta_report_token':'אסימון דוחות מטא','meta_write_token':'אסימון כתיבה במטא'}
         def add(identity,status,reason,**values):
             checks.append({'id':identity,'status':status,'reason':reason,**values})
-        day=(now.astimezone(ZoneInfo('Asia/Jerusalem')).date()-timedelta(days=1)).isoformat()
+        day=(now.astimezone(ZoneInfo(BUSINESS.timezone)).date()-timedelta(days=1)).isoformat()
         window=((report or {}).get('windows') or {}).get('1') or {}
         metrics=window.get('metrics') or {}
         bound=window.get('since')==day and window.get('until')==day

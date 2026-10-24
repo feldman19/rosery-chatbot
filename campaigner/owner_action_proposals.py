@@ -9,8 +9,9 @@ import hashlib
 import json
 from copy import deepcopy
 from experiment_suggestions import propose_experiments, assess_experiment_evidence
+from business import ACTIVE as BUSINESS
 
-ACCOUNT = '393059510164294'
+ACCOUNT = BUSINESS.meta_account
 _HASH = re.compile(r'^[a-f0-9]{64}$')
 
 

@@ -10,8 +10,9 @@ This module deliberately does NOT implement SDK's retry-batch convenience.
 from copy import deepcopy
 import hashlib,json,re
 from urllib.parse import urlencode
+from business import ACTIVE as BUSINESS
 
-ACCOUNT='393059510164294';PARENT='120246379886090730';MAX_BATCH=50
+ACCOUNT=BUSINESS.meta_account;PARENT=BUSINESS.meta_sales_campaign;MAX_BATCH=50
 CREATION={'adsets':{'name','status','campaign_id','targeting','optimization_goal','billing_event','promoted_object','start_time','end_time','daily_budget','lifetime_budget'},'adcreatives':{'name','object_story_spec'},'ads':{'name','status','adset_id','creative','tracking_specs'}}
 class BatchRejected(ValueError):pass
 

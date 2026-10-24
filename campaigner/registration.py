@@ -6,9 +6,10 @@ import hashlib
 import json
 import sqlite3
 from pathlib import Path
+from business import ACTIVE as BUSINESS
 
-ACCOUNT='393059510164294'
-CAMPAIGN='120253309360290730'
+ACCOUNT=BUSINESS.meta_account
+CAMPAIGN=BUSINESS.meta_launch_campaign
 ADSET='120253309362570730'
 PIXEL='723893636602228'
 
@@ -20,7 +21,7 @@ def _date(value):
 
 
 def _amount(value):
-    if not isinstance(value,dict) or value.get('unit')!='ILS' or value.get('value') in (None,''):
+    if not isinstance(value,dict) or value.get('unit')!=BUSINESS.currency or value.get('value') in (None,''):
         raise ValueError('ILS amount required')
     try:n=Decimal(str(value['value']))
     except InvalidOperation as e:raise ValueError('Invalid amount') from e
@@ -36,7 +37,7 @@ def registration_report(root,now=None,data_dir=None,manifest_override=None):
     allowed={'.local/registration-meta.json','.local/registration-site.json',
              '../outputs/rosery-launch-registration-tracking-2026-10-16.json',
              '../outputs/rosery-registration-scale-recheck-2026-10-16.json'}
-    if meta.get('tenant')!='rosery' or meta.get('account_id')!=ACCOUNT or meta.get('campaign_id')!=CAMPAIGN:
+    if meta.get('tenant')!=BUSINESS.id or meta.get('account_id')!=ACCOUNT or meta.get('campaign_id')!=CAMPAIGN:
         raise ValueError('Case scope mismatch')
     if set(meta.get('files',{}))!=allowed:raise ValueError('Missing or unsupported case evidence')
     evidence={}
@@ -46,8 +47,8 @@ def registration_report(root,now=None,data_dir=None,manifest_override=None):
         if hashlib.sha256(raw).hexdigest()!=digest:raise ValueError('Evidence changed; collect a new revision')
         evidence[name]=json.loads(raw)
     m=evidence['.local/registration-meta.json'];s=evidence['.local/registration-site.json']
-    if (m.get('tenant'),m.get('account_id'),m.get('campaign_id'))!=('rosery',ACCOUNT,CAMPAIGN):raise ValueError('Meta binding mismatch')
-    if s.get('tenant')!='rosery' or s.get('domain')!='roseryjewelry.com' or s.get('list_id')!='40428':raise ValueError('Site binding mismatch')
+    if (m.get('tenant'),m.get('account_id'),m.get('campaign_id'))!=(BUSINESS.id,ACCOUNT,CAMPAIGN):raise ValueError('Meta binding mismatch')
+    if s.get('tenant')!=BUSINESS.id or s.get('domain')!='roseryjewelry.com' or s.get('list_id')!='40428':raise ValueError('Site binding mismatch')
     c=m['campaign'];a=m['adset']
     if c.get('id')!=CAMPAIGN or a.get('id')!=ADSET or a.get('campaign_id')!=CAMPAIGN:raise ValueError('Entity binding mismatch')
     if any(row.get('campaign_id')!=CAMPAIGN or row.get('adset_id')!=ADSET for row in m['ads']):raise ValueError('Ad binding mismatch')
@@ -107,7 +108,7 @@ def registration_report(root,now=None,data_dir=None,manifest_override=None):
                   'why_needed':'כדי להכין הצעות עתידיות בגבולות הנכונים; המערכת לא שינתה את התקציב',
                   'checked':'נקראו התקציב הנוכחי ויומן הפעולות הקודם; לא נקבע מי ביצע את השינוי',
                   'grants_live_permission':False}
-    return {'available':True,'tenant':'rosery','case_id':'launch-registration','revision':revision,
+    return {'available':True,'tenant':BUSINESS.id,'case_id':'launch-registration','revision':revision,
             'captured_at':min(dates).isoformat(),'freshness':'stale' if stale else 'recent_owner_import',
             'state':'needs_answer' if question and not answer else 'blocked_evidence',
             'checks':checks,'completed_checks':sum(x['state']=='pass' for x in checks),

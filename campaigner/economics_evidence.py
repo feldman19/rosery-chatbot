@@ -1,13 +1,14 @@
 """Source-bound historical economics. Scenarios never become spend authority."""
 import math
 from decimal import Decimal, InvalidOperation
+from business import ACTIVE as BUSINESS
 
 
 def current_recorded_economics(result, source_ref):
     """Observed store aggregates, not costs audited or an ad-level CPA target."""
-    if not isinstance(result, dict) or result.get('shopDomain') != '21cc82-3.myshopify.com':
+    if not isinstance(result, dict) or result.get('shopDomain') != BUSINESS.shop:
         return None
-    if result.get('chartHint', {}).get('currencyCode') != 'ILS':
+    if result.get('chartHint', {}).get('currencyCode') != BUSINESS.currency:
         return None
     names = [x.get('name') for x in result.get('columns', [])]
     required = ['new_or_returning_customer', 'orders', 'net_sales', 'shipping_charges', 'taxes', 'cost_of_goods_sold']
@@ -28,7 +29,7 @@ def current_recorded_economics(result, source_ref):
     if not segments or len({x['new_or_returning_customer'] for x in segments}) != len(segments):
         return None
     return {'status': 'recorded_values_observed', 'source_ref': source_ref,
-            'observed_date': result.get('observed_date'), 'query': result.get('query'), 'currency': 'ILS',
+            'observed_date': result.get('observed_date'), 'query': result.get('query'), 'currency': BUSINESS.currency,
             'segments': segments, 'spend_target': None, 'automatic_action_allowed': False,
             'limitations': ['עלויות המוצר הן העלויות הרשומות בחנות; שלמות הכיסוי לא אומתה',
                             'מס שנרשם כאפס אינו הוכחה שאין חבות מע״מ',
@@ -39,7 +40,7 @@ def current_recorded_economics(result, source_ref):
 def summarize_economics(profile, source_ref):
     missing = {'status': 'not_collected', 'source_ref': source_ref,
                'spend_target': None, 'automatic_action_allowed': False, 'segments': []}
-    if not isinstance(profile, dict) or profile.get('shop') != '21cc82-3.myshopify.com' or profile.get('currency') != 'ILS':
+    if not isinstance(profile, dict) or profile.get('shop') != BUSINESS.shop or profile.get('currency') != BUSINESS.currency:
         return missing
     segments = []
     for key, label in (('New', 'לקוח חדש'), ('Returning', 'הזמנה מלקוח חוזר')):
@@ -57,7 +58,7 @@ def summarize_economics(profile, source_ref):
         return missing
     return {**missing, 'status': 'historical_scenarios_observed',
             'as_of': profile.get('as_of'), 'period': profile.get('period'),
-            'currency': 'ILS', 'segments': segments,
+            'currency': BUSINESS.currency, 'segments': segments,
             'assumptions': profile.get('inputs', {}),
             'unresolved': list(profile.get('missing_for_verified_limits', [])),
             'limitation': 'קיים חישוב היסטורי לפני פרסום, המבוסס גם על אומדנים. הוא אינו יעד עלות רכישה, רווח מאומת או תקציב מאושר.'}

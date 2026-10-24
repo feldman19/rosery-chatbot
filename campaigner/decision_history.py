@@ -7,8 +7,9 @@ from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 import hashlib
 import json
+from business import ACTIVE as BUSINESS
 
-ACCOUNT='393059510164294'
+ACCOUNT=BUSINESS.meta_account
 ROW_FIELDS=('ad_id','adset_id','campaign_id','date_start','date_stop','spend','impressions','inline_link_clicks')
 QUERY_FIELDS=('action_report_time','action_attribution_windows','use_account_attribution_setting',
               'use_unified_attribution_setting','level','time_increment')
@@ -19,7 +20,7 @@ def project_observation(source):
     data=source.get('data') or {}
     if not isinstance(data,dict):return 'invalid_source'
     if (source.get('error') or data.get('verified') is not True or data.get('complete') is not True
-        or data.get('account_id')!=ACCOUNT or data.get('currency')!='ILS'):return 'ineligible_source'
+        or data.get('account_id')!=ACCOUNT or data.get('currency')!=BUSINESS.currency):return 'ineligible_source'
     try:
         observed=datetime.fromisoformat(source['last_success_at'].replace('Z','+00:00'))
         today=date.fromisoformat(data['today'])
@@ -35,7 +36,7 @@ def project_observation(source):
                     item[name]=[{k:x[k] for k in ('action_type','value') if k in x} for x in row[name]]
             rows.append(item)
         settings=data.get('query_settings') or {}
-        payload={'schema_version':1,'account_id':ACCOUNT,'currency':'ILS',
+        payload={'schema_version':1,'account_id':ACCOUNT,'currency':BUSINESS.currency,
                  'observed_at':observed.isoformat(),'source_today':today.isoformat(),
                  'timezone':data.get('timezone'),
                  'source_since':data.get('since'),'source_until':data.get('until'),

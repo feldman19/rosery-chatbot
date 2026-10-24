@@ -28,10 +28,11 @@ import time
 from cohort import person_hmac
 from connections import QUERY as IDENTITY_QUERY, SHOP
 from shopify_direct import get_token, graph
+from business import ACTIVE as BUSINESS
 
 
-TENANT = 'rosery'
-ACCOUNT = '393059510164294'
+TENANT = BUSINESS.id
+ACCOUNT = BUSINESS.meta_account
 SOURCE_ID = 'shopify_orders_direct'
 AUTHORIZED_SCOPES = frozenset({'read_reports', 'read_orders'})
 MAX_PAGES = 20

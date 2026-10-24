@@ -12,8 +12,9 @@ from pause_recommendation_adapter import pause_assessment
 from rulebook import load_rulebook
 from rule_engine import evaluate_report
 from today_plan import build_today
+from business import ACTIVE as BUSINESS
 
-ACCOUNT = '393059510164294'
+ACCOUNT = BUSINESS.meta_account
 SOURCE = {'id': 'rosery-operating-guide-v1', 'kind': 'local_operating_safeguard',
           'reference': 'outputs/rosery-media-operations-guide-v1-2026-10-15.md',
           'as_of': '2026-10-15', 'supports': 'evidence completeness, alternatives, authorization; not profitability proof'}
@@ -104,7 +105,7 @@ def build_recommendations(report, dossier=None, *, now=None, rulebook=None):
     if not isinstance(report, dict) or report.get('account_id') != ACCOUNT:
         raise ValueError('ROSERY account mismatch')
     dossier = dossier or {}
-    if dossier and dossier.get('business_id') != 'rosery':
+    if dossier and dossier.get('business_id') != BUSINESS.id:
         raise ValueError('ROSERY dossier mismatch')
     now = now or datetime.now(timezone.utc)
     if now.tzinfo is None:

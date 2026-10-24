@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+from business import ACTIVE as BUSINESS
 
 
 def pilot_report(path, now=None):
@@ -12,10 +13,10 @@ def pilot_report(path, now=None):
         return {'available':False,'mode':'observe','live_action_allowed':False}
     raw = path.read_bytes()
     p = json.loads(raw)
-    if p.get('tenant') != 'rosery' or p.get('schema_version') != 1:
+    if p.get('tenant') != BUSINESS.id or p.get('schema_version') != 1:
         raise ValueError('Invalid pilot identity')
     identity=p.get('identity',{})
-    if identity.get('meta_account')!='393059510164294' or identity.get('shop_domain')!='21cc82-3.myshopify.com':
+    if identity.get('meta_account')!=BUSINESS.meta_account or identity.get('shop_domain')!=BUSINESS.shop:
         raise ValueError('Pilot account binding mismatch')
     captured=datetime.fromisoformat(p['captured_at'])
     now=now or datetime.now(timezone.utc)
@@ -41,9 +42,9 @@ def pilot_report(path, now=None):
         data=observation['data']
         if key=='meta_account' and data.get('id')!=identity['meta_account']:
             raise ValueError('Observation account mismatch')
-        if key=='meta_campaign' and data.get('id')!='120253309360290730':
+        if key=='meta_campaign' and data.get('id')!=BUSINESS.meta_launch_campaign:
             raise ValueError('Observation campaign mismatch')
-        expected_scope={'meta_account':identity['meta_account'],'meta_campaign':'120253309360290730','shopify_sales':identity['shop_domain']}[key]
+        expected_scope={'meta_account':identity['meta_account'],'meta_campaign':BUSINESS.meta_launch_campaign,'shopify_sales':identity['shop_domain']}[key]
         if observation.get('scope') not in (None,expected_scope):
             raise ValueError('Observation scope mismatch')
         observed.append({k:observation[k] for k in ('source_id','source','query','scope') if k in observation}|

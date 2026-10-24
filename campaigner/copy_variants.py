@@ -19,6 +19,7 @@ import tempfile
 
 from claude_quality_review import subscription_environment, subscription_auth
 from creative_claims import validate_creative_claims
+from business import ACTIVE as BUSINESS
 
 COUNT = 5
 COPY_RULES = ('masculine_copy', 'no_superlatives', 'headline_no_emoji', 'no_material_emphasis', 'no_variation_label',
@@ -69,7 +70,7 @@ def prompt(row, rulebook, transcript=None, goal=None, voice_examples=None, feedb
     if feedback:
         redo = ('\nA reader who is the customer flagged these lines of your previous attempt; rewrite those so the problem is '
                 'gone, keep the good ones: ' + json.dumps(feedback, ensure_ascii=False))
-    return ('Write ad copy in Hebrew for ROSERY (Israeli jewelry and apparel brand) for ONE Meta ad. Work in two steps and '
+    return ('Write ad copy in Hebrew for ' + BUSINESS.name + ' (' + BUSINESS.description + ') for ONE Meta ad. Work in two steps and '
             'return JSON per the schema.\n'
             'Step 1, "brief" (in Hebrew, short and concrete): who the buyer of THIS product is (avatar: life situation and why '
             'he would buy now, not a demographic list), what he wants to feel or show (desire), what stops him (objection), 3–6 '

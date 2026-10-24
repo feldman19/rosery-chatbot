@@ -1,5 +1,6 @@
 """Read-only evidence projection. Budget configuration is never a spend forecast."""
-ACCOUNT = '393059510164294'
+from business import ACTIVE as BUSINESS
+ACCOUNT = BUSINESS.meta_account
 SDK = 'https://github.com/facebook/facebook-python-business-sdk/blob/main/facebook_business/adobjects/'
 
 

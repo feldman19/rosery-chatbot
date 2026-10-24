@@ -3,8 +3,9 @@ import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
+from business import ACTIVE as BUSINESS
 
-ACCOUNT = '393059510164294'
+ACCOUNT = BUSINESS.meta_account
 ACTION = 'seven_active_ads_approved_copy_and_enhancement_repairs'
 BEFORE = 'outputs/seven-ads-repair-before-2026-10-19.json'
 AFTER = 'outputs/seven-ads-repair-after-2026-10-19.json'
