@@ -8,6 +8,8 @@ Local run: Python 3.12, from campaigner directory:
 python -B server.py --workspace manager --port 8767 --no-startup-execution-workers
 Inspect imports and README files for optional external dependencies and existing Claude CLI integration. Runtime configuration and authenticated integrations must be reconnected on the destination; they are deliberately not exported. This is a source handoff, not a fully configured deployment.
 
+Latest work (2026-10-23/24, cloud Claude session): read `.agents/messages/claude/20261024-cloud-session-summary.md` first — what was built, the owner's decisions, the unmerged branches and what is open. Copywriting research: `.agents/design/copywriter-research.md`.
+
 Unfinished priorities:
 1. Evidence-backed recommendations: action_recommendations still reports financial_action_generation_not_implemented. Do not convert old ROAS thresholds into automatic financial decisions.
 2. Chat: connect natural-language questions to relevant current data, grounded recommendations and the existing exact approval/execution flow.
