@@ -13,11 +13,11 @@ preview of the reverse change, so it also needs the owner's confirm.
 Enhancements live on the creative, which Meta does not let you edit: turning them off makes a
 copy of the creative with every feature OPT_OUT (except "Relevant comments", which the owner keeps)
 and puts it on the same ad. The ad id and its statistics stay; Meta reviews the ad again. Undo
-puts the previous creative back. Catalog and flexible (asset_feed_spec) creatives are not copied
-here; those stay a link to Ads Manager.
+puts the previous creative back. Catalog and flexible creatives retain their full content payloads.
 """
 from datetime import datetime, timedelta, timezone
 import json
+from copy import deepcopy
 import re
 import secrets
 import threading
@@ -30,7 +30,9 @@ PREVIEW_TTL = timedelta(minutes=10)
 MAX_STEP = 0.2
 AD_FIELDS = 'id,name,status,effective_status,adset_id'
 ADSET_FIELDS = 'id,name,status,daily_budget'
-CREATIVE_FIELDS = 'id,name,object_story_spec,asset_feed_spec,product_set_id,url_tags,degrees_of_freedom_spec'
+COPY_FIELDS = frozenset({'object_story_spec', 'asset_feed_spec', 'product_set_id', 'url_tags',
+                         'template_url_spec', 'use_page_actor_override'})
+CREATIVE_FIELDS = ','.join(['id', 'name', 'degrees_of_freedom_spec'] + sorted(COPY_FIELDS))
 STATUS_LABEL = {'ACTIVE': 'פעילה', 'PAUSED': 'מושהית'}
 
 
@@ -48,23 +50,39 @@ def _id(value):
     return value
 
 
-def _text_feed(feed):
-    """Copy of a text-options asset_feed_spec (several texts/headlines on one image or video), None when absent,
-    False for anything else (more media, catalog rules, ...), which is not copied here."""
-    if not feed:
+def _creative_content(creative):
+    """Copy complete structured payloads; reject unhandled top-level fields."""
+    if not isinstance(creative, dict):
+        raise ActionBlocked('מבנה הקריאייטיב אינו ידוע. לא מבצעים העתקה.')
+    unknown = set(creative) - COPY_FIELDS - {'id', 'name', 'degrees_of_freedom_spec'}
+    if unknown:
+        raise ActionBlocked('לא ניתן להעתיק בבטחה את השדות: ' + ', '.join(sorted(unknown)))
+    if not isinstance(creative.get('object_story_spec'), dict) or not creative['object_story_spec']:
+        raise ActionBlocked('תוכן המודעה חסר. לא מבצעים העתקה.')
+    if 'asset_feed_spec' in creative and not isinstance(creative['asset_feed_spec'], dict):
+        raise ActionBlocked('מבנה המדיה אינו ידוע. לא מבצעים העתקה.')
+    freedom = creative.get('degrees_of_freedom_spec')
+    if not isinstance(freedom, dict) or set(freedom) != {'creative_features_spec'}:
+        raise ActionBlocked('הגדרות השיפורים חסרות או מכילות שדות שלא ניתן להעתיק.')
+    features = freedom['creative_features_spec']
+    if not isinstance(features, dict) or not features or any(
+            not isinstance(v, dict) or v.get('enroll_status') not in ('OPT_IN', 'OPT_OUT')
+            for v in features.values()):
+        raise ActionBlocked('מצב השיפורים אינו ידוע. לא מבצעים שינוי.')
+    return {k: deepcopy(creative[k]) for k in COPY_FIELDS if k in creative}
+
+
+def _catalog_refusal(error, plan):
+    creative = plan.get('write', {}).get('new_creative', {})
+    if not (creative.get('product_set_id') or 'template_data' in creative.get('object_story_spec', {})):
         return None
-    lists = ('bodies', 'titles', 'descriptions')
-    if not isinstance(feed, dict) or not set(feed) <= set(lists) | {'optimization_type'} or feed.get('optimization_type', 'DEGREES_OF_FREEDOM') != 'DEGREES_OF_FREEDOM':
-        return False
-    copy = {'optimization_type': 'DEGREES_OF_FREEDOM'}
-    for key in lists:
-        items = feed.get(key)
-        if items is None:
-            continue
-        if not isinstance(items, list) or not all(isinstance(i, dict) and isinstance(i.get('text'), str) for i in items):
-            return False
-        copy[key] = [{'text': i['text']} for i in items]
-    return copy
+    details = getattr(error, 'details', {}) or {}
+    text = ' '.join(str(details.get(k, '')) for k in ('message', 'error_user_msg', 'error_user_title'))
+    features = creative.get('degrees_of_freedom_spec', {}).get('creative_features_spec', {})
+    refused = [feature_label(f) for f, v in features.items() if f not in ALLOWED_ON and f in text]
+    if not refused or not any(word in text.lower() for word in ('opt_out', 'opt out', 'enroll', 'disable')):
+        return None
+    return 'מטא לא מאפשרת לכבות את ' + ', '.join(refused) + ' במודעת קטלוג'
 
 
 class OwnerActions:
@@ -188,26 +206,19 @@ class OwnerActions:
         creative = ad.get('creative') or {}
         if creative.get('id') != item.get('creative_id'):
             raise ActionBlocked('הקריאייטיב של המודעה הוחלף מאז הקריאה האחרונה. רענן ונסה שוב.')
-        feed = _text_feed(creative.get('asset_feed_spec'))
-        if creative.get('product_set_id') or not isinstance(creative.get('object_story_spec'), dict) or feed is False:
-            raise ActionBlocked('במודעת קטלוג או מודעה גמישה עם כמה תמונות/סרטונים אי אפשר עדיין לכבות מכאן. כבה במטא.')
+        content = _creative_content(creative)
         spec = (creative.get('degrees_of_freedom_spec') or {}).get('creative_features_spec') or {}
         on = sorted(f for f, v in spec.items() if isinstance(v, dict) and v.get('enroll_status') == 'OPT_IN' and f not in ALLOWED_ON)
         if not on:
             raise ActionBlocked('כל השיפורים כבר כבויים במודעה הזו.')
-        features = {f: ({'enroll_status': v.get('enroll_status')} if f in ALLOWED_ON and isinstance(v, dict) else {'enroll_status': 'OPT_OUT'})
+        features = {f: (deepcopy(v) if f in ALLOWED_ON else {**deepcopy(v), 'enroll_status': 'OPT_OUT'})
                     for f, v in spec.items()}
-        new = {'name': ((creative.get('name') or 'creative') + ' | ללא שיפורים')[:200],
-               'object_story_spec': creative['object_story_spec'],
+        new = {**content, 'name': ((creative.get('name') or 'creative') + ' | ללא שיפורים')[:200],
                'degrees_of_freedom_spec': {'creative_features_spec': features}}
-        if feed:
-            new['asset_feed_spec'] = feed
-        if creative.get('url_tags'):
-            new['url_tags'] = creative['url_tags']
         return {'kind': 'disable_enhancements', 'entity_id': ad_id, 'entity_name': ad.get('name') or item.get('name'),
                 'title': 'לכבות שיפורי Advantage+', 'expect': {'creative_id': creative['id']}, 'write': {'new_creative': new},
                 'changes': [{'field': feature_label(f), 'from': 'מופעל', 'to': 'כבוי'} for f in on],
-                'warnings': ['מטא לא מאפשרת לערוך קריאייטיב קיים, אז נוצר עותק זהה בלי השיפורים ומוחלף באותה מודעה. '
+                'warnings': ['התוכן, המוצרים והקישורים נשארים זהים', 'מטא לא מאפשרת לערוך קריאייטיב קיים, אז נוצר עותק זהה בלי השיפורים ומוחלף באותה מודעה. '
                              'המודעה והנתונים שלה נשארים, ומטא תבדוק את המודעה שוב (בדרך כלל דקות עד שעות).'],
                 'undo_note': 'ביטול מחזיר את הקריאייטיב הקודם.'}
 
@@ -279,12 +290,32 @@ class OwnerActions:
                            detail=('מטא דחתה את השינוי. דבר לא השתנה. ' + message).strip() if definite else
                            'לא ידוע אם השינוי נקלט במטא. אין ניסיון חוזר אוטומטי; בדוק במטא או רענן.',
                            finished_at=self.clock().isoformat())
+            refusal = _catalog_refusal(error, plan) if definite else None
+            if refusal:
+                receipt['detail'] = refusal
             self._save(receipt)
             return receipt
         receipt['result'] = {**(receipt.get('result') or {}), **result}
         verified = self._readback(token, plan, receipt)
+        if not verified and plan['kind'] == 'disable_enhancements':
+            receipt['rollback'] = 'unknown'
+            self._save(receipt)
+            try:
+                current = self.transport.read(token, plan['entity_id'], AD_FIELDS + ',creative{id}')
+                if (current.get('creative') or {}).get('id') == receipt['result']['creative_id']:
+                    self.transport.swap_creative(token, plan['entity_id'], plan['expect']['creative_id'])
+                    restored = self.transport.read(token, plan['entity_id'], AD_FIELDS + ',creative{id}')
+                    receipt['rollback'] = ('verified' if (restored.get('creative') or {}).get('id') == plan['expect']['creative_id'] else 'unknown')
+                else:
+                    receipt['rollback'] = 'blocked_changed_creative'
+            except Exception:
+                pass  # Unknown rollback outcome is never retried.
         receipt.update(state='verified' if verified else 'not_verified', finished_at=self.clock().isoformat(),
                        detail='בוצע ואומת מול מטא.' if verified else 'מטא קיבלה את הבקשה, אבל הקריאה החוזרת לא הראתה את השינוי עדיין. רענן בעוד דקה.')
+        if receipt.get('rollback') == 'verified':
+            receipt['detail'] = 'האימות נכשל. הקריאייטיב הקודם הוחזר ואומת מול מטא.'
+        elif receipt.get('rollback'):
+            receipt['detail'] = 'האימות נכשל ולא אומתה החזרה לקריאייטיב הקודם. נדרשת בדיקה; אין ניסיון חוזר אוטומטי.'
         self._save(receipt)
         if verified and plan.get('undo_of'):
             with self.lock:
@@ -333,13 +364,15 @@ class OwnerActions:
                 return self.transport.read(token, plan['entity_id'], AD_FIELDS).get('status') == w['status']
             if 'daily_budget' in w:
                 return str(self.transport.read(token, plan['entity_id'], ADSET_FIELDS).get('daily_budget')) == w['daily_budget']
-            ad = self.transport.read(token, plan['entity_id'], AD_FIELDS + ',creative{id,degrees_of_freedom_spec}')
+            ad = self.transport.read(token, plan['entity_id'], AD_FIELDS + ',creative{' + CREATIVE_FIELDS + '}')
             creative = ad.get('creative') or {}
             if creative.get('id') != receipt['result']['creative_id']:
                 return False
             if 'new_creative' in w:
-                spec = (creative.get('degrees_of_freedom_spec') or {}).get('creative_features_spec') or {}
-                return not any(isinstance(v, dict) and v.get('enroll_status') == 'OPT_IN' and f not in ALLOWED_ON for f, v in spec.items())
+                expected = w['new_creative']
+                if _creative_content(creative) != {k: expected[k] for k in COPY_FIELDS if k in expected}:
+                    return False
+                return creative.get('degrees_of_freedom_spec') == expected['degrees_of_freedom_spec']
             return True
         except Exception:
             return False

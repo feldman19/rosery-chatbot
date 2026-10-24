@@ -187,18 +187,7 @@ class OwnerActionsTests(unittest.TestCase):
         receipt = self.actions.confirm(self.actions.preview('drift:' + AD)['confirm_token'])
         self.assertEqual(receipt['state'], 'verified')
         created = next(w for w in self.meta.writes if w[0] == 'create')[2]
-        self.assertEqual(created['asset_feed_spec'], {'optimization_type': 'DEGREES_OF_FREEDOM', 'bodies': [{'text': 'א'}, {'text': 'ב'}],
-                                                      'titles': [{'text': 'כותרת'}]})
-
-    def test_media_feed_creative_is_refused(self):
-        self.meta.creatives[CREATIVE]['asset_feed_spec'] = {'images': [{'hash': 'x'}], 'bodies': [{'text': 'א'}]}
-        with self.assertRaises(ActionBlocked):
-            self.actions.preview('drift:' + AD)
-
-    def test_catalog_creative_is_refused(self):
-        self.meta.creatives[CREATIVE]['product_set_id'] = '77777'
-        with self.assertRaises(ActionBlocked):
-            self.actions.preview('drift:' + AD)
+        self.assertEqual(created['asset_feed_spec'], self.meta.creatives[CREATIVE]['asset_feed_spec'])
 
     def test_unknown_target_refused(self):
         for bad in ('delete:' + AD, 'pause:abc', 'scale:', None):

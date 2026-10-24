@@ -65,10 +65,13 @@ def _features(creative):
 
 
 def _copyable(creative):
-    from owner_actions import _text_feed
-    story = creative.get('object_story_spec')
-    return (isinstance(story, dict) and 'template_data' not in story and not creative.get('product_set_id')
-            and _text_feed(creative.get('asset_feed_spec')) is not False)
+    from owner_actions import ActionBlocked, _creative_content
+    try:
+        _creative_content(creative)
+        return True
+    except ActionBlocked:
+        return False
+
 
 
 def ads_manager_url(ad_id):
