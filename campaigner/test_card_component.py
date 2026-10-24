@@ -17,7 +17,7 @@ def functions(*names):
         result.append(PAGE[start:end])
     return '\n'.join(result)
 
-HELPERS=functions('counted','ownerText','ratio','stateRows','card','adPicture','featureInfo','featureSummary','driftAfter','actionCard','driftCard','renderDrift','experimentProposal','experimentCard','hypothesisProgress','renderLearning')
+HELPERS=functions('salesLine','salesFor','salesExplanation','appendProfileReason','counted','ownerText','ratio','stateRows','card','adPicture','featureInfo','featureSummary','driftAfter','actionCard','driftCard','renderDrift','experimentProposal','experimentCard','hypothesisProgress','renderLearning')
 DOM=r"""
 const assert=require('node:assert/strict');
 class N {

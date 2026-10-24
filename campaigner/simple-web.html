@@ -321,12 +321,12 @@ main{padding-bottom:calc(var(--tabs-height,96px) + 24px + env(safe-area-inset-bo
 </style>
 
 <header><div class="wrap header-nowrap"><span class="logo">ROSERY</span><button class="fresh" id="fresh" type="button" aria-label="רענן נתונים"><span class="dot" id="fresh-dot"></span><span id="fresh-text">טוען…</span></button><button class="menu-button" id="owner-menu" type="button" aria-label="הגדרות" aria-haspopup="dialog">&#9881;</button></div></header>
-<dialog role="dialog" aria-modal="true" id="menu-sheet" aria-labelledby="menu-title"><div class="sheet-head"><h2 id="menu-title">הגדרות</h2><button class="btn tertiary" id="menu-close" type="button">סגור</button></div><p>כאן משנים את התצוגה ופותחים את היסטוריית הפעולות.</p><label class="field" for="theme">תצוגה<select id="theme"><option value="light">בהיר</option><option value="dark">כהה</option><option value="auto">אוטומטי</option></select></label><button class="btn secondary" id="menu-history" type="button">היסטוריה</button><p class="menu-version"></p></dialog>
+<dialog role="dialog" aria-modal="true" id="menu-sheet" aria-labelledby="menu-title"><div class="sheet-head"><h2 id="menu-title">הגדרות</h2><button class="btn tertiary" id="menu-close" type="button">סגור</button></div><p>כאן משנים את התצוגה ופותחים את היסטוריית הפעולות.</p><label class="field" for="theme">תצוגה<select id="theme"><option value="light">בהיר</option><option value="dark">כהה</option><option value="auto">אוטומטי</option></select></label><button class="btn secondary" id="menu-profile" type="button">אפיון העסק</button><button class="btn secondary" id="menu-history" type="button">היסטוריה</button><p class="menu-version"></p></dialog>
 
 <div class="newver" id="newver" role="alert" hidden><span>יש גרסה חדשה של המסך.</span><button class="btn primary" type="button" id="newver-go">רענן עכשיו</button></div>
 <main class="wrap">
   <section data-tab="today" aria-labelledby="hello-title">
-    <div class="hello"><h1 id="hello-title" tabindex="-1">שלום</h1><p>כאן רואים מה דורש תשומת לב ומה אפשר לעשות היום.</p><p id="hello-sub">בודק מה קורה בפרסום…</p></div>
+    <div class="hello"><h1 id="hello-title" tabindex="-1">שלום</h1><p>כאן רואים מה דורש תשומת לב ומה אפשר לעשות היום.</p><p id="hello-sub">בודק מה קורה בפרסום…</p><button id="profile-reminder" class="link" type="button" hidden></button></div>
     <h2 class="label" id="period-label">על איזו תקופה להסתכל?</h2>
     <div class="card period" role="group" aria-labelledby="period-label">
       <div class="seg" id="period-presets"></div>
@@ -416,6 +416,11 @@ main{padding-bottom:calc(var(--tabs-height,96px) + 24px + env(safe-area-inset-bo
     <div class="cards" id="launch-result"></div>
   </section>
 
+  <section data-tab="profile" hidden aria-labelledby="profile-title">
+    <h1 id="profile-title" tabindex="-1">אפיון העסק</h1>
+    <p>כאן קובעים מה מתאים לעסק שלך. שום הגדרה כאן לא משנה את Meta בעצמה; כל כרטיס שמבוסס עליה יציין ״לפי ההגדרות שלך מ-dd/mm״.</p>
+    <div id="profile-content" class="cards"></div>
+  </section>
   <section data-tab="ask" hidden aria-labelledby="ask-title">
     <div class="hello"><h1 id="ask-title" tabindex="-1">שאל על הפרסום</h1><p>שאלה פשוטה, תשובה פשוטה. שום דבר לא משתנה בחשבון.</p></div>
     <!-- BEGIN chat-threads -->
@@ -480,7 +485,7 @@ function card({node=null,kind='idle',label='לבדיקה',title='',age=null,tile
   if(age!==null&&age!==undefined)top.append(el('span','card-age',age===0?'מחכה מהיום':age===1?'מחכה מאתמול':'מחכה '+age+' ימים'));
   root.prepend(top);let heading=root.querySelector('h3');if(!heading&&title){heading=el('h3','',title);root.append(heading)}
   if(heading){const row=el('div','card-heading');root.insertBefore(row,heading);row.append(heading);const image=root.querySelector('.ad-thumbnail');if(image&&!(image.parentElement||image.parent)?.className?.includes('drift-ad'))row.append(image)}
-  if(tiles.length){const row=el('div','key-tiles');for(const t of tiles.slice(0,3)){const tile=el('div','key-tile'+(t.failing?' failing':''));tile.append(el('span','',t.label),el('b','money',t.value));row.append(tile)}const target=root.querySelector('.owner-reason,.actions');root.insertBefore(row,target||null)}
+  if(tiles.length){const row=el('div','key-tiles');for(const t of tiles){const tile=el('div','key-tile'+(t.failing?' failing':''));tile.append(el('span','',t.label),el('b','money',t.value));row.append(tile)}const target=root.querySelector('.owner-reason,.actions');root.insertBefore(row,target||null)}
   if(groups.length){const fold=el('details','why card-details'),table=el('table','card-table');fold.append(el('summary','','פרטים'),table);for(const [group,rows] of groups){const tr=el('tr','group'),th=el('th','',group);th.colSpan=2;tr.append(th);table.append(tr);for(const [key,value] of rows){const row=el('tr');row.append(el('th','',key),el('td','',value??'לא ידוע'));table.append(row)}}root.insertBefore(fold,root.querySelector('.actions')||null)}
   return root;
 }
@@ -535,6 +540,82 @@ async function dismiss(item,restore=false){
   if(!restore&&!confirm("להסיר? אפשר להחזיר מ'הוסרו'"))return;
   try{await api('/api/proposal-visibility',{proposal_id:item.proposal_id,restore});await load(false)}catch(e){alert(e.message)}
 }
+// BEGIN ux-pass: local business preferences and read-only store attribution.
+let businessProfile=null,profileDraft={},adSales=null;
+function profileDate(value){const d=new Date(value);return value&&Number.isFinite(d.getTime())?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'):null}
+function profileChanges(){return Object.fromEntries(Object.entries(profileDraft).filter(([key,value])=>{const row=businessProfile.sections.flatMap(s=>s.settings||[]).find(r=>r.key===key);return row&&JSON.stringify(row.value)!==JSON.stringify(value)}))}
+function salesExplanation(){return 'החנות סופרת הזמנות לפי UTM בביקור האחרון בלבד; Meta כוללת גם ייחוס צפייה. הספירות אינן מתחברות ואינן הוכחת סיבתיות.'}
+function salesLine(s){return !s||s.status!=='ready'?'לא ידוע':(Number.isFinite(s.store_orders)?s.store_orders+' הזמנות':'לא ידוע')+' · '+(Number.isFinite(s.store_revenue)?ils(s.store_revenue):'הכנסה לא ידועה')+' · '+(Number.isFinite(s.new_customer_percent)?Math.round(s.new_customer_percent)+'% חדשים':'שיעור חדשים לא ידוע')}
+function salesFor(item){
+  if(item.ad_sales)return item.ad_sales;
+  const id=String(item.ad_id||item.entity_id||item.proposal_id?.split(':')[1]||'');
+  const w=report?.windows?.['3'],kind=item.action==='SCALE'?'adsets':'ads';
+  return w?.[kind]?.find(a=>String(a.id)===id)?.ad_sales;
+}
+async function loadAdSales(){try{adSales=await api('/api/ad-sales');report=await api('/api/management-report')}catch{adSales=null}}
+function appendProfileReason(node,item){
+  const reasons=item.profile_reasons||item.allowed_reasons||[];
+  for(const reason of reasons)node.append(el('p','note',typeof reason==='string'?reason:reason.reason));
+  if(item.profile_reason)node.append(el('p','note',item.profile_reason));
+  if(item.dont_id){const rule=businessProfile?.donts?.find(r=>r.id===item.dont_id),date=profileDate(rule?.date);node.append(el('p','note','לפי ההגדרות שלך מ-'+(date||'תאריך לא ידוע')))}
+}
+async function loadProfile(render=true){
+  try{businessProfile=await api('/api/business-profile');if(render){profileDraft={};renderProfile()}renderProfileReminder()}
+  catch(e){businessProfile=null;renderProfileReminder();if(render)$('profile-content').replaceChildren(el('p','note',e.message))}
+}
+function renderProfileReminder(){
+  const line=$('profile-reminder');line.onclick=()=>go('profile');
+  const count=(businessProfile?.sections||[]).find(s=>s.key==='enhancements')?.settings.filter(r=>!r.updated_at&&r.recommended.verdict==='harmful').length;
+  line.hidden=!count;line.textContent='יש '+count+' שינויים של מטא שמומלץ להחליט עליהם · לאפיון ›';
+}
+function profileListInput(row,value){
+  const box=el('div','chips'),values=[...value],draw=()=>{box.replaceChildren();for(const word of values){const chip=el('button','chip',word+' ×');chip.type='button';chip.setAttribute('aria-label','להסיר '+word);chip.onclick=()=>{values.splice(values.indexOf(word),1);profileDraft[row.key]=[...values];draw()};box.append(chip)}const input=el('input');input.type=row.key==='no_change_dates'?'date':'text';input.setAttribute('aria-label',row.label);const add=el('button','btn','להוסיף');add.type='button';add.onclick=()=>{const v=input.value.trim();if(v&&!values.includes(v)){values.push(v);profileDraft[row.key]=[...values];draw()}};input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();add.onclick()}};box.append(input,add)};draw();return box;
+}
+function renderProfile(){
+  const box=$('profile-content');box.replaceChildren();
+  const names={enhancements:'שינויים אוטומטיים של מטא',donts:'דברים שהמערכת לא תעשה',brand:'המותג',products:'מוצרים',budget:'תקציב',special_dates:'ימים מיוחדים'};
+  const verdicts={harmful:'מומלץ לכבות',safe:'בטוח להשאיר',depends:'תלוי בך',unknown:'לא ידוע'};
+  for(const section of businessProfile.sections){
+    const root=el('article','card');root.append(el('h3','',names[section.key]||section.label));
+    if(section.key==='enhancements')for(const [verdict,label] of Object.entries(verdicts)){
+      const group=el(verdict==='unknown'?'details':'div','profile-group');group.append(el(verdict==='unknown'?'summary':'h4','',label));
+      for(const row of section.settings.filter(r=>(r.recommended?.verdict||'unknown')===verdict)){
+        const entry=el('div','state-rows'),rec=row.recommended,value=profileDraft[row.key]??row.value;
+        entry.append(el('strong','',row.label),el('p','note',row.sees||'לא ידוע מה הלקוח רואה'));
+        const toggle=el('button','btn',value==='allowed'?'מותר':'כבוי');toggle.type='button';toggle.setAttribute('role','switch');toggle.setAttribute('aria-label',row.label+' · כבוי / מותר');toggle.setAttribute('aria-checked',String(value==='allowed'));
+        const deviation=el('span','note');const update=()=>{const v=profileDraft[row.key]??row.value;toggle.textContent=v==='allowed'?'מותר':'כבוי';toggle.setAttribute('aria-checked',String(v==='allowed'));deviation.textContent=rec.value&&rec.value!==v?'שלא כמו ההמלצה':''};
+        toggle.onclick=()=>{profileDraft[row.key]=(profileDraft[row.key]??row.value)==='allowed'?'off':'allowed';update()};update();entry.append(toggle,el('span','chip',label),el('p','note',rec.reason),deviation);
+        const links=rec.sources||[],sources=el('details');sources.append(el('summary','','מקורות ('+links.length+')'));for(const source of links){const url=typeof source==='string'?source:source.url;try{if(new URL(url).protocol!=='https:')continue}catch{continue}const a=el('a','link',source.title||url);a.href=url;a.target='_blank';a.rel='noopener noreferrer';sources.append(a)}entry.append(sources);
+        if(row.updated_at)entry.append(el('p','note','שונה ב-'+profileDate(row.updated_at)));group.append(entry);
+      }root.append(group);
+    }
+    else if(section.key==='donts'){
+      for(const rule of section.entries||[]){const entry=el('div','state-rows'),kind=({PAUSE:'עצירת מודעה',SCALE:'הגדלת תקציב',HOLD:'מעקב',disable_enhancements:'כיבוי שינויים של מטא'})[rule.kind]||'המלצה שנחסמה';entry.append(el('p','',kind+' · '+({ad:'המודעה הזו',adset:'קבוצת המודעות',everywhere:'כל המודעות'})[rule.scope]),el('p','note',rule.reason),el('p','note','לפי ההגדרות שלך מ-'+(profileDate(rule.date)||'תאריך לא ידוע')));const remove=el('button','btn','להסיר');remove.onclick=async()=>{try{await api('/api/business-profile/dont',{remove_id:rule.id});await loadProfile();await load(false)}catch(e){toast(e.message)}};entry.append(remove);root.append(entry)}
+    }else for(const row of section.settings){
+      const label=row.key==='max_daily_budget_minor'?'תקציב יומי מרבי לקבוצת מודעות · ₪':row.key==='max_increase_percent'?'הגדלה מרבית בצעד · %':row.label;
+      const field=el('label','field',label),value=profileDraft[row.key]??row.value;
+      if(Array.isArray(value))field.append(profileListInput(row,value));else{const input=el('input');input.type=['max_daily_budget_minor','max_increase_percent'].includes(row.key)?'number':'text';input.value=value===null?'':row.key==='max_daily_budget_minor'?value/100:value;if(input.type==='number'){input.min=row.key==='max_increase_percent'?'0.01':'0.01';input.max=row.key==='max_increase_percent'?'20':'2000';input.step='0.01'}input.oninput=()=>{input.reportValidity();profileDraft[row.key]=input.type==='number'?(input.value===''?null:row.key==='max_daily_budget_minor'?Math.round(Number(input.value)*100):Number(input.value)):input.value};field.append(input)}field.append(el('p','note',row.what_it_changes));root.append(field);
+    }
+    box.append(windowCard({node:root,label:'אפיון העסק'}));
+  }
+  const save=el('button','btn primary','לשמור את ההגדרות');save.onclick=async()=>{
+    const changes=profileChanges(),rows=businessProfile.sections.flatMap(s=>s.settings||[]),keys=Object.keys(changes);if(!keys.length){toast('אין שינויים לשמירה');return}
+    const summary=keys.map(k=>{const v=changes[k];return rows.find(r=>r.key===k).label+' → '+(v==='off'?'כבוי':v==='allowed'?'מותר':Array.isArray(v)?v.join(', ')||'ריק':k==='max_daily_budget_minor'?(v===null?'ללא מגבלה':ils(v/100)):v??'ריק')}).join('\n');
+    if(!confirm(keys.length+' שינויים:\n'+summary))return;save.disabled=true;
+    try{await api('/api/business-profile',{settings:changes});await loadProfile();await load(false);toast('ההגדרות נשמרו ונקראו מחדש')}catch(e){toast(e.message)}finally{save.disabled=false}
+  };box.append(save);
+}
+function dontPayload(item,scope,reason){const adset=item.action==='SCALE',entity=String(item.ad_id||item.entity_id||item.proposal_id?.split(':')[1]||'');return {kind:item.features?'disable_enhancements':item.action||item.kind,scope:scope==='everywhere'?'everywhere':adset?'adset':'ad',entity_id:scope==='everywhere'?'':entity,reason:reason.trim()||'לא להציע את זה שוב'}}
+function dismissChoice(item){
+  closeSheet();const sheet=el('div','sheet'),panel=el('div','sheet-panel');sheet.append(panel);document.body.append(sheet);panel.append(el('h2','','הסר מהרשימה'));
+  const once=el('button','btn','רק הפעם');once.onclick=()=>{closeSheet();dismiss(item)};
+  const scope=el('select');for(const [value,label] of [['ad',item.action==='SCALE'?'קבוצת המודעות הזו':'המודעה הזו'],['everywhere','כל המודעות']]){const option=el('option','',label);option.value=value;scope.append(option)}scope.setAttribute('aria-label','על מה ההגדרה חלה');
+  const reason=el('input');reason.placeholder='סיבה (לא חובה)';reason.setAttribute('aria-label','סיבה (לא חובה)');
+  const forever=el('button','btn','לא להציע את זה שוב');forever.onclick=async()=>{forever.disabled=true;try{await api('/api/business-profile/dont',dontPayload(item,scope.value,reason.value));closeSheet();await load(false)}catch(e){toast(e.message);forever.disabled=false}};
+  const cancel=el('button','btn ghost','ביטול');cancel.onclick=closeSheet;panel.append(once,scope,reason,forever,cancel);
+}
+$('menu-profile').onclick=()=>{$('menu-sheet').close();go('profile')};
+// END ux-pass
 function actionWord(id){return id?.startsWith('pause:')?'עצור מודעה':id?.startsWith('scale:')?'הגדל תקציב':id?.startsWith('drift:')?'לכבות שינויים של מטא':'אשר שינוי'}
 function actionTitle(item){
  if(item.proposal_id?.startsWith('pause:'))return 'לעצור את כל המודעה';
@@ -565,6 +646,7 @@ function go(tab){
   for(const b of document.querySelectorAll('[data-go]'))b.setAttribute('aria-selected',String(b.dataset.go===tab));
   if(tab==='ask')loadChat();
   if(tab==='upload')loadLaunch();
+  if(tab==='profile')loadProfile();
   window.scrollTo(0,0);
   document.querySelector('section[data-tab="'+tab+'"] h1')?.focus({preventScroll:true});
 }
@@ -742,12 +824,13 @@ function actionCard(item){
   root.append(stateRows(alert?'יש בעיה שדורשת בדיקה':scale?(m?'₪'+m[1]+' ביום':'התקציב אינו ידוע'):'המודעה פעילה',alert?'נפתח את רשימת המודעות לבדיקה':pause?'מושהית; אפשר להפעיל שוב':scale?(m?'₪'+m[2]+' ביום':'הסכום יוצג לפני אישור'):'ממשיכים ובודקים שוב מחר'));
   root.append(el('p','owner-reason','למה: '+(alert?(item.body||'חסרים פרטים; כדאי לרענן נתונים.'):pause?(Number.isFinite(n.roas)&&Number.isFinite(d?.thresholds?.fail_below)&&n.roas<d.thresholds.fail_below?'ההחזר בתקופה שנבדקה נמוך מהסף שנקבע.':'צריך לבדוק את ההחזר לפני שמחליטים על עצירה.'):scale?'המודעות בקבוצה עומדות בתנאים להצעת הגדלה.':'עוד מוקדם להחליט; נאסוף עוד נתונים.')));
   const day=(report?.daily||[]).find(v=>v.partial===true)?.ads?.find(v=>String(v.id)===String(item.entity_id));
-  const tiles=[{label:Number.isFinite(n.spend)?'הוצאה · 3 ימים מלאים':'הוצאה היום · יום חלקי',value:Number.isFinite(n.spend)?ils(n.spend):Number.isFinite(day?.spend)?ils(day.spend):'לא ידוע'},{label:'כל ₪1 החזיר',value:ratio(n.roas),failing:pause},{label:'הסף שלך',value:ratio(d?.thresholds?.fail_below)}];
+  const tiles=[{label:'Meta · רכישות מיוחסות · 3 ימים מלאים',value:Number.isFinite(n.purchases)?String(n.purchases):'לא ידוע'},{label:'מכירות בחנות · ספירה נפרדת מ־Meta',value:salesLine(salesFor(item))},{label:Number.isFinite(n.spend)?'הוצאה · 3 ימים מלאים':'הוצאה היום · יום חלקי',value:Number.isFinite(n.spend)?ils(n.spend):Number.isFinite(day?.spend)?ils(day.spend):'לא ידוע'},{label:'כל ₪1 החזיר',value:ratio(n.roas),failing:pause},{label:'הסף שלך',value:ratio(d?.thresholds?.fail_below)}];
+  appendProfileReason(root,item);
   const a=el('div','actions');
   if(item.kind==='approve'&&item.proposal_id&&/^(pause|scale):/.test(item.proposal_id)){const run=el('button','btn primary',pause?'לעצור את המודעה':m?'להעלות ל-₪'+m[2]:'לבדוק את התקציב');run.disabled=!item.ready_for_approval;run.onclick=()=>openAction(item.proposal_id);a.append(run)}
   else if(item.link){const link=el('a','btn primary','לפתוח את המודעה במטא');link.href=item.link;link.target='_blank';link.rel='noopener noreferrer';a.append(link)}
   else{const watch=el('button','btn primary',alert?'לבדוק את המודעות':'לבדוק את המודעה');watch.onclick=()=>{filter='all';open=item.entity_id;renderAds();go('ads')};a.append(watch)}
-  const keep=el('button','btn ghost','השאר כך');keep.onclick=()=>dismiss(item);const remove=el('button','btn ghost','הסר מהרשימה');remove.onclick=()=>dismiss(item);a.append(keep,remove);
+  const keep=el('button','btn ghost','השאר כך');keep.onclick=()=>dismiss(item);const remove=el('button','btn ghost','הסר מהרשימה');remove.onclick=()=>dismissChoice(item);a.append(keep,remove);
   if(todayContradicts(item)){
     const context=todayContext(item).find(c=>c.contradicts);
     root.append(el('p','today-conflict',pause?'היום דווקא טוב יותר: כל ₪1 החזיר '+ratio(context?.ad?.roas)+'. אפשר לחכות למחר.':'היום המכירות נחלשו. אפשר לחכות למחר לפני שמגדילים.'));
@@ -757,7 +840,7 @@ function actionCard(item){
   root.append(a);
   if(item.kind==='approve'){const help=el('p','btn-help','מציג את השינוי לבדיקה. רק אישור נוסף שולח אותו למטא.');help.id='card-help-'+(++helpSeq);root.append(help);for(const button of a.querySelectorAll('button,a'))button.setAttribute('aria-describedby',help.id)}
   const audience=d?.audience_classification?.label||d?.audience_label||({prospecting:'קהל חדש',retargeting:'אנשים שכבר היו באתר'})[d?.audience_type]||'לא ידוע';
-  return windowCard({node:root,kind:pause?'stop':scale?'grow':'watch',label:pause?'הצעת עצירה':scale?'הצעת תקציב':'במעקב',age:item.waiting_days,tiles,groups:[['מספרים',[['הוצאה יומית ממוצעת',Number.isFinite(n.avg_daily_spend)?ils(n.avg_daily_spend):'לא ידוע'],['מכירות',n.purchases],['הנתונים של היום','יום חלקי; אינו מחליף את הימים המלאים']]],['הקהל',[['קהל',audience]]],['החוק שהופעל',[['הסיבה',item.body],['מגבלות',(item.warnings||[]).join(' · ')||'אין מידע נוסף']]]]});
+  return windowCard({node:root,kind:pause?'stop':scale?'grow':'watch',label:pause?'הצעת עצירה':scale?'הצעת תקציב':'במעקב',age:item.waiting_days,tiles,groups:[['מספרים',[['הוצאה יומית ממוצעת',Number.isFinite(n.avg_daily_spend)?ils(n.avg_daily_spend):'לא ידוע'],['Meta',n.purchases],['מכירות בחנות',salesLine(salesFor(item))],['למה המספרים שונים',salesExplanation()],['הנתונים של היום','יום חלקי; אינו מחליף את הימים המלאים']]],['הקהל',[['קהל',audience]]],['החוק שהופעל',[['הסיבה',item.body],['מגבלות',(item.warnings||[]).join(' · ')||'אין מידע נוסף']]]]});
 }
 // Local record only: says the owner made the change in Meta. Nothing is sent to Meta.
 async function markDone(id,button){
@@ -771,8 +854,10 @@ async function answerDetected(id,answer){
 // Enhancements Meta has on against the owner's rule. Turning off happens in Ads Manager.
 function driftCard(item,rule){
   const card=el('article','card'),features=item.features||[];
+  appendProfileReason(card,report?.creative_drift||{});
   card.append(el('h3','','לכבות שינויים ב„'+item.name+'“'),adPicture(item));
   if(!features.length){card.append(stateRows('מצב השינויים אינו ידוע.','לא נציע כיבוי בלי לקרוא את ההגדרות.'),el('p','owner-reason','צריך לקרוא מחדש את הגדרות המודעה.'));return windowCard({node:card,label:'חסרים נתונים',kind:'idle'})}
+  appendProfileReason(card,item);
   const now=featureSummary(features);
   card.append(stateRows(now,driftAfter()));
   card.append(el('p','owner-reason','למה: הלקוחות רואים תוכן שלא אישרת. התוצאות כוללות גם את שינויי מטא.'+(rule?' לפי החוק שלך זה צריך להיות כבוי.':'')));
@@ -780,7 +865,7 @@ function driftCard(item,rule){
   if(item.in_app===false){button=el('a','btn primary','לפתוח את המודעה במטא');button.href=item.link;button.target='_blank';button.rel='noopener noreferrer';card.append(el('p','owner-summary','במטא: לערוך את המודעה, לפתוח שינויים של מטא ולכבות את האפשרויות שברשימה.'))}
   else{button=el('button','btn primary',features.length===1?'לכבות את השינוי':'לכבות את '+features.length+' השינויים');button.onclick=()=>openAction('drift:'+item.ad_id)}
   const keep=el('button','btn ghost','השאר כך');keep.onclick=async()=>{keep.disabled=true;try{await api('/api/creative-drift/keep',{ad_id:item.ad_id});await load(false)}catch(e){keep.disabled=false;alert(e.message)}};
-  const remove=el('button','btn ghost','הסר מהרשימה');remove.onclick=()=>dismiss(item);a.append(button,keep,remove);
+  const remove=el('button','btn ghost','הסר מהרשימה');remove.onclick=()=>dismissChoice(item);a.append(button,keep,remove);
   card.append(a);
   return windowCard({node:card,label:'שינויים של מטא',kind:'watch',groups:[['השינויים',features.map(f=>[featureInfo(f)[0],featureInfo(f)[1]])],['החוק שהופעל',[['הסיבה','הלקוחות רואים תוכן שלא אישרת.'],['מה יקרה','נוצר עותק של התוכן הנוכחי ונקשר לאותה מודעה. אין שחזור של גרסה קודמת. מטא תבדוק שוב את המודעה; ייתכן שתידרש למידה מחדש.'],['לכבות','מציג את השינוי המדויק לאישור נוסף.'],['השאר כך','מסתיר את המצב הנוכחי בלי לשנות את המודעה.'],['הסר מהרשימה','מסתיר את ההמלצה בלבד.']]]]});
 }
@@ -795,6 +880,7 @@ function renderDrift(){
     const features=group[0].features,card=el('article','card');
     card.append(el('h3','','לכבות '+features.slice(0,3).map(f=>featureInfo(f)[0]).join(' ו')+' ב-'+counted(group.length,'מודעה','מודעות')));
     const gallery=el('div','group-ads');for(const item of group){const row=el('div','drift-ad');row.append(adPicture(item,true),el('p','',item.name));gallery.append(row)}card.append(gallery);
+    appendProfileReason(card,d);
     const now=featureSummary(features);
     card.append(stateRows(now,driftAfter()),el('p','owner-reason','למה: הלקוחות רואים תוכן שלא אישרת. לפי החוק שלך זה צריך להיות כבוי.'));
     const details=el('details','why');details.append(el('summary','','פרטים'));
@@ -914,7 +1000,8 @@ function renderAds(){
     const row=el('button','row');row.type='button';row.setAttribute('aria-expanded',String(open===d.entity_id));
     const main=el('div','row-main'),text=el('div','row-text'),side=el('div','row-side');
     text.append(el('span','row-name',d.entity_name),el('span','row-sub',ils(n.spend)+' · '+(n.purchases??'—')+' מכירות'));
-    text.append(el('span','row-sub',audienceLine(d)));
+    text.append(el('span','row-sub',audienceLine(d)),el('span','row-sub','מכירות בחנות · '+salesLine(salesFor(d))));
+    appendProfileReason(text,d);
     side.append(el('span','ret num '+cls,typeof n.roas==='number'?x(n.roas)+'×':'—'),el('span','pill '+cls,word));
     main.append(text,side);row.append(main);row.onclick=()=>{open=open===d.entity_id?null:d.entity_id;renderAds()};list.append(row);
     if(open===d.entity_id){
@@ -1007,6 +1094,7 @@ async function loadLaunch(){
 }
 function renderLaunch(){
   const box=$('launch-result');box.replaceChildren();const s=launchState||{};
+  appendProfileReason(box,s.draft||s);
   const busy=['analyzing','writing_copy','planning'].includes(s.state);
   setFlow(busy?'analyze':s.state==='ready_for_owner'?'review':'pick');
   if(s.state==='idle')return;
@@ -1266,9 +1354,10 @@ async function openAction(target){
   let title=item?actionTitle(item):view.title;if(target.startsWith('scale:')&&view.changes?.length)title='להגדיל תקציב יומי של האד-סט ב-20%: '+view.changes[0].from+' → '+view.changes[0].to;
   panel.replaceChildren(el('h2','',title),el('p','','כאן בודקים את השינוי המדויק לפני שמאשרים שליחה למטא.'),el('p','fact',view.entity_name||''));
   if(item){waiting(panel,item);if(target.startsWith('pause:'))panel.append(el('p','','המודעה תפסיק לרוץ. אפשר להפעיל מחדש.'));if(target.startsWith('drift:'))panel.append(el('p','','המודעה ממשיכה לרוץ; השינויים שיוצגו לכיבוי: '+view.changes.map(f=>f.field).join(', ')))}
+  if(target.startsWith('drift:'))panel.append(el('p','fact','התוכן, המוצרים והקישורים נשארים זהים'));
   panel.append(stateRows(view.changes.map(c=>c.field+': '+c.from).join('. '),view.changes.map(c=>c.field+': '+c.to).join('. ')));
   const diff=el('div','diff');for(const c of view.changes){const r=el('div');r.append(el('span','',c.field),el('s','num',c.from),el('i','','←'),el('b','num',c.to));diff.append(r)}
-  panel.append(diff);for(const w of view.warnings||[])panel.append(el('p','note',w));
+  panel.append(diff);appendProfileReason(panel,view);for(const w of view.warnings||[])panel.append(el('p','note',w));
   if(view.undo_note)panel.append(el('p','fact',view.undo_note));
   panel.append(el('p','fact','השינוי יישלח למטא רק אחרי אישור הפעולה. האישור תקף ל-10 דקות.'));
   const a=el('div','actions'),go=el('button','btn primary',actionWord(target)),no=el('button','btn ghost','ביטול');go.type=no.type='button';no.onclick=closeSheet;
@@ -1313,7 +1402,7 @@ function historyEntries(receipts,marks,dismissed,experiments){
       who:o.source==='auto_detected'?'זוהה במטא · המבצע לא ידוע':o.source==='owner_marked'?'סימנת ״ביצעתי״':'דרך המסך',
       status:o.verification==='confirmed'?'בוצע ובדקנו במטא ✓':'לא בטוח שנקלט — כדאי לבדוק',done:o.verification==='confirmed',result:resultLine(o),mark:o});
   }
-  for(const i of dismissed)entries.push({id:'dismiss:'+i.proposal_id,type:'dismiss',at:i.dismissed_at,title:'הסתרת המלצה: '+(i.name||i.headline||'ללא שם'),who:'דרך המסך',status:'הוסתרה מהרשימה',item:i});
+  for(const i of dismissed)entries.push({id:'dismiss:'+i.proposal_id,type:'dismiss',at:i.dismissed_at,title:'הסתרת המלצה: '+(i.name||i.headline||'ללא שם'),who:'דרך המסך',status:i.hidden_reason?'מוסתר לפי ההגדרה שלך':'הוסתרה מהרשימה',item:i});
   for(const x of experiments){const state=x.plan?.state;if(!['decided','inconclusive','interrupted','stopped_for_harm'].includes(state))continue;
     entries.push({id:'experiment:'+x.id,type:'experiment',at:x.finished_at||x.ended_at||null,title:'ניסוי הסתיים: '+(x.plan.question||'ללא שם'),who:'רישום מקומי · המבצע לא ידוע',status:x.verdict||'הניסוי הסתיים',result:x.next_step});
   }
@@ -1343,7 +1432,8 @@ function renderActed(){
     row.append(el('p','fact',time+' · '+e.who),el('p','',e.status));if(e.result)row.append(el('p','',e.result));
     const r=e.receipt;
     if(r?.state==='verified'&&!r.undone_by&&!r.undo_of){const b=el('button','btn','בטל');b.type='button';b.onclick=()=>openAction('undo:'+r.id);row.append(el('p','fact','ביטול יחזיר את ההגדרות הקודמות במטא, אחרי הצגת השינוי ואישור נוסף.'),b)}
-    if(e.item){const b=el('button','btn','החזר המלצה');b.onclick=()=>dismiss(e.item,true);row.append(b)}
+    if(e.item?.dont_id){appendProfileReason(row,e.item);const b=el('button','btn','לערוך באפיון העסק');b.onclick=()=>go('profile');row.append(b)}
+    else if(e.item){const b=el('button','btn','החזר המלצה');b.onclick=()=>dismiss(e.item,true);row.append(b)}
     if(e.mark?.needs_answer){const a=el('div','actions');for(const [answer,label] of [['yes','זה היה לפי ההצעה'],['no','לא']]){const b=el('button','btn',label);b.onclick=()=>answerDetected(e.mark.id,answer);a.append(b)}row.append(a)}
     box.append(windowCard({node:row,label:'היסטוריה'}));
   }
@@ -1458,6 +1548,7 @@ setInterval(loadUpdate,60000);
 async function load(refresh){
   if(refresh){$('fresh-text').textContent='מרענן…';try{await api('/api/live/refresh',{})}catch{}}
   try{report=await api('/api/management-report')}catch(e){$('hello-sub').textContent=e.message;$('todo').replaceChildren();return}
+  await Promise.all([loadProfile(false),loadAdSales()]);
   await loadOutcomes();
   await loadActed();
   await loadShadow(); // auto-mode-shadow refresh
