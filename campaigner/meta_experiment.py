@@ -17,6 +17,7 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 import math
 
+from business import ACTIVE as BUSINESS
 from experiments import LIMITS, Plan, evaluate
 
 # ---- Meta wire names (one place; see the design doc for which are verified) ----
@@ -80,7 +81,7 @@ class Spec:
     rules: tuple
 
 
-def build_spec(plan, *, experiment_id, rulebook, business_id, campaign_id, adset_ids, timezone_name='Asia/Jerusalem'):
+def build_spec(plan, *, experiment_id, rulebook, business_id, campaign_id, adset_ids, timezone_name=BUSINESS.timezone):
     """Check the plan against the owner's rules and Meta's limits; refuse rather than guess."""
     if not isinstance(experiment_id, str) or not experiment_id.isalnum() or len(experiment_id) > 64:
         raise SpecRefused('מזהה ניסוי לא תקין')

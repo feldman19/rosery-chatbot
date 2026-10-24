@@ -10,8 +10,9 @@ the business node, the business's ad studies, and the account's ad studies (any 
 """
 from datetime import datetime, timezone
 import re
+from business import ACTIVE as BUSINESS
 
-ACCOUNT = '393059510164294'
+ACCOUNT = BUSINESS.meta_account
 NEEDED = ('ads_read', 'ads_management')
 BUSINESS_SCOPE = 'business_management'
 STUDY_FIELDS = 'id,name,type,start_time,end_time,canceled_time'
@@ -74,7 +75,7 @@ def check(get, now=None, executor_app=None):
     business_id = None
     try:
         account = read('act_' + ACCOUNT, {'fields': 'account_id,currency,timezone_name,account_status,business{id,name}'})
-        ok = account.get('account_id') == ACCOUNT and account.get('currency') == 'ILS'
+        ok = account.get('account_id') == ACCOUNT and account.get('currency') == BUSINESS.currency
         item('חשבון המודעות', ok and account.get('account_status') == 1,
              f"החשבון פעיל, בשקלים, אזור זמן {account.get('timezone_name')}" if ok and account.get('account_status') == 1 else
              'החשבון לא פעיל או לא בשקלים, או שזה לא החשבון הנכון')
