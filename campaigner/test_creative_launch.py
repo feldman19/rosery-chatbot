@@ -140,7 +140,7 @@ class CreativeLaunchTests(unittest.TestCase):
         self.assertEqual(result['expected_source']['proposal_hash'], digest(proposal))
         self.assertEqual((proposal['adsets'][0]['budget_minor'], proposal['strategy']['campaign_id']), (10000, '120246379886090730'))
         features = proposal['creation_recipe']['creative_fields']['degrees_of_freedom_spec']['creative_features_spec']
-        self.assertEqual(features['inline_comment'], {'enroll_status': 'OPT_OUT'})
+        self.assertEqual(features['inline_comment'], {'enroll_status': 'OPT_IN'})
         self.assertTrue(all(v == {'enroll_status': 'OPT_OUT'} for k, v in features.items() if k != 'inline_comment'))
         self.assertEqual(operation_proposal(report)['source_binding'], result['expected_source'])
         # The write path's own checks: same rulebook digest and every rule it requires is cited.

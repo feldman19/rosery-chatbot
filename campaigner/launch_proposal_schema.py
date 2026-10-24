@@ -69,7 +69,7 @@ def validate_proposal_v2(obj):
             for feature,setting in features.items():
                 if not isinstance(feature,str) or not feature:raise ValueError('creation_recipe: invalid feature')
                 _closed(setting,'enroll_status','creative feature')
-                allowed=('OPT_OUT',)
+                allowed=('OPT_OUT','OPT_IN') if feature=='inline_comment' else ('OPT_OUT',)
                 if setting['enroll_status'] not in allowed:raise ValueError('creation_recipe: feature must opt out')
     for key, expected in (('activation_available', False), ('state', 'draft_for_review'), ('prepared_by', 'agent_review')):
         if key in obj and (type(obj[key]) is not type(expected) or obj[key] != expected):

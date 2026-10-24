@@ -16,6 +16,14 @@ def guidance():
     return json.loads(Path(__file__).with_name('enhancement_guidance.json').read_text(encoding='utf-8'))
 
 
+# Owner decision 2026-10-23: "Relevant comments" stays on; every other Meta change is off until the owner allows it.
+DEFAULT_ALLOWED = frozenset({'inline_comment'})
+
+
+def feature_default(key):
+    return 'allowed' if key in DEFAULT_ALLOWED else 'off'
+
+
 def feature_keys():
     from creative_launch import ENHANCEMENTS_OFF
     return [*ENHANCEMENTS_OFF, 'inline_comment']
@@ -74,7 +82,7 @@ class BusinessProfile:
     def value(self, key):
         with _LOCK:
             row = self._load()['settings'].get(key)
-            return deepcopy(row['value'] if row else ('off' if key in feature_keys() else SETTINGS[key][3]))
+            return deepcopy(row['value'] if row else (feature_default(key) if key in feature_keys() else SETTINGS[key][3]))
 
     def allowed(self, feature):
         return feature in feature_keys() and self.value(feature) == 'allowed'
@@ -98,7 +106,7 @@ class BusinessProfile:
         for key in [*feature_keys(), *SETTINGS]:
             is_feature = key in feature_keys()
             info = research.get(key, {}) if is_feature else {}
-            section, label, effect, default = ('enhancements', info.get('label', key), 'כבוי: ייכבה בהצעות ובפעולת כיבוי; מותר: נשאר לברירת המחדל של מטא', 'off') if is_feature else SETTINGS[key][:4]
+            section, label, effect, default = ('enhancements', info.get('label', key), 'כבוי: ייכבה בהצעות ובפעולת כיבוי; מותר: נשאר לברירת המחדל של מטא', feature_default(key)) if is_feature else SETTINGS[key][:4]
             row = state['settings'].get(key, {})
             verdict = info.get('verdict', 'unknown')
             sections[section]['settings'].append({'key': key, 'label': label, 'sees': info.get('sees'), 'what_it_changes': effect,
@@ -199,9 +207,12 @@ def creation_recipe(profile):
     from creative_launch import CREATION_RECIPE
     recipe = deepcopy(CREATION_RECIPE)
     recipe['creative_fields']['degrees_of_freedom_spec']['creative_features_spec'] = {f: {'enroll_status': 'OPT_OUT'} for f in feature_keys() if not profile.allowed(f)}
+    # A default-allowed feature the owner keeps is set on explicitly, as before the profile existed.
+    features = recipe['creative_fields']['degrees_of_freedom_spec']['creative_features_spec']
+    features.update({f: {'enroll_status': 'OPT_IN'} for f in sorted(DEFAULT_ALLOWED) if profile.allowed(f)})
     return recipe
 
 
 def validate_features(features):
-    if not isinstance(features, dict) or any(k not in feature_keys() or v != {'enroll_status': 'OPT_OUT'} for k, v in features.items()):
+    if not isinstance(features, dict) or any(k not in feature_keys() or v not in ({'enroll_status': 'OPT_OUT'}, *([{'enroll_status': 'OPT_IN'}] if k in DEFAULT_ALLOWED else [])) for k, v in features.items()):
         raise ValueError('ערך הגדרה או בקשה לא תקינים')

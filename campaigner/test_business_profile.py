@@ -23,13 +23,13 @@ class ProfileTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_defaults_and_per_business_isolation(self):
-        self.assertTrue(all(self.profile.value(k) == 'off' for k in feature_keys()))
+        self.assertTrue(all(self.profile.value(k) == ('allowed' if k == 'inline_comment' else 'off') for k in feature_keys()))
         features = creation_recipe(self.profile)['creative_fields']['degrees_of_freedom_spec']['creative_features_spec']
         self.assertEqual(set(features), set(feature_keys()))
-        self.assertTrue(all(v == {'enroll_status': 'OPT_OUT'} for v in features.values()))
+        self.assertTrue(all(v == {'enroll_status': 'OPT_IN' if k == 'inline_comment' else 'OPT_OUT'} for k, v in features.items()))
         self.assertFalse(self.profile.path.exists())
-        self.profile.update({'settings': {'inline_comment': 'allowed'}})
-        self.assertEqual(BusinessProfile(Path(self.temp.name)/'other').value('inline_comment'), 'off')
+        self.profile.update({'settings': {'inline_comment': 'off'}})
+        self.assertEqual(BusinessProfile(Path(self.temp.name)/'other').value('inline_comment'), 'allowed')
 
     def test_history_binding_and_atomic_validation(self):
         before = self.profile.binding()
@@ -101,7 +101,8 @@ class ProfileTests(unittest.TestCase):
     def test_guidance_unknown_and_honest_unwired_settings(self):
         from business_profile import guidance
         self.assertEqual(set(guidance()), set(feature_keys()))
-        self.assertTrue(all(v['verdict'] == 'unknown' for v in guidance().values()))
+        self.assertTrue(all(v['verdict'] in ('safe', 'harmful', 'depends', 'unknown') for v in guidance().values()))
+        self.assertTrue(all(v['sources'] and all(u.startswith('https://') for u in v['sources']) for v in guidance().values() if v['verdict'] != 'unknown'))
         settings = {v['key']: v for section in self.profile.get()['sections'] for v in section['settings']}
         for key in ('excluded_products', 'tone_notes', 'no_change_dates'):
             self.assertIn('עוד לא בשימוש', settings[key]['what_it_changes'])
@@ -150,7 +151,7 @@ class ProfileLaunchBindingTests(unittest.TestCase):
         self.assertEqual(operation['blocked_reasons'], [])
         spec = operation['manifest']['creation_recipe']['creative_fields']['degrees_of_freedom_spec']['creative_features_spec']
         self.assertNotIn('image_brightness_and_contrast', spec)
-        self.assertEqual(spec['inline_comment'], {'enroll_status': 'OPT_OUT'})
+        self.assertEqual(spec['inline_comment'], {'enroll_status': 'OPT_IN'})
         profile.update({'settings': {'image_animation': 'allowed'}})
         with self.assertRaises(OperationBlocked):
             self.service.approve(operation['operation_id'], operation['digest'])

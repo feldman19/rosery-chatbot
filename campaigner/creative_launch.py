@@ -38,7 +38,7 @@ ENHANCEMENTS_OFF = (
     'wa_mm_image_filtering').split()
 CREATION_RECIPE = {'adset_fields': {'destination_type': 'WEBSITE', 'bid_strategy': 'LOWEST_COST_WITHOUT_CAP'},
                    'creative_fields': {'degrees_of_freedom_spec': {'creative_features_spec': {
-                       **{f: {'enroll_status': 'OPT_OUT'} for f in ENHANCEMENTS_OFF}, 'inline_comment': {'enroll_status': 'OPT_OUT'}}}},
+                       **{f: {'enroll_status': 'OPT_OUT'} for f in ENHANCEMENTS_OFF}, 'inline_comment': {'enroll_status': 'OPT_IN'}}}},
                    'optimization_type': 'DEGREES_OF_FREEDOM'}
 COPY_RULES = ['full_copy_set', 'cta_shop_now', 'no_carousel', 'offer_in_headline']
 URL_TAGS = 'utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign={{campaign.id}}&utm_content={{ad.id}}&adset_id={{adset.id}}'

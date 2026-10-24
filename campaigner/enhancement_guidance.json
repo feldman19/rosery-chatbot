@@ -1,422 +1,588 @@
 {
   "adapt_to_placement": {
-    "label": "התאמה למיקום",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "התאמה לגודל המסך",
+    "sees": "תמונת המוצר מוצגת בגודל שמתאים לכל מקום",
+    "verdict": "safe",
+    "reason": "נחשב סיכון נמוך",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "add_text_overlay": {
-    "label": "טקסט על התמונה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "תג מחיר או מבצע על התמונה",
+    "sees": "תג מחיר, הנחה או \"נשארו מעט\" על התמונה",
+    "verdict": "depends",
+    "reason": "שימושי במבצע; לוודא שהמחיר בקטלוג נכון ושהעברית תקינה",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "ads_with_benefits": {
-    "label": "מודעות עם יתרונות",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "הצגת יתרונות",
+    "sees": "יתרונות שמטא הסיקה מהאתר",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד; אם נכתב בבינה מלאכותית — כמו סיכום",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "advantage_plus_creative": {
-    "label": "Advantage+ קריאייטיב",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "המתג הכללי של השינויים",
+    "sees": "מדליק חבילה של שינויים",
+    "verdict": "depends",
+    "reason": "עדיף לבחור כל שינוי בנפרד; מדווח שנדלק מחדש מעצמו",
+    "sources": [
+      "https://www.businessinsider.com/meta-ai-generating-bizarre-ads-advantage-plus-2025-10",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026"
+    ]
   },
   "app_highlights": {
-    "label": "הדגשות אפליקציה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "הדגשות לאפליקציה",
+    "sees": "רלוונטי רק לפרסום אפליקציות",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "לא רלוונטי לחנות אתר; אין תיעוד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "audio": {
-    "label": "אודיו",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "מוזיקה אוטומטית",
+    "sees": "מטא מוסיפה שיר לבחירתה",
+    "verdict": "harmful",
+    "reason": "מתנגש עם קול בסרטון או מוזיקה שלא מתאימה למותג",
+    "sources": [
+      "https://metalla.digital/meta-advantage-plus-creative-enhancements/",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "biz_ai": {
-    "label": "בינה מלאכותית לעסק",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "עוזר צ׳אט אוטומטי",
+    "sees": "צ׳אט שעונה ללקוחות בשמך",
+    "verdict": "depends",
+    "reason": "עונה בשמך; בעברית יש סכנה לתשובות שגויות",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "carousel_to_video": {
     "label": "קרוסלה לסרטון",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "sees": "הקרוסלה הופכת לסרטון",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "catalog_feed_tag": {
-    "label": "תג פיד קטלוג",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "תגי מוצר באינסטגרם",
+    "sees": "תג מוצר שאפשר ללחוץ עליו",
+    "verdict": "safe",
+    "reason": "סיכון נמוך",
+    "sources": [
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "creative_stickers": {
-    "label": "מדבקות",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "מדבקה על הסרטון",
+    "sees": "מדבקת \"קנו עכשיו\" שמטא יצרה",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "חדש ולא נבדק",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "cv_transformation": {
-    "label": "שינוי קריאייטיב",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "שינוי תמונה בבינה מלאכותית",
+    "sees": "לא ידוע",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד; אם זו יצירת תמונה — סיכון גבוה",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "description_automation": {
-    "label": "תיאור אוטומטי",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "תיאור אוטומטי מהקטלוג",
+    "sees": "שורת תיאור מתוך פרטי המוצר",
+    "verdict": "safe",
+    "reason": "סיכון נמוך כשהקטלוג מסודר",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "dha_optimization": {
-    "label": "מיטוב קריאייטיב דינמי",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "שיפור פנימי של מטא",
+    "sees": "לא ידוע",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "dynamic_partner_content": {
-    "label": "תוכן שותף דינמי",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "תוכן של שותפים",
+    "sees": "כנראה תוכן משותף עם יוצרים",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "enable_ncs_testimonials": {
     "label": "המלצות לקוחות",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "sees": "ציטוט מביקורת של לקוח",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד; לבדוק איזה טקסט מוצג",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "enhance_cta": {
-    "label": "שיפור כפתור הפעולה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "הוספה ליד הכפתור",
+    "sees": "משפט כמו \"משלוח חינם\" ליד הכפתור",
+    "verdict": "depends",
+    "reason": "לוודא שהמשפט נכון לעסק",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://metalla.digital/meta-advantage-plus-creative-enhancements/",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "feed_caption_optimization": {
-    "label": "מיטוב כיתוב בפיד",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "שינוי הטקסט בפיד",
+    "sees": "הטקסט הראשי משתנה",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד; אם הוא כותב מחדש — כמו שינויי טקסט",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "generate_cta": {
-    "label": "כפתור פעולה שנוצר ב-AI",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "ניסוח כפתור אוטומטי",
+    "sees": "נוסח אחר לכפתור",
+    "verdict": "depends",
+    "reason": "לבדוק את הנוסח בעברית",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "hide_price": {
     "label": "הסתרת מחיר",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "sees": "המחיר לא מוצג",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "ig_glados_feed": {
-    "label": "שיפורי פיד אינסטגרם",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "שינוי פנימי של אינסטגרם",
+    "sees": "לא ידוע",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "שם פנימי בלי תיעוד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "ig_video_native_subtitle": {
-    "label": "כתוביות באינסטגרם",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "כתוביות אוטומטיות",
+    "sees": "כתוביות שנוצרות מהדיבור בסרטון",
+    "verdict": "depends",
+    "reason": "נבדק באנגלית; בעברית סיכון לכתוביות שגויות",
+    "sources": [
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "image_animation": {
-    "label": "אנימציה לתמונה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "הנפשת תמונה",
+    "sees": "התמונה זזה (זום או סיבוב)",
+    "verdict": "harmful",
+    "reason": "מעוות קצוות ומוצרים; יש מומחה אחד שמקל",
+    "sources": [
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026",
+      "https://metalla.digital/meta-advantage-plus-creative-enhancements/",
+      "https://www.jonloomer.com/advantage-plus-creative-enhancements/"
+    ]
   },
   "image_auto_crop": {
     "label": "חיתוך תמונה אוטומטי",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "sees": "התמונה נחתכת אחרת בכל מקום",
+    "verdict": "depends",
+    "reason": "זהירות כשהתכשיט קטן או בפינה",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/",
+      "https://adlibrary.com/posts/advantage-plus-creative-changes"
+    ]
   },
   "image_background_gen": {
-    "label": "רקע שנוצר ב-AI",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "רקע שמטא יוצרת",
+    "sees": "המוצר מופיע על רקע חדש שלא צילמת",
+    "verdict": "harmful",
+    "reason": "מקרים מתועדים של מודעות מוזרות אצל מותגים מוכרים",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026",
+      "https://www.businessinsider.com/meta-ai-generating-bizarre-ads-advantage-plus-2025-10"
+    ]
   },
   "image_brightness_and_contrast": {
-    "label": "בהירות וניגודיות",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "שיפור בהירות וניגודיות",
+    "sees": "התמונה קצת יותר בהירה וחדה",
+    "verdict": "safe",
+    "reason": "שינוי עדין; לפי מטא מוזיל מעט את העלות",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026"
+    ]
   },
   "image_enhancement": {
-    "label": "שיפור תמונה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "שיפור איכות תמונה",
+    "sees": "התמונה מעט חדה ונקייה יותר",
+    "verdict": "safe",
+    "reason": "תיקון מראה בסיסי; כמעט בלי דיווחי בעיות",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026"
+    ]
   },
   "image_templates": {
-    "label": "תבניות תמונה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "מסגרת טקסט על התמונה",
+    "sees": "פס צבע עם טקסט מעל התמונה",
+    "verdict": "harmful",
+    "reason": "השינוי ששנוא הכי הרבה על מפרסמים; לא ברור שמתאים לעברית",
+    "sources": [
+      "https://www.jonloomer.com/advantage-plus-creative-enhancements/",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026"
+    ]
   },
   "image_text_translation": {
-    "label": "תרגום טקסט בתמונה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "תרגום טקסט שבתמונה",
+    "sees": "הטקסט שעל התמונה מתורגם",
+    "verdict": "harmful",
+    "reason": "כמו תרגום, ועוד סיכון לעיצוב מימין לשמאל",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://romanpeschke.com/guides/turn-off-meta-advantage-creative-translation/"
+    ]
   },
   "image_touchups": {
-    "label": "שיפורי תמונה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "התאמת תמונה למיקום",
+    "sees": "חיתוך או הרחבה קלה שהתמונה תתאים לפיד ולסטורי",
+    "verdict": "depends",
+    "reason": "בסדר כשיש שוליים נקיים; לוגו או טקסט בקצה עלולים להיחתך",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements",
+      "https://adlibrary.com/posts/advantage-plus-creative-changes"
+    ]
   },
   "image_uncrop": {
-    "label": "הרחבת תמונה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "הרחבת תמונה בבינה מלאכותית",
+    "sees": "מטא ממציאה רקע וחלקים סביב המוצר",
+    "verdict": "harmful",
+    "reason": "ממציא פרטים; בתכשיטים מסוכן במיוחד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026"
+    ]
   },
   "local_store_extension": {
-    "label": "הרחבת חנות מקומית",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "מיקום חנות",
+    "sees": "הצגת חנות קרובה",
+    "verdict": "depends",
+    "reason": "רלוונטי רק כשיש חנות פיזית מוגדרת",
+    "sources": [
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "media_liquidity_animated_image": {
-    "label": "הנפשת תמונה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "תמונה מונפשת",
+    "sees": "גרסה זזה של התמונה",
+    "verdict": "depends",
+    "reason": "כנראה מאותה משפחה של ההנפשה; לבדוק לפני שמשאירים",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "media_order": {
-    "label": "סדר מדיה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "סדר התמונות",
+    "sees": "התמונה החזקה מוצגת ראשונה",
+    "verdict": "safe",
+    "reason": "סיכון נמוך",
+    "sources": [
+      "https://www.jonloomer.com/advantage-plus-creative-enhancements/",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "media_type_automation": {
-    "label": "בחירת סוג מדיה אוטומטית",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "סרטון מוצר מהקטלוג",
+    "sees": "סרטון מהקטלוג במקום תמונה",
+    "verdict": "safe",
+    "reason": "סיכון נמוך",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "multi_photo_to_video": {
-    "label": "תמונות לווידאו",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "סרטון מכמה תמונות",
+    "sees": "מטא מרכיבה סרטון עם מוזיקה וטקסט",
+    "verdict": "depends",
+    "reason": "נוסף טקסט ומוזיקה אוטומטיים; בעברית חובה לבדוק",
+    "sources": [
+      "https://adlibrary.com/posts/advantage-plus-creative-changes"
+    ]
   },
   "pac_recomposition": {
-    "label": "הרכבה מחדש",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "סידור מחדש של התמונה",
+    "sees": "חלקי התמונה מוזזים",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד ציבורי",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "pac_relaxation": {
-    "label": "גמישות קריאייטיב",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "אותה מודעה בעוד מקומות",
+    "sees": "התמונה מוצגת גם במקומות שלא בחרת",
+    "verdict": "safe",
+    "reason": "סיכון נמוך",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "product_browsing": {
-    "label": "עיון במוצרים",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "גלישה במוצרים",
+    "sees": "קטלוג נפתח לפני שעוברים לאתר",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "לא נבדק",
+    "sources": [
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "product_extensions": {
-    "label": "הרחבות מוצר",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "מוצרים נוספים מהקטלוג",
+    "sees": "מוצרים נוספים ליד התמונה",
+    "verdict": "depends",
+    "reason": "טוב כשהמוצרים רלוונטיים; אחרת מסיח",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://www.jonloomer.com/advantage-plus-creative-enhancements/",
+      "https://metalla.digital/meta-advantage-plus-creative-enhancements/"
+    ]
   },
   "product_metadata_automation": {
     "label": "פרטי מוצר אוטומטיים",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "sees": "פרטים מהקטלוג מוצגים במודעה",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "כנראה דומה לתיאור האוטומטי; אין תיעוד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "profile_card": {
-    "label": "כרטיס פרופיל",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "כרטיס הלוגו בסוף",
+    "sees": "כרטיס עם הלוגו בסוף הקרוסלה",
+    "verdict": "safe",
+    "reason": "מומלץ להשאיר",
+    "sources": [
+      "https://www.jonloomer.com/advantage-plus-creative-enhancements/",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "replace_media_text": {
-    "label": "החלפת טקסט במדיה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "החלפת טקסט בתוך התמונה",
+    "sees": "הטקסט שעל התמונה מוחלף בטקסט אחר",
+    "verdict": "harmful",
+    "reason": "משנה מילים שעיצבת; סיכון לטעויות בעברית",
+    "sources": [
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "reveal_details_over_time": {
     "label": "חשיפת פרטים בהדרגה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "sees": "פרטים מהדף מופיעים אחרי כמה שניות",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין דעות מבוססות",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "show_destination_blurbs": {
-    "label": "תיאור יעד",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "קטעים מהאתר",
+    "sees": "טקסט ותמונות מדף המוצר",
+    "verdict": "depends",
+    "reason": "תלוי כמה הדף מסודר; מטא עלולה לבחור משפט לא מתאים",
+    "sources": [
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "show_summary": {
-    "label": "סיכום אוטומטי",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "סיכום שמטא כותבת",
+    "sees": "סיכום של נקודות מכירה שמטא ניסחה",
+    "verdict": "harmful",
+    "reason": "טקסט של בינה מלאכותית עם סיכון לטענות לא נכונות, ובעברית יותר",
+    "sources": [
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "site_extensions": {
-    "label": "קישורים לאתר",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "קישורים נוספים לאתר",
+    "sees": "עד 4 קישורים לעמודים אחרים מתחת לכפתור",
+    "verdict": "harmful",
+    "reason": "מפזר את הלקוח לעמודי משלוחים או בלוג במקום למוצר",
+    "sources": [
+      "https://metalla.digital/meta-advantage-plus-creative-enhancements/",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "standard_enhancements": {
-    "label": "שיפורים סטנדרטיים",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "חבילת השינויים הרגילה",
+    "sees": "כמה שינויים יחד",
+    "verdict": "depends",
+    "reason": "מטא מוציאה אותה משימוש לטובת בחירה אחד-אחד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started"
+    ]
   },
   "standard_enhancements_catalog": {
-    "label": "שיפורים סטנדרטיים לקטלוג",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "חבילת השינויים לקטלוג",
+    "sees": "כמה שינויים יחד במודעת קטלוג",
+    "verdict": "depends",
+    "reason": "עדיף לבחור כל שינוי בנפרד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started"
+    ]
   },
   "text_optimizations": {
-    "label": "שיפורי טקסט",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "שינויי טקסט",
+    "sees": "מטא מזיזה ומחליפה חלקים מהטקסט שכתבת",
+    "verdict": "depends",
+    "reason": "יש מחלוקת: בדיקה אחת מצאה שיפור אחרי כיבוי, מומחה אחר משאיר דלוק",
+    "sources": [
+      "https://metalla.digital/meta-advantage-plus-creative-enhancements/",
+      "https://www.jonloomer.com/advantage-plus-creative-enhancements/",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026"
+    ]
   },
   "text_translation": {
-    "label": "תרגום טקסט",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "תרגום הטקסט",
+    "sees": "המודעה מוצגת בשפה אחרת",
+    "verdict": "harmful",
+    "reason": "נדלק מחדש אחרי עריכה; מומלץ לכבות",
+    "sources": [
+      "https://romanpeschke.com/guides/turn-off-meta-advantage-creative-translation/",
+      "https://metalla.digital/meta-advantage-plus-creative-enhancements/"
+    ]
   },
   "translate_voiceover": {
-    "label": "תרגום קריינות",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "קריינות מתורגמת",
+    "sees": "קול מלאכותי בשפה אחרת",
+    "verdict": "harmful",
+    "reason": "עברית לא ברשימת השפות הנתמכות",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://www.jonloomer.com/qvt/translate-voiceover/",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "video_auto_crop": {
-    "label": "חיתוך וידאו אוטומטי",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "חיתוך סרטון אוטומטי",
+    "sees": "הסרטון נחתך אחרת בכל מקום",
+    "verdict": "depends",
+    "reason": "כמו בתמונה: תלוי במה שיש בשוליים",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "video_filtering": {
-    "label": "פילטר לווידאו",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "פילטר לסרטון",
+    "sees": "הצבעים בסרטון חזקים יותר",
+    "verdict": "depends",
+    "reason": "בתכשיטים הגוון חשוב; חלק מהמומחים ממליצים לכבות",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://metalla.digital/meta-advantage-plus-creative-enhancements/",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "video_highlight": {
-    "label": "היילייט מהווידאו",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "קטעים נבחרים מהסרטון",
+    "sees": "משפטים ותמונות שנשלפים מהסרטון",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "עדיין בבדיקה אצל מטא; כולל טקסט אוטומטי",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "video_highlights": {
-    "label": "רגעי שיא בווידאו",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "קטעים נבחרים מהסרטון",
+    "sees": "משפטים ותמונות שנשלפים מהסרטון",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "עדיין בבדיקה אצל מטא; כולל טקסט אוטומטי",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "video_to_image": {
-    "label": "וידאו לתמונה",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "תמונה מתוך הסרטון",
+    "sees": "פריים מהסרטון מוצג כתמונה",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד מבוסס",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "video_uncrop": {
-    "label": "הרחבת וידאו",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "הרחבת סרטון בבינה מלאכותית",
+    "sees": "שוליים מומצאים בסרטון",
+    "verdict": "harmful",
+    "reason": "אותה בעיה כמו בהרחבת תמונה",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026"
+    ]
   },
   "video_voiceover": {
-    "label": "קריינות וידאו",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "קריינות אוטומטית",
+    "sees": "קול מלאכותי שמקריא",
+    "verdict": "harmful",
+    "reason": "עברית לא ברשימת השפות הנתמכות",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://www.jonloomer.com/qvt/translate-voiceover/",
+      "https://adsuploader.com/blog/advantage-plus-creative-enhancements"
+    ]
   },
   "wa_mm_image_filtering": {
-    "label": "מסנני תמונה בוואטסאפ",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
+    "label": "פילטר לתמונות בוואטסאפ",
+    "sees": "פילטר על תמונות בהודעות",
     "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "reason": "אין תיעוד",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/reference/ad-creative-features-spec/"
+    ]
   },
   "inline_comment": {
-    "label": "תגובות רלוונטיות",
-    "sees": "שינוי אוטומטי של מטא; ההשפעה המדויקת טרם נחקרה",
-    "verdict": "unknown",
-    "reason": "טרם הושלם מחקר",
-    "sources": []
+    "label": "תגובה של גולש מתחת למודעה",
+    "sees": "תגובה אמיתית של לקוח מוצגת מתחת למודעה",
+    "verdict": "depends",
+    "reason": "טוב כשעוקבים אחרי תגובות; תגובה שלילית תוצג",
+    "sources": [
+      "https://developers.facebook.com/docs/marketing-api/creative/advantage-creative/get-started",
+      "https://www.sparkugc.com/resources/advantage-plus-creative-best-practices-2026",
+      "https://metalla.digital/meta-advantage-plus-creative-enhancements/"
+    ]
   }
 }
